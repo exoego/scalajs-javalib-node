@@ -9,7 +9,7 @@ import java.io.{
   Writer
 }
 
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach, FunSuite, Outcome}
+import org.scalatest.{BeforeAndAfterEach, FunSuite}
 
 class BufferedWriterTest extends FunSuite with BeforeAndAfterEach {
   private[io] var bw: BufferedWriter = _
