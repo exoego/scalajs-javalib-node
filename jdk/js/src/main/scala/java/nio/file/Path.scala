@@ -33,7 +33,7 @@ trait Path {
   def normalize(): Path = ???
 
   def resolve(other: String): Path = {
-    this.resolve(this.getFileSystem.getPath(other, Array.empty: _*))
+    this.resolve(this.getFileSystem.getPath(other, Array.empty))
   }
   def resolveSibling(other: Path): Path = {
     if (other == null) throw new NullPointerException
@@ -43,7 +43,7 @@ trait Path {
     }
   }
   def resolveSibling(other: String): Path = {
-    this.resolveSibling(this.getFileSystem.getPath(other, Array.empty: _*))
+    this.resolveSibling(this.getFileSystem.getPath(other, Array.empty))
   }
   def resolve(ptjer: Path): Path = ???
 

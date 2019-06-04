@@ -44,16 +44,9 @@ lazy val root = project
   )
   .settings(commonSettings: _*)
   .aggregate(
-    lang.jvm,
-    lang.js,
-    security.jvm,
-    security.js,
-    concurrent.jvm,
-    concurrent.js,
-    io.jvm,
-    io.js,
-    crossDependenciesTest.jvm,
-    crossDependenciesTest.js
+    jdk.jvm,
+    jdk.js,
+    nodejsFacade
   )
 
 lazy val nodejsFacade = (project in file("facade/nodejs"))
@@ -64,55 +57,13 @@ lazy val nodejsFacade = (project in file("facade/nodejs"))
     name := s"${selfPackageName}-nodejs-facade"
   )
 
-lazy val crossDependenciesTest = crossProject(JVMPlatform, JSPlatform)
+lazy val jdk = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
-  .in(file("jdk/java/cross-dep-test"))
+  .in(file("jdk"))
   .settings(commonSettings: _*)
   .settings(
-    name := s"${selfPackageName}-cross-dep-test"
+    name := s"${selfPackageName}"
   )
   .jsSettings(commonJsSettings: _*)
   .jvmSettings()
-  .dependsOn(lang, io)
-
-lazy val lang = crossProject(JVMPlatform, JSPlatform)
-  .crossType(CrossType.Full)
-  .in(file("jdk/java/lang"))
-  .settings(commonSettings: _*)
-  .settings(
-    name := s"${selfPackageName}-lang"
-  )
-  .jsSettings(commonJsSettings: _*)
-  .jvmSettings()
-lazy val langJS = lang.js.dependsOn(nodejsFacade)
-
-lazy val security = crossProject(JVMPlatform, JSPlatform)
-  .crossType(CrossType.Full)
-  .in(file("jdk/java/security"))
-  .settings(commonSettings: _*)
-  .settings(
-    name := s"${selfPackageName}-security"
-  )
-  .jsSettings(commonJsSettings: _*)
-  .jvmSettings()
-
-lazy val concurrent = crossProject(JVMPlatform, JSPlatform)
-  .crossType(CrossType.Full)
-  .in(file("jdk/java/concurrent"))
-  .settings(commonSettings: _*)
-  .settings(
-    name := s"${selfPackageName}-concurrent"
-  )
-  .jsSettings(commonJsSettings: _*)
-  .jvmSettings()
-
-lazy val io = crossProject(JVMPlatform, JSPlatform)
-  .crossType(CrossType.Full)
-  .in(file("jdk/java/io"))
-  .settings(commonSettings: _*)
-  .settings(
-    name := s"${selfPackageName}-io"
-  )
-  .jsSettings(commonJsSettings: _*)
-  .jvmSettings()
-  .dependsOn(lang, security, concurrent)
+lazy val jdkJS = jdk.js.dependsOn(nodejsFacade)
