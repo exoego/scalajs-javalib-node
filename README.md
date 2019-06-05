@@ -35,9 +35,7 @@ This project may not provide the following libs, or may provide only skelton/stu
 * `java.util.logging`
 * Most of `javax.*` packages
 
+## Note
 
-
-
-
-
-
+Many implementations and tests are based on [Apache Harmony project](https://github.com/apache/harmony), not OpenJDK.
+This is because Harmony uses Apache License, which is very flexible and non-invasive, but OpenJDK uses GPL. 
