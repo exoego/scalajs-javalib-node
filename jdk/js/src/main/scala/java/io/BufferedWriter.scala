@@ -1,3 +1,19 @@
+/*
+ *  Licensed to the Apache Software Foundation (ASF) under one or more
+ *  contributor license agreements.  See the NOTICE file distributed with
+ *  this work for additional information regarding copyright ownership.
+ *  The ASF licenses this file to You under the Apache License, Version 2.0
+ *  (the "License"); you may not use this file except in compliance with
+ *  the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 package java.io
 
 class BufferedWriter(private[this] var out: Writer, size: Int) extends Writer {
@@ -8,7 +24,7 @@ class BufferedWriter(private[this] var out: Writer, size: Int) extends Writer {
   private var buf = new Array[Char](size)
   private var pos = 0
 
-  private def isClosed = {
+  @inline private def isClosed = {
     out == null
   }
 
@@ -35,8 +51,12 @@ class BufferedWriter(private[this] var out: Writer, size: Int) extends Writer {
     if (thrown != null) throw thrown
   }
 
-  def flush(): Unit = {
+  private def ensureOpen(): Unit = {
     if (isClosed) throw new IOException()
+  }
+
+  def flush(): Unit = {
+    ensureOpen()
     flushInternal()
     out.flush()
   }
@@ -51,7 +71,7 @@ class BufferedWriter(private[this] var out: Writer, size: Int) extends Writer {
   }
 
   def write(cbuf: Array[Char], offset: Int, count: Int): Unit = {
-    if (isClosed) throw new IOException()
+    ensureOpen()
     if (offset < 0 || {
           if (cbuf == null) throw new NullPointerException
           offset > cbuf.length - count || count < 0
@@ -86,7 +106,7 @@ class BufferedWriter(private[this] var out: Writer, size: Int) extends Writer {
   }
 
   override def write(oneChar: Int): Unit = {
-    if (isClosed) throw new IOException()
+    ensureOpen()
     if (pos >= buf.length) {
       out.write(buf, 0, buf.length)
       pos = 0
@@ -95,7 +115,7 @@ class BufferedWriter(private[this] var out: Writer, size: Int) extends Writer {
   }
 
   override def write(str: String, offset: Int, count: Int): Unit = {
-    if (isClosed) throw new IOException()
+    ensureOpen()
     if (count > 0) {
       if (str == null) throw new NullPointerException()
       if (offset > str.length - count || offset < 0) throw new StringIndexOutOfBoundsException()
