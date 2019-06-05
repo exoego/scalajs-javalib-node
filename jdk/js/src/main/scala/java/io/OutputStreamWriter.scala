@@ -8,8 +8,8 @@ import java.nio.charset._
 /**
   * This is temporary implementation to fix issue in Scala.js javalib implementation.
   */
-class OutputStreamWriter(private[this] var out: OutputStream,
-                         private[this] var enc: CharsetEncoder) extends Writer {
+class OutputStreamWriter(private[this] var out: OutputStream, private[this] var enc: CharsetEncoder)
+    extends Writer {
 
   private[this] var closed: Boolean = false
 
@@ -27,10 +27,12 @@ class OutputStreamWriter(private[this] var out: OutputStream,
   private[this] var outBuf: ByteBuffer = ByteBuffer.allocate(4096)
 
   def this(out: OutputStream, cs: Charset) =
-    this(out,
+    this(
+      out,
       cs.newEncoder
         .onMalformedInput(CodingErrorAction.REPLACE)
-        .onUnmappableCharacter(CodingErrorAction.REPLACE))
+        .onUnmappableCharacter(CodingErrorAction.REPLACE)
+    )
 
   def this(out: OutputStream) =
     this(out, Charset.defaultCharset)
@@ -93,13 +95,15 @@ class OutputStreamWriter(private[this] var out: OutputStream,
     @inline
     @tailrec
     def loopEncode(): Unit = {
-      val cbuf = CharBuffer.wrap(inBuf)
+      val cbuf   = CharBuffer.wrap(inBuf)
       val result = enc.encode(cbuf, outBuf, true)
       if (result.isUnderflow) {
-        assert(!cbuf.hasRemaining,
-          "CharsetEncoder.encode() should not have returned UNDERFLOW when "+
-            "both endOfInput and inBuf.hasRemaining are true. It should have "+
-            "returned a MalformedInput error instead.")
+        assert(
+          !cbuf.hasRemaining,
+          "CharsetEncoder.encode() should not have returned UNDERFLOW when " +
+            "both endOfInput and inBuf.hasRemaining are true. It should have " +
+            "returned a MalformedInput error instead."
+        )
       } else if (result.isOverflow) {
         makeRoomInOutBuf()
         loopEncode()
