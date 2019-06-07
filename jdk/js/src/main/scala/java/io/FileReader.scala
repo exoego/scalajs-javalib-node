@@ -19,4 +19,9 @@ class FileReader private (in: FileInputStream, charset: Charset)
   def this(fileName: String) {
     this(fileName, Charset.defaultCharset())
   }
+
+  def this(fd: FileDescriptor) {
+    this("")
+    throw new UnsupportedOperationException()
+  }
 }

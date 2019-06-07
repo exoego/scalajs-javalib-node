@@ -50,4 +50,6 @@ class FileInputStream(file: File) extends InputStream {
       -1
     }
   }
+
+  def getFD(): FileDescriptor = throw new UnsupportedOperationException("getFD")
 }
