@@ -1,5 +1,6 @@
 package java.io
 
+import io.scalajs.nodejs.FileIOError
 import io.scalajs.nodejs.buffer.Buffer
 import io.scalajs.nodejs.fs.Fs
 
@@ -33,4 +34,5 @@ class FileOutputStream(file: File, append: Boolean) extends OutputStream {
     // TODO: not implemented
   }
 
+  def getFD(): FileDescriptor = FileDescriptorFactory.createInternal(this.fd)
 }

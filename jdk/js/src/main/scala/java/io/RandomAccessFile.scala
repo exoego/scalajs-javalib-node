@@ -26,4 +26,9 @@ class RandomAccessFile(file: File, mode: String) extends Closeable {
     // TODO: not implemented
     0L
   }
+
+  def getFD(): FileDescriptor = {
+    // TODO: not implemented
+    new FileDescriptor
+  }
 }

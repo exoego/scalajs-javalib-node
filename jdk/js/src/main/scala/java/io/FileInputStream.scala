@@ -51,5 +51,5 @@ class FileInputStream(file: File) extends InputStream {
     }
   }
 
-  def getFD(): FileDescriptor = throw new UnsupportedOperationException("getFD")
+  def getFD(): FileDescriptor = FileDescriptorFactory.createInternal(this.fileDescriptor)
 }
