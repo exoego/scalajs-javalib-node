@@ -29,7 +29,7 @@ class FileInputStream(file: File) extends InputStream {
 
   override def available(): Int = {
     if (closed) throw new IOException("stream is closed")
-    super.available()
+    Fs.fstatSync(this.fileDescriptor).size.toInt
   }
 
   override def close(): Unit = {
