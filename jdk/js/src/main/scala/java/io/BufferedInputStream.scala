@@ -1,5 +1,6 @@
 package java.io
 
+import scala.annotation.tailrec
 import scala.scalajs.js.JavaScriptException
 
 class BufferedInputStream protected (
@@ -122,7 +123,8 @@ class BufferedInputStream protected (
         length - copylength
       } else length
 
-    while (true) {
+    @tailrec
+    def loop(): Int = {
       var read = 0
       /*
        * If we're not marked and the required size is greater than the
@@ -131,20 +133,17 @@ class BufferedInputStream protected (
       if ((markpos == -1) && required >= localBuf.length) {
         read = in.read(buffer, offset, required)
         if (read == -1)
-          return if (required == length) -1
-          else length - required
+          return if (required == length) -1 else length - required
       } else {
         if (fillbuf(in, localBuf) == -1)
-          return if (required == length) -1
-          else length - required
+          return if (required == length) -1 else length - required
+
         // localBuf may have been invalidated by fillbuf
-        if (localBuf ne buf) {
+        if (localBuf != buf) {
           localBuf = buf
           if (localBuf == null) throw new IOException()
         }
-        read =
-          if (count - pos >= required) required
-          else count - pos
+        read = if (count - pos >= required) required else count - pos
         System.arraycopy(localBuf, pos, buffer, offset, read)
         pos += read
       }
@@ -152,8 +151,9 @@ class BufferedInputStream protected (
       if (required == 0) return length
       if (in.available == 0) return length - required
       offset += read
+      loop()
     }
-    -1
+    loop()
   }
 
   override def reset(): Unit = {
