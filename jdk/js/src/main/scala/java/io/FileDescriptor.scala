@@ -4,12 +4,15 @@ import io.scalajs.nodejs.fs.Fs
 
 final class FileDescriptor {
 
-  private[io] var descriptor = -1
+  private[io] var internal = -1
 
   private[io] var readOnly = false
 
-  def valid: Boolean = this.descriptor != -1
+  def valid(): Boolean = this.internal != -1
 
+  private[io] def invalidate(): Unit = {
+    internal = -1
+  }
 }
 
 object FileDescriptor {
@@ -19,9 +22,14 @@ object FileDescriptor {
 }
 
 private[io] object FileDescriptorFactory {
+  def openRead(filepath: String): FileDescriptor = {
+    val nodeFD = Fs.openSync(filepath, "r")
+    FileDescriptorFactory.createInternal(nodeFD, readOnly = true)
+  }
+
   def createInternal(descriptor: Int, readOnly: Boolean = false): FileDescriptor = {
     val instance = new FileDescriptor
-    instance.descriptor = descriptor
+    instance.internal = descriptor
     instance.readOnly = readOnly
     instance
   }

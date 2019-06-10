@@ -1,14 +1,25 @@
 package luni.java.io
 
-import java.io.{ File, FileInputStream, FileOutputStream, InputStream, OutputStream }
+import java.io.{
+  File,
+  FileDescriptor,
+  FileInputStream,
+  FileNotFoundException,
+  FileOutputStream,
+  IOException,
+  InputStream,
+  InputStreamReader,
+  OutputStream
+}
+import java.nio.channels.ClosedChannelException
 
-import org.scalatest.{ BeforeAndAfterEach, FunSuite }
+import org.scalatest.{BeforeAndAfterEach, FunSuite}
 import support.Support_PlatformFile
 
 class FileInputStreamTest extends FunSuite with BeforeAndAfterEach {
   var fileName: String = _
 
-  private var is: InputStream = _
+  private var is: FileInputStream = _
 
   private[io] val ibuf = new Array[Byte](4096)
 
@@ -18,17 +29,208 @@ class FileInputStreamTest extends FunSuite with BeforeAndAfterEach {
   override protected def beforeEach(): Unit = {
     fileName = System.getProperty("user.dir", "./")
     val separator = System.getProperty("file.separator")
-    fileName = if (fileName.charAt(fileName.length - 1) == separator.charAt(0))
-      Support_PlatformFile.getNewPlatformFile(fileName, "input.tst")
-    else
-      Support_PlatformFile.getNewPlatformFile(fileName + separator, "input.tst")
+    fileName =
+      if (fileName.charAt(fileName.length - 1) == separator.charAt(0))
+        Support_PlatformFile.getNewPlatformFile(fileName, "input.tst")
+      else
+        Support_PlatformFile.getNewPlatformFile(fileName + separator, "input.tst")
     val fos = new FileOutputStream(fileName)
     fos.write(fileString.getBytes)
     fos.close()
   }
 
   override def afterEach(): Unit = {
-    new File(fileName).delete()
+//    new File(fileName).delete()
+    is = null
+  }
+
+  test("ConstructorLjava_io_File") {
+    val f = new File(fileName)
+    is = new FileInputStream(f)
+    is.close()
+  }
+
+  // TODO: FileDescriptor
+//  test("ConstructorLjava_io_FileDescriptor") {
+//    val fos = new FileOutputStream(fileName)
+//    val fis = new FileInputStream(fos.getFD)
+//    fos.close()
+//    fis.close()
+//  }
+
+  test("ConstructorLjava_lang_String") {
+    is = new FileInputStream(fileName)
+    is.close()
+  }
+
+  test("ConstructorLjava_lang_String_I") {
+    assertThrows[FileNotFoundException] {
+      is = new FileInputStream("")
+    }
+    if (is != null) is.close()
+
+    assertThrows[FileNotFoundException] {
+      is = new FileInputStream(new File(""))
+    }
+    if (is != null) is.close()
+  }
+
+  test("close") {
+    is = new FileInputStream(fileName)
+    is.close()
+    assertThrows[IOException] {
+      is.read
+    }
+
+    // Regression test for HARMONY-6642
+    val fis  = new FileInputStream(fileName)
+    val fis2 = new FileInputStream(fis.getFD)
+    fis2.close()
+    assert(!fis.getFD.valid() && !fis2.getFD.valid())
+    assertThrows[IOException] {
+      fis.read()
+    }
+    try fis.close()
+    catch {
+      case _: IOException =>
+    }
+  }
+
+  // TODO: FileDescriptor.in
+  //  test("close: stdin") {
+  //    var stdin = new FileInputStream(FileDescriptor.in)
+  //    stdin.close()
+  //    stdin = new FileInputStream(FileDescriptor.in)
+  //    assertThrows[IOException] {
+  //      stdin.read()
+  //    }
+  //  }
+
+  test("getFD") {
+    val fis = new FileInputStream(fileName)
+    assert(fis.getFD.valid)
+    fis.close()
+    assert(!fis.getFD.valid)
+  }
+
+  test("read") {
+    val isr = new InputStreamReader(new FileInputStream(fileName))
+    val c   = isr.read()
+    isr.close()
+    assert(c == fileString.charAt(0))
+  }
+
+  test("read$B") {
+    val buf1 = new Array[Byte](100)
+    is = new FileInputStream(fileName)
+    is.skip(3000)
+    is.read(buf1)
+    is.close()
+    assert(new String(buf1, 0, buf1.length) == fileString.substring(3000, 3100))
+  }
+
+  ignore("read$BII") {
+    val buf1 = new Array[Byte](100)
+    is = new FileInputStream(fileName)
+    is.skip(3000)
+    is.read(buf1, 0, buf1.length)
+    is.close()
+    assert(new String(buf1, 0, buf1.length) == fileString.substring(3000, 3100))
+  }
+
+  test("read$BII: Regression test for HARMONY-285") {
+    val file = new File("FileInputStream.tmp")
+    file.createNewFile()
+    file.deleteOnExit()
+    val in = new FileInputStream(file)
+    assertThrows[NullPointerException] {
+      in.read(null, 0, 0)
+    }
+    in.close()
+    file.delete()
+  }
+
+  test("read_$BII_IOException") {
+    val buf = new Array[Byte](1000)
+    assertThrows[IOException] {
+      is = new FileInputStream(fileName)
+      is.close()
+      is.read(buf, 0, 100)
+    }
+    is.close()
+
+    is = new FileInputStream(fileName)
+    is.close()
+    is.read(buf, 0, 0)
+    is.close()
+  }
+
+  test("read_$BII_NullPointerException") {
+    val buf = null
+    assertThrows[NullPointerException] {
+      is = new FileInputStream(fileName)
+      is.read(buf, -1, 0)
+    }
+    is.close()
+  }
+
+  test("read_$BII_IndexOutOfBoundsException") {
+    val buf = new Array[Byte](1000)
+    assertThrows[IndexOutOfBoundsException] {
+      is = new FileInputStream(fileName)
+      is.read(buf, -1, 0)
+    }
+    is.close()
+
+    assertThrows[IndexOutOfBoundsException] {
+      is = new FileInputStream(fileName)
+      is.read(buf, 0, -1)
+    }
+    is.close()
+
+    assertThrows[IndexOutOfBoundsException] {
+      is = new FileInputStream(fileName)
+      is.read(buf, -1, -1)
+    }
+    is.close()
+
+    assertThrows[IndexOutOfBoundsException] {
+      is = new FileInputStream(fileName)
+      is.read(buf, 0, 1001)
+    }
+    is.close()
+
+    assertThrows[IndexOutOfBoundsException] {
+      is = new FileInputStream(fileName)
+      is.read(buf, 1001, 0)
+    }
+    is.close()
+
+    assertThrows[IndexOutOfBoundsException] {
+      is = new FileInputStream(fileName)
+      is.read(buf, 500, 501)
+    }
+    is.close()
+  }
+
+  test("regressionNNN: Regression for HARMONY-434") {
+    val fis = new FileInputStream(fileName)
+    assertThrows[IndexOutOfBoundsException] {
+      fis.read(new Array[Byte](1), -1, 1)
+    }
+    assertThrows[IndexOutOfBoundsException] {
+      fis.read(new Array[Byte](1), 0, -1)
+    }
+    assertThrows[IndexOutOfBoundsException] {
+      fis.read(new Array[Byte](1), 0, 5)
+    }
+    assertThrows[IndexOutOfBoundsException] {
+      fis.read(new Array[Byte](10), Integer.MAX_VALUE, 5)
+    }
+    assertThrows[IndexOutOfBoundsException] {
+      fis.read(new Array[Byte](10), 5, Integer.MAX_VALUE)
+    }
+    fis.close()
   }
 
   test("available") {
@@ -36,11 +238,65 @@ class FileInputStreamTest extends FunSuite with BeforeAndAfterEach {
       is = new FileInputStream(fileName)
       assert(is.available == fileString.length)
     } finally {
-      try is.close
+      try is.close()
       catch {
         case _: Exception => // ignore
       }
     }
   }
+
+  test("skipJ") {
+    val buf1 = new Array[Byte](10)
+    is = new FileInputStream(fileName)
+    is.skip(1000)
+    is.read(buf1, 0, buf1.length)
+    is.close()
+    assert(new String(buf1, 0, buf1.length) == fileString.substring(1000, 1010))
+  }
+
+  test("skipNegativeArgumentJ") {
+    val fis = new FileInputStream(fileName)
+    assertThrows[IOException] {
+      fis.skip(-5)
+    }
+    fis.close()
+  }
+
+// TODO: FileChannel
+//  test("getChannel") {
+//    var fis = new FileInputStream(fileName)
+//    assert(0 == fis.getChannel.position)
+//    var r     = 0
+//    var count = 1
+//    while ({
+//      r = fis.read
+//      r != -1
+//    }) {
+//      assert({
+//        count += 1; count - 1
+//      } == fis.getChannel.position)
+//    }
+//    fis.close()
+//
+//    assertThrows[ClosedChannelException] {
+//      fis.getChannel.position
+//    }
+//
+//    fis = new FileInputStream(fileName)
+//    assert(0 == fis.getChannel.position)
+//    var bs = new Array[Byte](10)
+//    r = fis.read(bs)
+//    assert(10 == fis.getChannel.position)
+//    fis.close()
+//
+//    fis = new FileInputStream(fileName)
+//    assert(0 == fis.getChannel.position)
+//    bs = new Array[Byte](10)
+//    fis.skip(100)
+//    assert(100 == fis.getChannel.position)
+//    r = fis.read(bs)
+//    assert(110 == fis.getChannel.position)
+//    fis.close()
+//  }
 
 }
