@@ -22,6 +22,11 @@ object FileDescriptor {
 }
 
 private[io] object FileDescriptorFactory {
+  def openWrite(filepath: String, append: Boolean): FileDescriptor = {
+    val nodeFD = Fs.openSync(filepath, if (append) "a" else "w")
+    FileDescriptorFactory.createInternal(nodeFD, readOnly = false)
+  }
+
   def openRead(filepath: String): FileDescriptor = {
     val nodeFD = Fs.openSync(filepath, "r")
     FileDescriptorFactory.createInternal(nodeFD, readOnly = true)
