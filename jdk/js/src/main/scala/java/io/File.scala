@@ -18,7 +18,7 @@ object File {
   val pathSeparatorChar: Char = System.getProperty("path.separator").charAt(0)
 
   def listRoots(): Array[File] = {
-    val path     = new File(".").getCanonicalPath
+    val path     = new File(".").getCanonicalPath()
     val rootPath = NodePath.parse(path).root
     rootPath.map(p => Array(new File(p))).getOrElse(Array.empty)
   }
@@ -65,7 +65,7 @@ object File {
 }
 
 class File private (dirname: Option[String], basename: String) extends Comparable[File] {
-  def this(pathname: String) {
+  def this(pathname: String) = {
     this({
       if (pathname == null) {
         throw new NullPointerException
@@ -81,7 +81,7 @@ class File private (dirname: Option[String], basename: String) extends Comparabl
 
   }
 
-  def this(parent: String, child: String) {
+  def this(parent: String, child: String) = {
     this({
       if (child == null) {
         throw new NullPointerException()
@@ -90,12 +90,12 @@ class File private (dirname: Option[String], basename: String) extends Comparabl
     }, child)
   }
 
-  def this(parent: File, child: String) {
+  def this(parent: File, child: String) = {
     this({
       if (child == null) {
         throw new NullPointerException()
       }
-      Option(parent).map(_.getPath)
+      Option(parent).map(_.getPath())
     }, child)
   }
 
@@ -204,7 +204,7 @@ class File private (dirname: Option[String], basename: String) extends Comparabl
   }
 
   def deleteOnExit(): Unit = {
-    FileHelper.deleteQueue.enqueue(this.file)
+    FileHelper.deleteQueue.enqueue(this.file())
   }
 
   def setReadOnly(): Boolean = {
@@ -219,7 +219,7 @@ class File private (dirname: Option[String], basename: String) extends Comparabl
       false
     } else {
       try {
-        Fs.writeFileSync(file = this.file, data = "")
+        Fs.writeFileSync(file = this.file(), data = "")
         true
       } catch {
         case jse: js.JavaScriptException => false
@@ -236,7 +236,7 @@ class File private (dirname: Option[String], basename: String) extends Comparabl
     if (!isValid() || exists()) {
       false
     } else {
-      Fs.mkdirSync(this.file)
+      Fs.mkdirSync(this.file())
       true
     }
   }
@@ -248,7 +248,7 @@ class File private (dirname: Option[String], basename: String) extends Comparabl
       // TODO: scalajs-io does not support recursive yet
       Fs.asInstanceOf[js.Dynamic]
         .mkdirSync(
-          this.file,
+          this.file(),
           js.Dynamic.literal(
             recursive = true
           )
@@ -261,7 +261,7 @@ class File private (dirname: Option[String], basename: String) extends Comparabl
     if (dest == null) {
       throw new NullPointerException
     }
-    Fs.renameSync(oldPath = this.file, newPath = dest.getPath)
+    Fs.renameSync(oldPath = this.file(), newPath = dest.getPath())
     true
   }
 
@@ -311,7 +311,7 @@ class File private (dirname: Option[String], basename: String) extends Comparabl
   }
 
   def length(): Long = {
-    Fs.statSync(file).size.toLong
+    Fs.statSync(file()).size.toLong
   }
 
   override def hashCode(): Int = {
@@ -321,7 +321,7 @@ class File private (dirname: Option[String], basename: String) extends Comparabl
   override def equals(obj: Any): Boolean = {
     obj match {
       case null       => false
-      case that: File => this.getAbsolutePath() == that.getAbsolutePath
+      case that: File => this.getAbsolutePath() == that.getAbsolutePath()
       case _          => false
     }
   }
@@ -343,9 +343,6 @@ class File private (dirname: Option[String], basename: String) extends Comparabl
     0L
   }
   private def testPermission(flag: io.scalajs.nodejs.FileMode): Boolean = {
-    if (flag == null) {
-      throw new NullPointerException("flag is null")
-    }
     try {
       Fs.accessSync(this.file(), flag)
       true
@@ -448,6 +445,6 @@ class File private (dirname: Option[String], basename: String) extends Comparabl
     if (that == null) {
       throw new NullPointerException()
     }
-    this.getPath().compareTo(that.getPath)
+    this.getPath().compareTo(that.getPath())
   }
 }

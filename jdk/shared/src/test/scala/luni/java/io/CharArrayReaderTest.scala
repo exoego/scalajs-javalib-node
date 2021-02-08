@@ -2,10 +2,10 @@ package luni.java.io
 
 import java.io.CharArrayReader
 import java.io.IOException
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.funsuite.AnyFunSuite
 
-import org.scalatest.{BeforeAndAfterEach, FunSuite}
-
-class CharArrayReaderTest extends FunSuite with BeforeAndAfterEach {
+class CharArrayReaderTest extends AnyFunSuite with BeforeAndAfterEach {
   private[io] val hw                  = Array('H', 'e', 'l', 'l', 'o', 'W', 'o', 'r', 'l', 'd')
   private[io] var cr: CharArrayReader = _
 
@@ -56,7 +56,7 @@ class CharArrayReaderTest extends FunSuite with BeforeAndAfterEach {
     assert(cr.read == '\u8765')
   }
 
-  test("read$CII"){
+  test("read$CII") {
     val c = new Array[Char](11)
     cr = new CharArrayReader(hw)
     cr.read(c, 1, 10)
@@ -100,7 +100,7 @@ class CharArrayReaderTest extends FunSuite with BeforeAndAfterEach {
     }
   }
 
-  test("skipJ"){
+  test("skipJ") {
     cr = new CharArrayReader(hw)
     val skipped = cr.skip(5L)
     assert(5L == skipped)

@@ -1,10 +1,10 @@
 package luni.java.io
 
-import java.io.{ IOException, InterruptedIOException }
+import org.scalatest.funsuite.AnyFunSuite
 
-import org.scalatest.FunSuite
+import java.io.InterruptedIOException
 
-class InterruptedIOExceptionTest extends FunSuite {
+class InterruptedIOExceptionTest extends AnyFunSuite {
 
   test("Constructor") {
     val ex = intercept[InterruptedIOException] {

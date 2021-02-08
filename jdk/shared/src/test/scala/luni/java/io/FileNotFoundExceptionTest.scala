@@ -1,10 +1,10 @@
 package luni.java.io
 
-import java.io.{ FileNotFoundException, IOException }
+import java.io.{FileNotFoundException, IOException}
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class FileNotFoundExceptionTest extends FunSuite {
+class FileNotFoundExceptionTest extends AnyFunSuite {
 
   test("Constructor") {
     val ex = intercept[FileNotFoundException] {

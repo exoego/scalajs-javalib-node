@@ -28,7 +28,7 @@ class BufferedWriter(private[this] var out: Writer, size: Int) extends Writer {
     out == null
   }
 
-  def this(out: Writer) {
+  def this(out: Writer) = {
     this(out, 8192)
   }
 

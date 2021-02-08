@@ -14,14 +14,14 @@ class BufferedInputStream protected (
 
   private var isClosed = false
 
-  def this(in: InputStream, size: Int) {
+  def this(in: InputStream, size: Int) = {
     this(in, {
       if (size <= 0) throw new IllegalArgumentException()
       Array.ofDim(size)
     }, count = 0, marklimit = 0, markpos = -1, pos = 0)
   }
 
-  def this(in: InputStream) {
+  def this(in: InputStream) = {
     this(in, 8192)
   }
 

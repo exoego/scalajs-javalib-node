@@ -8,15 +8,15 @@ import scala.scalajs.js.JSConverters._
 
 class FileOutputStream(private[this] val fd: FileDescriptor) extends OutputStream {
 
-  def this(file: File, append: Boolean) {
+  def this(file: File, append: Boolean) = {
     this({
-      if (file.isDirectory) {
+      if (file.isDirectory()) {
         throw new IOException("Got a directory")
       }
-      if (file.getPath.isEmpty) {
+      if (file.getPath().isEmpty) {
         throw new FileNotFoundException()
       }
-      FileDescriptorFactory.openWrite(file.getPath, append)
+      FileDescriptorFactory.openWrite(file.getPath(), append)
     })
   }
 

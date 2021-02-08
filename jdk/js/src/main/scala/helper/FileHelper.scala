@@ -6,14 +6,14 @@ import java.nio.file.attribute.PosixFilePermission
 
 import io.scalajs.nodejs.fs.Fs
 import io.scalajs.nodejs.os.OS
-import io.scalajs.nodejs.process
+import io.scalajs.nodejs.process.Process
 
 import scala.collection.mutable
 import scala.util.matching.Regex
 
 object FileHelper {
   val deleteQueue: mutable.Queue[String] = collection.mutable.Queue.empty[String]
-  process.onBeforeExit(() => {
+  Process.onBeforeExit((exitCode) => {
     FileHelper.deleteQueue.foreach { file =>
       try {
         val result = new File(file).delete()
@@ -44,11 +44,11 @@ object FileHelper {
   }
 
   def getPermissionCode(file: File): Int = {
-    Fs.statSync(file.getPath).mode & Integer.parseInt("777", 8)
+    Fs.statSync(file.getPath()).mode & Integer.parseInt("777", 8)
   }
 
   def getPermissions(path: Path): java.util.Set[PosixFilePermission] = {
-    val code = getPermissionCode(path.toFile)
+    val code = getPermissionCode(path.toFile())
     val set  = new java.util.HashSet[PosixFilePermission]()
     if ((code & READ_BY_OWNER) > 0) {
       set.add(PosixFilePermission.OWNER_READ)

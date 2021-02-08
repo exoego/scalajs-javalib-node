@@ -2,9 +2,10 @@ package luni.java.io
 
 import java.io.StringWriter
 
-import org.scalatest.{ BeforeAndAfterEach, FunSuite }
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.funsuite.AnyFunSuite
 
-class StringWriterTest extends FunSuite with BeforeAndAfterEach {
+class StringWriterTest extends AnyFunSuite with BeforeAndAfterEach {
   private[io] var sw: StringWriter = _
 
   override def beforeEach(): Unit = {

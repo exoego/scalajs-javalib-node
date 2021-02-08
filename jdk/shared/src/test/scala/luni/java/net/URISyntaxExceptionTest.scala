@@ -1,10 +1,10 @@
 package luni.java.net
 
+import org.scalatest.funsuite.AnyFunSuite
+
 import java.net.URISyntaxException
 
-import org.scalatest.FunSuite
-
-class URISyntaxExceptionTest extends FunSuite {
+class URISyntaxExceptionTest extends AnyFunSuite {
   test("ConstructorLjava_lang_StringLjava_lang_StringI") {
     assertThrows[NullPointerException] {
       new URISyntaxException(null, "problem", 2)

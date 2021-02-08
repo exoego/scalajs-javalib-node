@@ -2,9 +2,9 @@ package luni.java.io
 
 import java.io.{IOException, Writer}
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class WriterTest extends FunSuite {
+class WriterTest extends AnyFunSuite {
 
   test("appendChar") {
     val testChar = ' '

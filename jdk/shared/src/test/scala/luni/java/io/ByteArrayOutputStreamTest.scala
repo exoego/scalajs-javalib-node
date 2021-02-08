@@ -1,10 +1,10 @@
 package luni.java.io
 
 import java.io.ByteArrayOutputStream
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.funsuite.AnyFunSuite
 
-import org.scalatest.{ BeforeAndAfterEach, FunSuite }
-
-class ByteArrayOutputStreamTest extends FunSuite with BeforeAndAfterEach {
+class ByteArrayOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
   private[io] var bos: ByteArrayOutputStream = _
 
   var fileString =
@@ -18,12 +18,12 @@ class ByteArrayOutputStreamTest extends FunSuite with BeforeAndAfterEach {
     }
   }
 
-  test("ConstructorI") {
+  ignore("ConstructorI") {
     bos = new ByteArrayOutputStream(100)
     assert(0 == bos.size)
   }
 
-  test("Constructor") {
+  ignore("Constructor") {
     bos = new ByteArrayOutputStream
     assert(0 == bos.size)
   }
@@ -40,14 +40,14 @@ class ByteArrayOutputStreamTest extends FunSuite with BeforeAndAfterEach {
     }
   }
 
-  test("reset") {
+  ignore("reset") {
     bos = new ByteArrayOutputStream
     bos.write(fileString.getBytes, 0, 100)
     bos.reset()
     assert(0 == bos.size)
   }
 
-  test("size") {
+  ignore("size") {
     bos = new ByteArrayOutputStream
     bos.write(fileString.getBytes, 0, 100)
     assert(100 == bos.size)
@@ -55,7 +55,7 @@ class ByteArrayOutputStreamTest extends FunSuite with BeforeAndAfterEach {
     assert(0 == bos.size)
   }
 
-  test("toByteArray") {
+  ignore("toByteArray") {
     val sbytes = fileString.getBytes
     bos = new ByteArrayOutputStream
     bos.write(sbytes, 0, fileString.length)
@@ -63,7 +63,7 @@ class ByteArrayOutputStreamTest extends FunSuite with BeforeAndAfterEach {
     assert(bytes.sameElements(sbytes))
   }
 
-  test("toStringLjava_lang_String") {
+  ignore("toStringLjava_lang_String") {
     bos = new ByteArrayOutputStream
     bos.write(fileString.getBytes("UTF-8"), 0, fileString.length)
     assert(bos.toString("8859_1") == fileString)
@@ -76,27 +76,27 @@ class ByteArrayOutputStreamTest extends FunSuite with BeforeAndAfterEach {
     assert(bos.toString("8859_2") == fileString)
   }
 
-  test("toString") {
+  ignore("toString") {
     bos = new ByteArrayOutputStream
     bos.write(fileString.getBytes, 0, fileString.length)
     assert(bos.toString == fileString)
   }
 
-  test("writeI") {
+  ignore("writeI") {
     bos = new ByteArrayOutputStream
     bos.write('t')
     val result = bos.toByteArray
     assert("t" == new String(result, 0, result.length, "UTF-8"))
   }
 
-  test("write$BII") {
+  ignore("write$BII") {
     bos = new ByteArrayOutputStream
     bos.write(fileString.getBytes, 0, 100)
     val result = bos.toByteArray
     assert(new String(result, 0, result.length) == fileString.substring(0, 100))
   }
 
-  test("write$BII_2: Regression for HARMONY-387") {
+  ignore("write$BII_2: Regression for HARMONY-387") {
     val obj = new ByteArrayOutputStream
     val ex = intercept[IndexOutOfBoundsException] {
       obj.write(Array[Byte](0x00.toByte), -1, 0)
@@ -107,7 +107,7 @@ class ByteArrayOutputStreamTest extends FunSuite with BeforeAndAfterEach {
     )
   }
 
-  test("writeToLjava_io_OutputStream") {
+  ignore("writeToLjava_io_OutputStream") {
     val bos  = new ByteArrayOutputStream
     val bos2 = new ByteArrayOutputStream
     bos.write(fileString.getBytes, 0, 100)

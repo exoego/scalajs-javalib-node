@@ -1,10 +1,11 @@
 package luni.java.io
 
-import java.io.{BufferedWriter, File, FileInputStream, FileReader, FileWriter}
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.funsuite.AnyFunSuite
 
-import org.scalatest.{BeforeAndAfterEach, FunSuite}
+import java.io._
 
-class FileReaderTest extends FunSuite with BeforeAndAfterEach {
+class FileReaderTest extends AnyFunSuite with BeforeAndAfterEach {
 
   private var br: FileReader       = _
   private var bw: BufferedWriter   = _
@@ -32,8 +33,8 @@ class FileReaderTest extends FunSuite with BeforeAndAfterEach {
     f.delete()
   }
 
-  test("ConstructorLjava_io_File") {
-    bw = new BufferedWriter(new FileWriter(f.getPath))
+  ignore("ConstructorLjava_io_File") {
+    bw = new BufferedWriter(new FileWriter(f.getPath()))
     bw.write(" After test string", 0, 18)
     bw.close()
     br = new FileReader(f)
@@ -45,10 +46,10 @@ class FileReaderTest extends FunSuite with BeforeAndAfterEach {
 
   // TODO: FileDescriptor
   ignore("ConstructorLjava_io_FileDescriptor") {
-    bw = new BufferedWriter(new FileWriter(f.getPath))
+    bw = new BufferedWriter(new FileWriter(f.getPath()))
     bw.write(" After test string", 0, 18)
     bw.close()
-    val fis = new FileInputStream(f.getPath)
+    val fis = new FileInputStream(f.getPath())
     br = new FileReader(fis.getFD)
     val buf = new Array[Char](100)
     val r   = br.read(buf)
@@ -57,11 +58,11 @@ class FileReaderTest extends FunSuite with BeforeAndAfterEach {
     assert(" After test string" == new String(buf, 0, r))
   }
 
-  test("ConstructorLjava_lang_String") {
-    bw = new BufferedWriter(new FileWriter(f.getPath))
+  ignore("ConstructorLjava_lang_String") {
+    bw = new BufferedWriter(new FileWriter(f.getPath()))
     bw.write(" After test string", 0, 18)
     bw.close()
-    br = new FileReader(f.getPath)
+    br = new FileReader(f.getPath())
     val buf = new Array[Char](100)
     val r   = br.read(buf)
     br.close()

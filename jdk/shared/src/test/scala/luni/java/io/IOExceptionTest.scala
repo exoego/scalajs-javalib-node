@@ -1,10 +1,10 @@
 package luni.java.io
 
+import org.scalatest.funsuite.AnyFunSuite
+
 import java.io.IOException
 
-import org.scalatest.FunSuite
-
-class IOExceptionTest extends FunSuite {
+class IOExceptionTest extends AnyFunSuite {
 
   test("Constructor") {
     val ex = intercept[IOException] {

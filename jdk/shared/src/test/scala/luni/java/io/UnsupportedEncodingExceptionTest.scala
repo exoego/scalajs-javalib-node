@@ -1,10 +1,10 @@
 package luni.java.io
 
-import java.io.{ ByteArrayOutputStream, OutputStreamWriter, UnsupportedEncodingException }
+import java.io.{ByteArrayOutputStream, OutputStreamWriter, UnsupportedEncodingException}
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class UnsupportedEncodingExceptionTest extends FunSuite {
+class UnsupportedEncodingExceptionTest extends AnyFunSuite {
 
   test("Constructor") {
     val ex = intercept[UnsupportedEncodingException] {

@@ -2,7 +2,7 @@ package java.io
 
 class ObjectOutputStream protected () extends OutputStream with Closeable {
 
-  def this(is: OutputStream) {
+  def this(is: OutputStream) = {
     // TODO: not implemented
     this()
   }

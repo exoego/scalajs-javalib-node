@@ -13,7 +13,7 @@ import java.nio.file.attribute.{
 import java.nio.file.spi.FileSystemProvider
 import java.util.{Map => JavaMap, Set => JavaSet}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object FileSystems {
 
@@ -121,7 +121,7 @@ private[file] object DefaultFileSystem extends FileSystem {
     }
   }
 
-  override def getPath(s: String, strings: Array[String]): Path = ???
+  def getPath(s: String, strings: Array[String]): Path = ???
 
   override def getPathMatcher(s: String): PathMatcher = ???
 

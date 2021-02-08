@@ -2,7 +2,7 @@ package java.io
 
 class ObjectInputStream protected () extends InputStream {
 
-  def this(is: InputStream) {
+  def this(is: InputStream) = {
     // TODO: not implemented
     this()
   }

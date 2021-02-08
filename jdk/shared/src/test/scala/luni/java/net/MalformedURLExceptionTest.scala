@@ -1,10 +1,10 @@
 package luni.java.net
 
+import org.scalatest.funsuite.AnyFunSuite
+
 import java.net.{MalformedURLException, URL}
 
-import org.scalatest.FunSuite
-
-class MalformedURLExceptionTest extends FunSuite {
+class MalformedURLExceptionTest extends AnyFunSuite {
 
   test("Constructor") {
     assertThrows[MalformedURLException] {

@@ -2,7 +2,8 @@ import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 import sbt._
 
 val selfPackageName = "scalajs-javalib-node"
-val scalaVer        = "2.12.8"
+val scala212Ver     = "2.12.13"
+val scala213Ver     = "2.13.4"
 val selfVersion     = "0.1-SNAPSHOT"
 
 lazy val commonSettings = Seq(
@@ -11,8 +12,8 @@ lazy val commonSettings = Seq(
   organization := "net.exoego",
   homepage := Some(url(s"https://github.com/exoego/${selfPackageName}")),
   licenses := Seq("Apache License 2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0")),
-  scalaVersion := scalaVer,
-  crossScalaVersions := Seq("2.12.8", "2.13.0-RC2"),
+  scalaVersion := scala213Ver,
+  crossScalaVersions := Seq(scala212Ver, scala212Ver),
   scalacOptions ++= Seq(
     "-deprecation",
     "-feature",
@@ -24,16 +25,16 @@ lazy val commonSettings = Seq(
     "-Xfatal-warnings"
   ),
   libraryDependencies ++= Seq(
-    "org.scalatest" %%% "scalatest" % "3.0.7" % "test"
+    "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.1",
+    "org.scalatest" %%% "scalatest" % "3.1.4" % "test"
   )
 )
 lazy val commonJsSettings = Seq(
   scalacOptions ++= Seq(
-    "-P:scalajs:sjsDefinedByDefault"
-  ),
-  scalaJSModuleKind := ModuleKind.CommonJSModule,
+    ),
+  scalaJSLinkerConfig in Test ~= { _.withModuleKind(ModuleKind.CommonJSModule) },
   libraryDependencies ++= Seq(
-    "io.scalajs" %%% "nodejs" % "0.4.2"
+    "net.exoego" %%% "scala-js-nodejs-v14" % "0.12.0"
   )
 )
 
@@ -45,16 +46,7 @@ lazy val root = project
   .settings(commonSettings: _*)
   .aggregate(
     jdk.jvm,
-    jdk.js,
-    nodejsFacade
-  )
-
-lazy val nodejsFacade = (project in file("facade/nodejs"))
-  .enablePlugins(ScalaJSPlugin)
-  .settings(commonSettings: _*)
-  .settings(commonJsSettings: _*)
-  .settings(
-    name := s"${selfPackageName}-nodejs-facade"
+    jdk.js
   )
 
 lazy val jdk = crossProject(JVMPlatform, JSPlatform)
@@ -66,4 +58,3 @@ lazy val jdk = crossProject(JVMPlatform, JSPlatform)
   )
   .jsSettings(commonJsSettings: _*)
   .jvmSettings()
-lazy val jdkJS = jdk.js.dependsOn(nodejsFacade)

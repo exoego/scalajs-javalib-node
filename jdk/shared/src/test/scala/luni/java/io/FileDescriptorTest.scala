@@ -8,10 +8,10 @@ import java.io.{
   FileOutputStream,
   RandomAccessFile
 }
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.funsuite.AnyFunSuite
 
-import org.scalatest.{BeforeAndAfterEach, FunSuite}
-
-class FileDescriptorTest extends FunSuite with BeforeAndAfterEach {
+class FileDescriptorTest extends AnyFunSuite with BeforeAndAfterEach {
   private val platformId = "JDK" + System.getProperty("java.vm.version").replace('.', '-')
 
   private[io] var fos: FileOutputStream    = _

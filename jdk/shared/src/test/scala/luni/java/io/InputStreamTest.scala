@@ -2,9 +2,9 @@ package luni.java.io
 
 import java.io.InputStream
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class InputStreamTest extends FunSuite {
+class InputStreamTest extends AnyFunSuite {
 
   private val isScalaJS = System.getProperty("java.vm.name") == "Scala.js"
 

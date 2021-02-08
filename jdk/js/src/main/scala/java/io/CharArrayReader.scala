@@ -24,7 +24,7 @@ class CharArrayReader(protected var buf: Array[Char], offset: Int, length: Int) 
   protected var markedPos: Int = offset
   protected var count: Int     = if (offset + length < buf.length) length else buf.length
 
-  def this(buf: Array[Char]) {
+  def this(buf: Array[Char]) = {
     this(buf, 0, buf.length)
   }
 

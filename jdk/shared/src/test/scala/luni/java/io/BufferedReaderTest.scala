@@ -1,18 +1,11 @@
 package luni.java.io
 
-import java.io.{
-  BufferedReader,
-  ByteArrayInputStream,
-  CharArrayReader,
-  IOException,
-  InputStreamReader,
-  Reader,
-  StringReader
-}
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.funsuite.AnyFunSuite
 
-import org.scalatest.{BeforeAndAfterEach, FunSuite}
+import java.io._
 
-class BufferedReaderTest extends FunSuite with BeforeAndAfterEach {
+class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
   private[io] var br: BufferedReader = _
   private[io] val testString =
     "Test_All_Tests\nTest_java_io_BufferedInputStream\nTest_java_io_BufferedOutputStream\nTest_java_io_ByteArrayInputStream\nTest_java_io_ByteArrayOutputStream\nTest_java_io_DataInputStream\nTest_java_io_File\nTest_java_io_FileDescriptor\nTest_java_io_FileInputStream\nTest_java_io_FileNotFoundException\nTest_java_io_FileOutputStream\nTest_java_io_FilterInputStream\nTest_java_io_FilterOutputStream\nTest_java_io_InputStream\nTest_java_io_IOException\nTest_java_io_OutputStream\nTest_java_io_PrintStream\nTest_java_io_RandomAccessFile\nTest_java_io_SyncFailedException\nTest_java_lang_AbstractMethodError\nTest_java_lang_ArithmeticException\nTest_java_lang_ArrayIndexOutOfBoundsException\nTest_java_lang_ArrayStoreException\nTest_java_lang_Boolean\nTest_java_lang_Byte\nTest_java_lang_Character\nTest_java_lang_Class\nTest_java_lang_ClassCastException\nTest_java_lang_ClassCircularityError\nTest_java_lang_ClassFormatError\nTest_java_lang_ClassLoader\nTest_java_lang_ClassNotFoundException\nTest_java_lang_CloneNotSupportedException\nTest_java_lang_Double\nTest_java_lang_Error\nTest_java_lang_Exception\nTest_java_lang_ExceptionInInitializerError\nTest_java_lang_Float\nTest_java_lang_IllegalAccessError\nTest_java_lang_IllegalAccessException\nTest_java_lang_IllegalArgumentException\nTest_java_lang_IllegalMonitorStateException\nTest_java_lang_IllegalThreadStateException\nTest_java_lang_IncompatibleClassChangeError\nTest_java_lang_IndexOutOfBoundsException\nTest_java_lang_InstantiationError\nTest_java_lang_InstantiationException\nTest_java_lang_Integer\nTest_java_lang_InternalError\nTest_java_lang_InterruptedException\nTest_java_lang_LinkageError\nTest_java_lang_Long\nTest_java_lang_Math\nTest_java_lang_NegativeArraySizeException\nTest_java_lang_NoClassDefFoundError\nTest_java_lang_NoSuchFieldError\nTest_java_lang_NoSuchMethodError\nTest_java_lang_NullPointerException\nTest_java_lang_Number\nTest_java_lang_NumberFormatException\nTest_java_lang_Object\nTest_java_lang_OutOfMemoryError\nTest_java_lang_RuntimeException\nTest_java_lang_SecurityManager\nTest_java_lang_Short\nTest_java_lang_StackOverflowError\nTest_java_lang_String\nTest_java_lang_StringBuffer\nTest_java_lang_StringIndexOutOfBoundsException\nTest_java_lang_System\nTest_java_lang_Thread\nTest_java_lang_ThreadDeath\nTest_java_lang_ThreadGroup\nTest_java_lang_Throwable\nTest_java_lang_UnknownError\nTest_java_lang_UnsatisfiedLinkError\nTest_java_lang_VerifyError\nTest_java_lang_VirtualMachineError\nTest_java_lang_vm_Image\nTest_java_lang_vm_MemorySegment\nTest_java_lang_vm_ROMStoreException\nTest_java_lang_vm_VM\nTest_java_lang_Void\nTest_java_net_BindException\nTest_java_net_ConnectException\nTest_java_net_DatagramPacket\nTest_java_net_DatagramSocket\nTest_java_net_DatagramSocketImpl\nTest_java_net_InetAddress\nTest_java_net_NoRouteToHostException\nTest_java_net_PlainDatagramSocketImpl\nTest_java_net_PlainSocketImpl\nTest_java_net_Socket\nTest_java_net_SocketException\nTest_java_net_SocketImpl\nTest_java_net_SocketInputStream\nTest_java_net_SocketOutputStream\nTest_java_net_UnknownHostException\nTest_java_util_ArrayEnumerator\nTest_java_util_Date\nTest_java_util_EventObject\nTest_java_util_HashEnumerator\nTest_java_util_Hashtable\nTest_java_util_Properties\nTest_java_util_ResourceBundle\nTest_java_util_tm\nTest_java_util_Vector\n"
@@ -24,11 +17,11 @@ class BufferedReaderTest extends FunSuite with BeforeAndAfterEach {
     }
   }
 
-  test("readLine_IgnoresEbcdic85Characters") {
+  ignore("readLine_IgnoresEbcdic85Characters") {
     assertLines("A\u0085B", "A\u0085B")
   }
 
-  test("readLine_Separators") {
+  ignore("readLine_Separators") {
     assertLines("A\nB\nC", "A", "B", "C")
     assertLines("A\rB\rC", "A", "B", "C")
     assertLines("A\r\nB\r\nC", "A", "B", "C")
@@ -50,15 +43,15 @@ class BufferedReaderTest extends FunSuite with BeforeAndAfterEach {
     assert(bufferedReader.readLine == null)
   }
 
-  test("ConstructorLjava_io_Reader") {
+  ignore("ConstructorLjava_io_Reader") {
     assert(true, "Used in tests")
   }
 
-  test("ConstructorLjava_io_ReaderI") {
+  ignore("ConstructorLjava_io_ReaderI") {
     assert(true, "Used in tests")
   }
 
-  test("close") {
+  ignore("close") {
     br = new BufferedReader(new StringReader(testString))
     br.close()
     assertThrows[IOException] {
@@ -66,7 +59,7 @@ class BufferedReaderTest extends FunSuite with BeforeAndAfterEach {
     }
   }
 
-  test("markI") {
+  ignore("markI") {
     br = new BufferedReader(new StringReader(testString))
     br.skip(500)
     br.mark(1000)
@@ -133,12 +126,12 @@ class BufferedReaderTest extends FunSuite with BeforeAndAfterEach {
     reader.close()
   }
 
-  test("markSupported") {
+  ignore("markSupported") {
     br = new BufferedReader(new StringReader(testString))
     assert(br.markSupported)
   }
 
-  test("read") {
+  ignore("read") {
     br = new BufferedReader(new StringReader(testString))
     val r = br.read
     assert(testString.charAt(0) == r)
@@ -160,11 +153,11 @@ class BufferedReaderTest extends FunSuite with BeforeAndAfterEach {
   }
 
   // FIXME: Issue in CharArrayReader ?
-  ignore("regression test for HARMONY-841"){
+  ignore("regression test for HARMONY-841") {
     assert(new BufferedReader(new CharArrayReader(new Array[Char](5), 1, 0), 2).read == -1)
   }
 
-  test("read$CII") {
+  ignore("read$CII") {
     val ca    = new Array[Char](2)
     var toRet = new BufferedReader(new StringReader(new String(new Array[Byte](0))))
     assertThrows[NullPointerException] {
@@ -245,7 +238,7 @@ class BufferedReaderTest extends FunSuite with BeforeAndAfterEach {
     }
   }
 
-  test("read_$CII_Exception") {
+  ignore("read_$CII_Exception") {
     br = new BufferedReader(new StringReader(testString))
     val nullCharArray: Array[Char] = null
     val charArray                  = testString.toCharArray
@@ -292,18 +285,18 @@ class BufferedReaderTest extends FunSuite with BeforeAndAfterEach {
     }
   }
 
-  test("readLine") {
+  ignore("readLine") {
     br = new BufferedReader(new StringReader(testString))
     val r = br.readLine
     assert("Test_All_Tests" == r)
   }
 
-  test("ready") {
+  ignore("ready") {
     br = new BufferedReader(new StringReader(testString))
     assert(br.ready)
   }
 
-  test("reset") {
+  ignore("reset") {
     br = new BufferedReader(new StringReader(testString))
     br.skip(500)
     br.mark(900)
@@ -320,7 +313,7 @@ class BufferedReaderTest extends FunSuite with BeforeAndAfterEach {
     }
   }
 
-  test("reset_IOException") {
+  ignore("reset_IOException") {
     val expected = Array[Int]('1', '2', '3', '4', '5', '6', '7', '8', '9', '0', -1)
     br = new BufferedReader(new StringReader("1234567890"), 9)
     br.mark(9)
@@ -344,7 +337,7 @@ class BufferedReaderTest extends FunSuite with BeforeAndAfterEach {
     }
   }
 
-  test("skipJ") {
+  ignore("skipJ") {
     br = new BufferedReader(new StringReader(testString))
     br.skip(500)
     val buf = new Array[Char](testString.length)

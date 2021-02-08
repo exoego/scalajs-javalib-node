@@ -1,10 +1,11 @@
 package luni.java.io
 
-import java.io.{ CharArrayReader, CharArrayWriter, StringWriter }
+import java.io.{CharArrayReader, CharArrayWriter, StringWriter}
 
-import org.scalatest.{ BeforeAndAfterEach, FunSuite }
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.funsuite.AnyFunSuite
 
-class CharArrayWriterTest extends FunSuite with BeforeAndAfterEach {
+class CharArrayWriterTest extends AnyFunSuite with BeforeAndAfterEach {
   private[io] val hw = Array('H', 'e', 'l', 'l', 'o', 'W', 'o', 'r', 'l', 'd')
 
   private[io] var cw: CharArrayWriter = _
@@ -12,7 +13,7 @@ class CharArrayWriterTest extends FunSuite with BeforeAndAfterEach {
   private[io] var cr: CharArrayReader = _
 
   override protected def beforeEach(): Unit = {
-    cw = new  CharArrayWriter()
+    cw = new CharArrayWriter()
   }
 
   override protected def afterEach(): Unit = {
@@ -22,7 +23,7 @@ class CharArrayWriterTest extends FunSuite with BeforeAndAfterEach {
 
   test("Constructor") {
     cw = new CharArrayWriter()
-    assert( 0 == cw.size)
+    assert(0 == cw.size)
   }
 
   test("ConstructorI") {
@@ -45,13 +46,13 @@ class CharArrayWriterTest extends FunSuite with BeforeAndAfterEach {
     cr = new CharArrayReader(cw.toCharArray)
     val c = new Array[Char](100)
     cr.read(c, 0, 5)
-    assert( "Hello" == new String(c, 0 , 5))
+    assert("Hello" == new String(c, 0, 5))
   }
 
   test("size") {
-    assert( 0 == cw.size)
+    assert(0 == cw.size)
     cw.write(hw, 5, 5)
-    assert( 5 == cw.size)
+    assert(5 == cw.size)
   }
 
   test("toCharArray") {
@@ -59,13 +60,13 @@ class CharArrayWriterTest extends FunSuite with BeforeAndAfterEach {
     cr = new CharArrayReader(cw.toCharArray)
     val c = new Array[Char](100)
     cr.read(c, 0, 10)
-    assert( "HelloWorld" == new String(c, 0 , 10))
+    assert("HelloWorld" == new String(c, 0, 10))
   }
 
   test("toString") {
     cw.write("HelloWorld", 5, 5)
     cr = new CharArrayReader(cw.toCharArray)
-    assert( "World" == cw.toString)
+    assert("World" == cw.toString)
   }
 
   test("write$CII") {
@@ -73,7 +74,7 @@ class CharArrayWriterTest extends FunSuite with BeforeAndAfterEach {
     cr = new CharArrayReader(cw.toCharArray)
     val c = new Array[Char](100)
     cr.read(c, 0, 5)
-    assert( "World" == new String(c, 0 , 5))
+    assert("World" == new String(c, 0, 5))
   }
 
   test("write$CII_2") {
@@ -85,7 +86,7 @@ class CharArrayWriterTest extends FunSuite with BeforeAndAfterEach {
   test("writeI") {
     cw.write('T')
     cr = new CharArrayReader(cw.toCharArray)
-    assert( 'T' == cr.read)
+    assert('T' == cr.read)
   }
 
   test("writeLjava_lang_StringII") {
@@ -93,7 +94,7 @@ class CharArrayWriterTest extends FunSuite with BeforeAndAfterEach {
     cr = new CharArrayReader(cw.toCharArray)
     val c = new Array[Char](100)
     cr.read(c, 0, 5)
-    assert( "World" == new String(c, 0 , 5))
+    assert("World" == new String(c, 0, 5))
   }
 
   test("writeLjava_lang_StringII_2") {
@@ -106,7 +107,7 @@ class CharArrayWriterTest extends FunSuite with BeforeAndAfterEach {
     cw.write("HelloWorld", 0, 10)
     val sw = new StringWriter
     cw.writeTo(sw)
-    assert( "HelloWorld" == sw.toString)
+    assert("HelloWorld" == sw.toString)
   }
 
   test("appendChar") {

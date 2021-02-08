@@ -1,10 +1,11 @@
 package luni.java.io
 
+import org.scalatest.funsuite.AnyFunSuite
+
 import java.io.{IOException, StringReader}
+import org.scalatest.BeforeAndAfterEach
 
-import org.scalatest.{BeforeAndAfterEach, FunSuite}
-
-class StringReaderTest extends FunSuite with BeforeAndAfterEach {
+class StringReaderTest extends AnyFunSuite with BeforeAndAfterEach {
 
   private[io] val testString = "This is a test string"
 

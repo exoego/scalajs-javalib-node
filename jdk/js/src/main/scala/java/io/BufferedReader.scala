@@ -28,7 +28,7 @@ class BufferedReader(in: Reader, size: Int) extends Reader {
 
   @inline private def isClosed = buf == null
 
-  def this(in: Reader) {
+  def this(in: Reader) = {
     this(in, 8192)
   }
 

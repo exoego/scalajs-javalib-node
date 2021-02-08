@@ -26,7 +26,7 @@ class CharArrayWriter(initialSize: Int) extends Writer {
 
   protected var count = 0
 
-  def this() {
+  def this() = {
     this(32)
   }
 

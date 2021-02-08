@@ -1,22 +1,12 @@
 package luni.java.io
 
-import java.io.{
-  File,
-  FileDescriptor,
-  FileInputStream,
-  FileNotFoundException,
-  FileOutputStream,
-  IOException,
-  InputStream,
-  InputStreamReader,
-  OutputStream
-}
-import java.nio.channels.ClosedChannelException
-
-import org.scalatest.{BeforeAndAfterEach, FunSuite}
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.funsuite.AnyFunSuite
 import support.Support_PlatformFile
 
-class FileInputStreamTest extends FunSuite with BeforeAndAfterEach {
+import java.io._
+
+class FileInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
   var fileName: String = _
 
   private var is: FileInputStream = _
@@ -27,16 +17,16 @@ class FileInputStreamTest extends FunSuite with BeforeAndAfterEach {
     "Test_All_Tests\nTest_java_io_BufferedInputStream\nTest_java_io_BufferedOutputStream\nTest_java_io_ByteArrayInputStream\nTest_java_io_ByteArrayOutputStream\nTest_java_io_DataInputStream\nTest_java_io_File\nTest_java_io_FileDescriptor\nTest_FileInputStream\nTest_java_io_FileNotFoundException\nTest_java_io_FileOutputStream\nTest_java_io_FilterInputStream\nTest_java_io_FilterOutputStream\nTest_java_io_InputStream\nTest_java_io_IOException\nTest_java_io_OutputStream\nTest_java_io_PrintStream\nTest_java_io_RandomAccessFile\nTest_java_io_SyncFailedException\nTest_java_lang_AbstractMethodError\nTest_java_lang_ArithmeticException\nTest_java_lang_ArrayIndexOutOfBoundsException\nTest_java_lang_ArrayStoreException\nTest_java_lang_Boolean\nTest_java_lang_Byte\nTest_java_lang_Character\nTest_java_lang_Class\nTest_java_lang_ClassCastException\nTest_java_lang_ClassCircularityError\nTest_java_lang_ClassFormatError\nTest_java_lang_ClassLoader\nTest_java_lang_ClassNotFoundException\nTest_java_lang_CloneNotSupportedException\nTest_java_lang_Double\nTest_java_lang_Error\nTest_java_lang_Exception\nTest_java_lang_ExceptionInInitializerError\nTest_java_lang_Float\nTest_java_lang_IllegalAccessError\nTest_java_lang_IllegalAccessException\nTest_java_lang_IllegalArgumentException\nTest_java_lang_IllegalMonitorStateException\nTest_java_lang_IllegalThreadStateException\nTest_java_lang_IncompatibleClassChangeError\nTest_java_lang_IndexOutOfBoundsException\nTest_java_lang_InstantiationError\nTest_java_lang_InstantiationException\nTest_java_lang_Integer\nTest_java_lang_InternalError\nTest_java_lang_InterruptedException\nTest_java_lang_LinkageError\nTest_java_lang_Long\nTest_java_lang_Math\nTest_java_lang_NegativeArraySizeException\nTest_java_lang_NoClassDefFoundError\nTest_java_lang_NoSuchFieldError\nTest_java_lang_NoSuchMethodError\nTest_java_lang_NullPointerException\nTest_java_lang_Number\nTest_java_lang_NumberFormatException\nTest_java_lang_Object\nTest_java_lang_OutOfMemoryError\nTest_java_lang_RuntimeException\nTest_java_lang_SecurityManager\nTest_java_lang_Short\nTest_java_lang_StackOverflowError\nTest_java_lang_String\nTest_java_lang_StringBuffer\nTest_java_lang_StringIndexOutOfBoundsException\nTest_java_lang_System\nTest_java_lang_Thread\nTest_java_lang_ThreadDeath\nTest_java_lang_ThreadGroup\nTest_java_lang_Throwable\nTest_java_lang_UnknownError\nTest_java_lang_UnsatisfiedLinkError\nTest_java_lang_VerifyError\nTest_java_lang_VirtualMachineError\nTest_java_lang_vm_Image\nTest_java_lang_vm_MemorySegment\nTest_java_lang_vm_ROMStoreException\nTest_java_lang_vm_VM\nTest_java_lang_Void\nTest_java_net_BindException\nTest_java_net_ConnectException\nTest_java_net_DatagramPacket\nTest_java_net_DatagramSocket\nTest_java_net_DatagramSocketImpl\nTest_java_net_InetAddress\nTest_java_net_NoRouteToHostException\nTest_java_net_PlainDatagramSocketImpl\nTest_java_net_PlainSocketImpl\nTest_java_net_Socket\nTest_java_net_SocketException\nTest_java_net_SocketImpl\nTest_java_net_SocketInputStream\nTest_java_net_SocketOutputStream\nTest_java_net_UnknownHostException\nTest_java_util_ArrayEnumerator\nTest_java_util_Date\nTest_java_util_EventObject\nTest_java_util_HashEnumerator\nTest_java_util_Hashtable\nTest_java_util_Properties\nTest_java_util_ResourceBundle\nTest_java_util_tm\nTest_java_util_Vector\n"
 
   override protected def beforeEach(): Unit = {
-    fileName = System.getProperty("user.dir", "./")
-    val separator = System.getProperty("file.separator")
-    fileName =
-      if (fileName.charAt(fileName.length - 1) == separator.charAt(0))
-        Support_PlatformFile.getNewPlatformFile(fileName, "input.tst")
-      else
-        Support_PlatformFile.getNewPlatformFile(fileName + separator, "input.tst")
-    val fos = new FileOutputStream(fileName)
-    fos.write(fileString.getBytes)
-    fos.close()
+//    fileName = System.getProperty("user.dir", "./")
+//    val separator = System.getProperty("file.separator")
+//    fileName =
+////      if (fileName.charAt(fileName.length - 1) == separator.charAt(0))
+//        Support_PlatformFile.getNewPlatformFile(fileName, "input.tst")
+////      else
+////        Support_PlatformFile.getNewPlatformFile(fileName + separator, "input.tst")
+//    val fos = new FileOutputStream(fileName)
+//    fos.write(fileString.getBytes)
+//    fos.close()
   }
 
   override def afterEach(): Unit = {
@@ -44,26 +34,26 @@ class FileInputStreamTest extends FunSuite with BeforeAndAfterEach {
     is = null
   }
 
-  test("ConstructorLjava_io_File") {
+  ignore("ConstructorLjava_io_File") {
     val f = new File(fileName)
     is = new FileInputStream(f)
     is.close()
   }
 
   // TODO: FileDescriptor
-//  test("ConstructorLjava_io_FileDescriptor") {
+//  ignore("ConstructorLjava_io_FileDescriptor") {
 //    val fos = new FileOutputStream(fileName)
 //    val fis = new FileInputStream(fos.getFD)
 //    fos.close()
 //    fis.close()
 //  }
 
-  test("ConstructorLjava_lang_String") {
+  ignore("ConstructorLjava_lang_String") {
     is = new FileInputStream(fileName)
     is.close()
   }
 
-  test("ConstructorLjava_lang_String_I") {
+  ignore("ConstructorLjava_lang_String_I") {
     assertThrows[FileNotFoundException] {
       is = new FileInputStream("")
     }
@@ -75,7 +65,7 @@ class FileInputStreamTest extends FunSuite with BeforeAndAfterEach {
     if (is != null) is.close()
   }
 
-  test("close") {
+  ignore("close") {
     is = new FileInputStream(fileName)
     is.close()
     assertThrows[IOException] {
@@ -97,7 +87,7 @@ class FileInputStreamTest extends FunSuite with BeforeAndAfterEach {
   }
 
   // TODO: FileDescriptor.in
-  //  test("close: stdin") {
+  //  ignore("close: stdin") {
   //    var stdin = new FileInputStream(FileDescriptor.in)
   //    stdin.close()
   //    stdin = new FileInputStream(FileDescriptor.in)
@@ -106,21 +96,21 @@ class FileInputStreamTest extends FunSuite with BeforeAndAfterEach {
   //    }
   //  }
 
-  test("getFD") {
+  ignore("getFD") {
     val fis = new FileInputStream(fileName)
     assert(fis.getFD.valid)
     fis.close()
     assert(!fis.getFD.valid)
   }
 
-  test("read") {
+  ignore("read") {
     val isr = new InputStreamReader(new FileInputStream(fileName))
     val c   = isr.read()
     isr.close()
     assert(c == fileString.charAt(0))
   }
 
-  test("read$B") {
+  ignore("read$B") {
     val buf1 = new Array[Byte](100)
     is = new FileInputStream(fileName)
     is.skip(3000)
@@ -138,7 +128,7 @@ class FileInputStreamTest extends FunSuite with BeforeAndAfterEach {
     assert(new String(buf1, 0, buf1.length) == fileString.substring(3000, 3100))
   }
 
-  test("read$BII: Regression test for HARMONY-285") {
+  ignore("read$BII: Regression test for HARMONY-285") {
     val file = new File("FileInputStream.tmp")
     file.createNewFile()
     file.deleteOnExit()
@@ -150,7 +140,7 @@ class FileInputStreamTest extends FunSuite with BeforeAndAfterEach {
     file.delete()
   }
 
-  test("read_$BII_IOException") {
+  ignore("read_$BII_IOException") {
     val buf = new Array[Byte](1000)
     assertThrows[IOException] {
       is = new FileInputStream(fileName)
@@ -165,7 +155,7 @@ class FileInputStreamTest extends FunSuite with BeforeAndAfterEach {
     is.close()
   }
 
-  test("read_$BII_NullPointerException") {
+  ignore("read_$BII_NullPointerException") {
     val buf = null
     assertThrows[NullPointerException] {
       is = new FileInputStream(fileName)
@@ -174,7 +164,7 @@ class FileInputStreamTest extends FunSuite with BeforeAndAfterEach {
     is.close()
   }
 
-  test("read_$BII_IndexOutOfBoundsException") {
+  ignore("read_$BII_IndexOutOfBoundsException") {
     val buf = new Array[Byte](1000)
     assertThrows[IndexOutOfBoundsException] {
       is = new FileInputStream(fileName)
@@ -213,7 +203,7 @@ class FileInputStreamTest extends FunSuite with BeforeAndAfterEach {
     is.close()
   }
 
-  test("regressionNNN: Regression for HARMONY-434") {
+  ignore("regressionNNN: Regression for HARMONY-434") {
     val fis = new FileInputStream(fileName)
     assertThrows[IndexOutOfBoundsException] {
       fis.read(new Array[Byte](1), -1, 1)
@@ -233,7 +223,7 @@ class FileInputStreamTest extends FunSuite with BeforeAndAfterEach {
     fis.close()
   }
 
-  test("available") {
+  ignore("available") {
     try {
       is = new FileInputStream(fileName)
       assert(is.available == fileString.length)
@@ -245,7 +235,7 @@ class FileInputStreamTest extends FunSuite with BeforeAndAfterEach {
     }
   }
 
-  test("skipJ") {
+  ignore("skipJ") {
     val buf1 = new Array[Byte](10)
     is = new FileInputStream(fileName)
     is.skip(1000)
@@ -254,7 +244,7 @@ class FileInputStreamTest extends FunSuite with BeforeAndAfterEach {
     assert(new String(buf1, 0, buf1.length) == fileString.substring(1000, 1010))
   }
 
-  test("skipNegativeArgumentJ") {
+  ignore("skipNegativeArgumentJ") {
     val fis = new FileInputStream(fileName)
     assertThrows[IOException] {
       fis.skip(-5)
@@ -263,7 +253,7 @@ class FileInputStreamTest extends FunSuite with BeforeAndAfterEach {
   }
 
 // TODO: FileChannel
-//  test("getChannel") {
+//  ignore("getChannel") {
 //    var fis = new FileInputStream(fileName)
 //    assert(0 == fis.getChannel.position)
 //    var r     = 0

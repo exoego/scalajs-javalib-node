@@ -8,7 +8,7 @@ trait Path {
 
   def toFile(): File
 
-  override def toString: String = toFile().getPath
+  override def toString: String = toFile().getPath()
 
   def getFileSystem: file.FileSystem = ???
 
@@ -80,10 +80,10 @@ private[java] object PathHelper {
       throw new UnsupportedOperationException
     }
     override def getFileName: Path = {
-      Paths.get(file.getName, Array.empty: _*)
+      Paths.get(file.getName(), Array.empty.toIndexedSeq: _*)
     }
     override def getParent: Path = {
-      file.getParentFile.toPath
+      file.getParentFile().toPath()
     }
     override def getNameCount: Int = {
       throw new UnsupportedOperationException
@@ -131,7 +131,7 @@ private[java] object PathHelper {
 
     override def equals(obj: Any): Boolean = {
       obj match {
-        case path: Path => this.toFile() == path.toFile
+        case path: Path => this.toFile() == path.toFile()
         case _          => false
       }
     }

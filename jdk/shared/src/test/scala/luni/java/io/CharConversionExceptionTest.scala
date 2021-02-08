@@ -2,9 +2,9 @@ package luni.java.io
 
 import java.io.CharConversionException
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class CharConversionExceptionTest extends FunSuite {
+class CharConversionExceptionTest extends AnyFunSuite {
 
   test("Constructor") {
     val ex = intercept[CharConversionException] {

@@ -80,7 +80,7 @@ class OutputStreamWriter(private[this] var out: OutputStream, private[this] var 
     }
 
     loopEncode()
-    if (cbuf1.hasRemaining)
+    if (cbuf1.hasRemaining())
       inBuf = cbuf1.toString
   }
 
@@ -99,7 +99,7 @@ class OutputStreamWriter(private[this] var out: OutputStream, private[this] var 
       val result = enc.encode(cbuf, outBuf, true)
       if (result.isUnderflow) {
         assert(
-          !cbuf.hasRemaining,
+          !cbuf.hasRemaining(),
           "CharsetEncoder.encode() should not have returned UNDERFLOW when " +
             "both endOfInput and inBuf.hasRemaining are true. It should have " +
             "returned a MalformedInput error instead."

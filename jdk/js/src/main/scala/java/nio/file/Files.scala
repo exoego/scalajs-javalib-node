@@ -18,7 +18,7 @@ object Files {
       tpe: Class[V],
       options: Array[LinkOption]
   ): V = {
-    getFileAttributeView(path, tpe, options: _*)
+    getFileAttributeView(path, tpe, options.toArray)
   }
 
   def getFileAttributeView[V <: FileAttributeView](
@@ -34,7 +34,7 @@ object Files {
       tpe: Class[A],
       options: Array[LinkOption]
   ): A = {
-    readAttributes(path, tpe, options: _*)
+    readAttributes(path, tpe, options)
   }
 
   private def dateToFileTime(date: js.Date): FileTime = ???
@@ -107,7 +107,7 @@ object Files {
     throw new UnsupportedOperationException("newBufferedWriter")
   }
 
-  private def nullCheck(a: Array[_]): Unit = {
+  private def nullCheck(a: Array[java.nio.file.attribute.FileAttribute[_]]): Unit = {
     if (a == null || a.contains(null)) {
       throw new NullPointerException
     }
@@ -122,20 +122,20 @@ object Files {
   def createTempDirectory(dir: Path, prefix: String, attributes: Array[FileAttribute[_]]): Path = {
     nullCheck(attributes)
     if (dir == null) throw new NullPointerException
-    val dirFile = dir.toFile
-    if (!dirFile.isDirectory) throw new IOException()
-    File.createTempFile(prefix, "", dirFile).toPath
+    val dirFile = dir.toFile()
+    if (!dirFile.isDirectory()) throw new IOException()
+    File.createTempFile(prefix, "", dirFile).toPath()
   }
 
   def createTempDirectory(prefix: String, attributes: Array[FileAttribute[_]]): Path = {
     nullCheck(attributes)
-    createTempDirectory(FileHelper.getDefaultTempDirectory().toPath, prefix, attributes)
+    createTempDirectory(FileHelper.getDefaultTempDirectory().toPath(), prefix, attributes)
   }
 
   def createTempFile(prefix: String, suffix: String, attributes: Array[FileAttribute[_]]): Path = {
     nullCheck(attributes)
     val tmpdir = FileHelper.getDefaultTempDirectory()
-    createTempFile(tmpdir.toPath, prefix, suffix, attributes)
+    createTempFile(tmpdir.toPath(), prefix, suffix, attributes)
   }
 
   def createTempFile(
@@ -146,14 +146,14 @@ object Files {
   ): Path = {
     nullCheck(attributes)
     if (dir == null) throw new NullPointerException
-    val dirFile = dir.toFile
-    if (!dirFile.isDirectory) throw new IOException()
-    File.createTempFile(prefix, suffix, dirFile).toPath
+    val dirFile = dir.toFile()
+    if (!dirFile.isDirectory()) throw new IOException()
+    File.createTempFile(prefix, suffix, dirFile).toPath()
   }
 
   def createFile(path: Path, attributes: Array[FileAttribute[_]]): Path = {
     nullCheck(attributes)
-    if (path.toFile.createNewFile()) {
+    if (path.toFile().createNewFile()) {
       // TODO: atomic update here
       path
     } else {
@@ -181,12 +181,12 @@ object Files {
   }
 
   def delete(path: Path): Unit = {
-    path.toFile.delete()
+    path.toFile().delete()
   }
 
   def deleteIfExists(path: Path): Boolean = {
-    if (path.toFile.exists()) {
-      path.toFile.delete()
+    if (path.toFile().exists()) {
+      path.toFile().delete()
     } else {
       false
     }

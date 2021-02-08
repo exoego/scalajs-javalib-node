@@ -1,31 +1,31 @@
 package java.io
 
 import io.scalajs.nodejs.buffer.Buffer
-import io.scalajs.nodejs.fs.Fs
+import io.scalajs.nodejs.fs.{BigIntStats, Fs, Stats}
 
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters._
 
 class FileInputStream(descriptor: FileDescriptor) extends InputStream {
 
-  def this(file: File) {
+  def this(file: File) = {
     this({
-      if (file.getPath.isEmpty) {
+      if (file.getPath().isEmpty) {
         throw new FileNotFoundException()
       }
 
-      if (file.isDirectory) {
+      if (file.isDirectory()) {
         throw new IOException("Got a directory")
       }
       if (file.exists()) {
-        FileDescriptorFactory.createInternal(Fs.openSync(file.getPath, "r"), readOnly = true)
+        FileDescriptorFactory.createInternal(Fs.openSync(file.getPath(), "r"), readOnly = true)
       } else {
         new FileDescriptor
       }
     })
   }
 
-  def this(file: String) {
+  def this(file: String) = {
     this(new File(file))
   }
 
@@ -36,7 +36,8 @@ class FileInputStream(descriptor: FileDescriptor) extends InputStream {
   override def available(): Int = {
     openCheck()
     if (!descriptor.valid()) throw new IOException()
-    Fs.fstatSync(this.descriptor.internal).size.toInt
+
+    Fs.fstatSync(this.descriptor.internal).asInstanceOf[Stats].size.toInt
   }
 
   override def close(): Unit = {
