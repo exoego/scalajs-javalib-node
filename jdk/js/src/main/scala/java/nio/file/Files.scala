@@ -69,7 +69,14 @@ object Files {
 
   def isHidden(path: Path): Boolean = ???
 
-  def isReadable(path: Path): Boolean = ???
+  def isReadable(path: Path): Boolean = {
+    try {
+      NodeJsFs.accessSync(path.toString, NodeJsFs.constants.R_OK)
+      true
+    } catch {
+      case _: Throwable => false
+    }
+  }
 
   def isRegularFile(path: Path, options: LinkOption*): Boolean = ???
 

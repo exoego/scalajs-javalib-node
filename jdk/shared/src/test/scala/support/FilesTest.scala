@@ -53,7 +53,16 @@ class FilesTest extends AnyFunSuite {
 
   ignore("isHidden(Path)") {}
 
-  ignore("isReadable(Path)") {}
+  test("isReadable(Path)") {
+    assert(Files.isReadable(Paths.get("README.md")))
+    assert(Files.isReadable(Paths.get("./README.md")))
+    assert(!Files.isReadable(Paths.get("no-such-file")))
+
+    assert(Files.isReadable(Paths.get("project/build.properties")))
+    assert(Files.isReadable(Paths.get("project/build.properties")))
+    assert(Files.isReadable(Paths.get("project", "build.properties")))
+    assert(!Files.isReadable(Paths.get("project", "no-such-file")))
+  }
 
   ignore("isRegularFile(Path, LinkOption*)") {}
 
