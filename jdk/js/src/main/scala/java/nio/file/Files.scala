@@ -9,7 +9,7 @@ import java.util.{List => JavaList, Map => JavaMap, Set => JavaSet}
 import java.util.function.BiPredicate
 import java.util.stream.{Stream => JavaStream}
 
-import io.scalajs.nodejs.fs.{Fs => NodeJsFs}
+import io.scalajs.nodejs.fs
 
 object Files {
   def copy(in: InputStream, target: Path, options: CopyOption*): Long = ???
@@ -63,7 +63,22 @@ object Files {
 
   def getPosixFilePermissions(path: Path, options: LinkOption*): JavaSet[PosixFilePermission] = ???
 
-  def isDirectory(path: Path, options: LinkOption*): Boolean = ???
+  def isDirectory(path: Path, options: Array[LinkOption]): Boolean = {
+    if (options.contains(LinkOption.NOFOLLOW_LINKS)) {
+      try {
+        fs.Fs.lstatSync(path.toString).isDirectory()
+      } catch {
+        case _: Throwable => false
+      }
+    } else {
+      try {
+        fs.Fs.statSync(path.toString).isDirectory()
+      } catch {
+        case _: Throwable => false
+      }
+    }
+  }
+  def isDirectory(path: Path): Boolean = isDirectory(path, Array.empty)
 
   def isExecutable(path: Path): Boolean = ???
 
@@ -71,7 +86,7 @@ object Files {
 
   def isReadable(path: Path): Boolean = {
     try {
-      NodeJsFs.accessSync(path.toString, NodeJsFs.constants.R_OK)
+      fs.Fs.accessSync(path.toString, fs.Fs.constants.R_OK)
       true
     } catch {
       case _: Throwable => false

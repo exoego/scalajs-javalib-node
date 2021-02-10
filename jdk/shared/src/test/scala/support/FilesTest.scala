@@ -47,7 +47,18 @@ class FilesTest extends AnyFunSuite {
 
   ignore("getPosixFilePermissions(Path, LinkOption*)") {}
 
-  ignore("isDirectory(Path, LinkOption*)") {}
+  test("isDirectory(Path, LinkOption*)") {
+    assert(Files.isDirectory(Paths.get("project")))
+    assert(Files.isDirectory(Paths.get("./project")))
+    assert(Files.isDirectory(Paths.get("./project/")))
+    assert(Files.isDirectory(Paths.get("project/")))
+    assert(Files.isDirectory(Paths.get("project/target")))
+    assert(!Files.isDirectory(Paths.get("project/build.properties")))
+    assert(!Files.isDirectory(Paths.get("project/no-such-file")))
+    assert(!Files.isDirectory(Paths.get("project/no-such-file/")))
+
+    // TODO: nofollow_links symbolic link
+  }
 
   ignore("isExecutable(Path)") {}
 
