@@ -5,6 +5,7 @@ import java.io.{Closeable, IOException}
 import java.nio.file.attribute.UserPrincipalLookupService
 import java.nio.file.spi.FileSystemProvider
 import java.util.{Set => JavaSet}
+import scala.annotation.varargs
 
 abstract class FileSystem protected () extends Closeable {
 
@@ -25,7 +26,7 @@ abstract class FileSystem protected () extends Closeable {
 
   def supportedFileAttributeViews(): JavaSet[String]
 
-  def getPath(first: String, more: Array[String]): Path
+  @varargs def getPath(first: String, more: String*): Path
 
   def getPathMatcher(syntaxAndPattern: String): PathMatcher
 

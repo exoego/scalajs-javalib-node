@@ -33,7 +33,7 @@ trait Path {
   def normalize(): Path = ???
 
   def resolve(other: String): Path = {
-    this.resolve(this.getFileSystem.getPath(other, Array.empty))
+    this.resolve(this.getFileSystem.getPath(other, Array.empty: _*))
   }
   def resolveSibling(other: Path): Path = {
     if (other == null) throw new NullPointerException
@@ -43,9 +43,9 @@ trait Path {
     }
   }
   def resolveSibling(other: String): Path = {
-    this.resolveSibling(this.getFileSystem.getPath(other, Array.empty))
+    this.resolveSibling(this.getFileSystem.getPath(other, Array.empty: _*))
   }
-  def resolve(ptjer: Path): Path = ???
+  def resolve(other: Path): Path = ???
 
   def relativize(path: Path): Path = ???
 
@@ -80,7 +80,7 @@ private[java] object PathHelper {
       throw new UnsupportedOperationException
     }
     override def getFileName: Path = {
-      Paths.get(file.getName(), Array.empty.toIndexedSeq: _*)
+      Paths.get(file.getName())
     }
     override def getParent: Path = {
       file.getParentFile().toPath()
