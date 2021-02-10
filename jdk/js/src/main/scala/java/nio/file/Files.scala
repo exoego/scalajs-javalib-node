@@ -1,206 +1,172 @@
 package java.nio.file
 
-import java.io.{BufferedWriter, File, IOException}
+import java.io.{BufferedReader, BufferedWriter, InputStream, OutputStream}
 import java.nio.channels.SeekableByteChannel
 import java.nio.charset.Charset
 import java.nio.file.attribute._
-import java.util
+import java.lang.{Iterable => JavaIterable}
+import java.util.{List => JavaList, Map => JavaMap, Set => JavaSet}
+import java.util.function.BiPredicate
+import java.util.stream.{Stream => JavaStream}
 
-import helper.FileHelper
-import io.scalajs.nodejs.fs.Fs
-
-import scala.scalajs.js
+import io.scalajs.nodejs.fs.{Fs => NodeJsFs}
 
 object Files {
+  def copy(in: InputStream, target: Path, options: CopyOption*): Long = ???
+
+  def copy(source: Path, out: OutputStream): Long = ???
+
+  def copy(source: Path, tareget: Path, options: CopyOption*): Path = ???
+
+  def createDirectories(dir: Path, attrs: FileAttribute[_]*): Path = ???
+
+  def createDirectory(dir: Path, attrs: FileAttribute[_]*): Path = ???
+
+  def createFile(path: Path, attrs: FileAttribute[_]*): Path = ???
+
+  def createLink(link: Path, existing: Path): Path = ???
+
+  def createSymbolicLink(link: Path, target: Path, attrs: FileAttribute[_]): Path = ???
+
+  def createTempDirectory(dir: Path, prefix: String, attrs: FileAttribute[_]): Path = ???
+
+  def createTempDirectory(prefix: String, attrs: FileAttribute[_]): Path = ???
+
+  def createTempFile(dir: Path, prefix: String, suffix: String, attrs: FileAttribute[_]): Path = ???
+
+  def createTempFile(prefix: String, suffix: String, attrs: FileAttribute[_]): Path = ???
+
+  def delete(path: Path): Unit = ???
+
+  def deleteIfExists(path: Path): Boolean = ???
+
+  def exists(path: Path, options: LinkOption*): Boolean = ???
+
+  def find(
+      start: Path,
+      maxDepth: Int,
+      matcher: BiPredicate[Path, BasicFileAttributes],
+      options: FileVisitOption*
+  ): JavaStream[Path] = ???
+
+  def getAttribute(path: Path, attribute: String, options: LinkOption*): AnyRef = ???
 
   def getFileAttributeView[V <: FileAttributeView](
       path: Path,
-      tpe: Class[V],
-      options: Array[LinkOption]
-  ): V = {
-    getFileAttributeView(path, tpe, options.toArray)
-  }
-
-  def getFileAttributeView[V <: FileAttributeView](
-      path: Path,
-      tpe: Class[V],
+      `type`: Class[V],
       options: LinkOption*
-  ): V = {
-    throw new UnsupportedOperationException("getFileAttributeView")
-  }
+  ): V = ???
 
-  def readAttributes[A <: BasicFileAttributes](
-      path: Path,
-      tpe: Class[A],
-      options: Array[LinkOption]
-  ): A = {
-    readAttributes(path, tpe, options)
-  }
+  def getFileStore(path: Path): FileStore = ???
 
-  private def dateToFileTime(date: js.Date): FileTime = ???
+  def getOwner(path: Path, options: LinkOption*): UserPrincipal = ???
 
-  private final class PosixFileAttributesImpl(
-      basic: BasicFileAttributes,
-      val owner: UserPrincipal,
-      val group: GroupPrincipal,
-      val permissions: java.util.Set[PosixFilePermission]
-  ) extends PosixFileAttributes {
-    override def lastModifiedTime = basic.lastModifiedTime
-    override def lastAccessTime   = basic.lastAccessTime
-    override def creationTime     = basic.creationTime
-    override def isRegularFile    = basic.isRegularFile
-    override def isDirectory      = basic.isDirectory
-    override def isSymbolicLink   = basic.isSymbolicLink
-    override def isOther          = basic.isOther
-    override def size             = basic.size
-    override def fileKey          = basic.fileKey
-  }
+  def getPosixFilePermissions(path: Path, options: LinkOption*): JavaSet[PosixFilePermission] = ???
 
-  def readAttributes[A <: BasicFileAttributes](
-      path: Path,
-      tpe: Class[A],
-      options: LinkOption*
-  ): A = {
-    val stat = Fs.statSync(path.toString)
+  def isDirectory(path: Path, options: LinkOption*): Boolean = ???
 
-    val basicAttributes = new BasicFileAttributes {
-      override def lastModifiedTime = dateToFileTime(stat.mtime)
-      override def lastAccessTime   = dateToFileTime(stat.atime)
-      override def creationTime     = dateToFileTime(stat.ctime)
-      override def isRegularFile =
-        stat.isFile() || stat.isBlockDevice() || stat.isSymbolicLink() && !options.contains(
-          LinkOption.NOFOLLOW_LINKS
-        )
-      override def isDirectory    = stat.isDirectory()
-      override def isSymbolicLink = stat.isSymbolicLink()
-      override def isOther        = !stat.isFile() && !stat.isDirectory() && !stat.isSymbolicLink()
-      override def size           = stat.size.toLong
-      override def fileKey        = throw new UnsupportedOperationException("fileKey")
-    }
+  def isExecutable(path: Path): Boolean = ???
 
-    val attribute = if (tpe == classOf[BasicFileAttributes]) {
-      basicAttributes
-    } else if (tpe == classOf[PosixFileAttributes]) {
-      val owner = new UserPrincipal {
-        override def getName: String =
-          throw new UnsupportedOperationException("UserPrincipal.getName")
-      }
-      val group = new GroupPrincipal {
-        override def getName: String =
-          throw new UnsupportedOperationException("GroupPrincipal.getName")
-      }
+  def isHidden(path: Path): Boolean = ???
 
-      val permissions: util.Set[PosixFilePermission] =
-        FileHelper.getPermissions(path)
-      new PosixFileAttributesImpl(basicAttributes, owner, group, permissions)
-    } else {
-      throw new UnsupportedOperationException(s"Unsupported file attributes ${tpe}")
-    }
-    attribute.asInstanceOf[A]
-  }
+  def isReadable(path: Path): Boolean = ???
 
-  def newBufferedWriter(
-      path: Path,
-      charset: Charset,
-      options: Array[OpenOption]
-  ): BufferedWriter = {
-    throw new UnsupportedOperationException("newBufferedWriter")
-  }
+  def isRegularFile(path: Path, options: LinkOption*): Boolean = ???
 
-  private def nullCheck(a: Array[java.nio.file.attribute.FileAttribute[_]]): Unit = {
-    if (a == null || a.contains(null)) {
-      throw new NullPointerException
-    }
-  }
+  def isSameFile(path: Path, path2: Path): Boolean = ???
 
-  def createDirectories(path: Path, attributes: Array[FileAttribute[_]]): Path = {
-    nullCheck(attributes)
-    if (path == null) throw new NullPointerException
-    throw new UnsupportedOperationException("createDirectories")
-  }
+  def isSymbolicLink(path: Path): Boolean = ???
 
-  def createTempDirectory(dir: Path, prefix: String, attributes: Array[FileAttribute[_]]): Path = {
-    nullCheck(attributes)
-    if (dir == null) throw new NullPointerException
-    val dirFile = dir.toFile()
-    if (!dirFile.isDirectory()) throw new IOException()
-    File.createTempFile(prefix, "", dirFile).toPath()
-  }
+  def isWritable(path: Path): Boolean = ???
 
-  def createTempDirectory(prefix: String, attributes: Array[FileAttribute[_]]): Path = {
-    nullCheck(attributes)
-    createTempDirectory(FileHelper.getDefaultTempDirectory().toPath(), prefix, attributes)
-  }
+  def lines(path: Path): JavaStream[String] = ???
 
-  def createTempFile(prefix: String, suffix: String, attributes: Array[FileAttribute[_]]): Path = {
-    nullCheck(attributes)
-    val tmpdir = FileHelper.getDefaultTempDirectory()
-    createTempFile(tmpdir.toPath(), prefix, suffix, attributes)
-  }
+  def lines(path: Path, cs: Charset): JavaStream[String] = ???
 
-  def createTempFile(
-      dir: Path,
-      prefix: String,
-      suffix: String,
-      attributes: Array[FileAttribute[_]]
-  ): Path = {
-    nullCheck(attributes)
-    if (dir == null) throw new NullPointerException
-    val dirFile = dir.toFile()
-    if (!dirFile.isDirectory()) throw new IOException()
-    File.createTempFile(prefix, suffix, dirFile).toPath()
-  }
+  def list(dir: Path): JavaStream[String] = ???
 
-  def createFile(path: Path, attributes: Array[FileAttribute[_]]): Path = {
-    nullCheck(attributes)
-    if (path.toFile().createNewFile()) {
-      // TODO: atomic update here
-      path
-    } else {
-      throw new IllegalArgumentException
-    }
-  }
+  def move(source: Path, target: Path, options: CopyOption*): Path = ???
 
-  def newByteChannel(path: Path, options: Array[OpenOption]): SeekableByteChannel = {
-    throw new UnsupportedOperationException("newByteChannel")
-  }
+  def newBufferedReader(path: Path): BufferedReader = ???
+
+  def newBufferedReader(path: Path, cs: Charset): BufferedReader = ???
+
+  def newBufferedWriter(path: Path, cs: Charset, options: OpenOption*): BufferedWriter = ???
+
+  def newBufferedWriter(path: Path, options: OpenOption*): BufferedWriter = ???
+
+  def newByteChannel(path: Path, options: OpenOption*): SeekableByteChannel = ???
 
   def newByteChannel(
       path: Path,
-      options: java.util.Set[OpenOption],
-      attrs: Array[FileAttribute[_]]
-  ): SeekableByteChannel = {
-    throw new UnsupportedOperationException("newByteChannel")
-  }
-  def newDirectoryStream(path: Path): DirectoryStream[Path] = {
-    throw new UnsupportedOperationException("newDirectoryStream")
-  }
+      options: JavaSet[_ <: OpenOption],
+      attrs: FileAttribute[_]*
+  ): SeekableByteChannel = ???
 
-  def getFileStore(path: Path): FileStore = {
-    throw new UnsupportedOperationException("getFileStore")
-  }
+  def newDirectoryStream(dir: Path): DirectoryStream[Path] = ???
 
-  def delete(path: Path): Unit = {
-    path.toFile().delete()
-  }
+  def newDirectoryStream(
+      dir: Path,
+      filter: DirectoryStream.Filter[_ >: Path]
+  ): DirectoryStream[Path] = ???
 
-  def deleteIfExists(path: Path): Boolean = {
-    if (path.toFile().exists()) {
-      path.toFile().delete()
-    } else {
-      false
-    }
-  }
+  def newDirectoryStream(dir: Path, glob: String): DirectoryStream[Path] = ???
 
-  def exists(path: Path, options: Array[LinkOption]): Boolean = {
-    throw new UnsupportedOperationException("exists")
-  }
+  def newInputStream(path: Path, options: OpenOption*): InputStream = ???
 
-  def getPosixFilePermissions(
+  def newOutputStream(path: Path, options: OpenOption*): OutputStream = ???
+
+  def notExists(path: Path, options: LinkOption*): Boolean = ???
+
+  def probeContentType(path: Path): String = ???
+
+  def readAllBytes(path: Path): Array[Byte] = ???
+
+  def readAllLines(path: Path): JavaList[String] = ???
+
+  def readAllLines(path: Path, cs: Charset): JavaList[String] = ???
+
+  def readAttributes[A <: BasicFileAttributes](
       path: Path,
-      options: Array[LinkOption]
-  ): java.util.Set[PosixFilePermission] = {
-    throw new UnsupportedOperationException("getPosixFilePermissions")
-  }
+      `type`: Class[A],
+      options: LinkOption*
+  ): A = ???
 
+  def readAttributes[A <: BasicFileAttributes](
+      path: Path,
+      Sattributes: String,
+      options: LinkOption*
+  ): JavaMap[String, AnyRef] = ???
+
+  def readSymbolicLink(link: Path): Path = ???
+
+  def setAttribute(path: Path, attribute: String, value: AnyRef, options: LinkOption*): Path = ???
+
+  def setLastModifiedTime(path: Path, time: FileTime): Path = ???
+
+  def setOwner(path: Path, owner: UserPrincipal): Path = ???
+
+  def setPosixFilePermissions(path: Path, perms: JavaSet[PosixFilePermission]): Path = ???
+
+  def size(path: Path): Long = ???
+
+  def walk(start: Path, options: FileVisitOption*): JavaStream[Path]                = ???
+  def walk(start: Path, maxDepth: Int, options: FileVisitOption*): JavaStream[Path] = ???
+
+  def walkFileTree(start: Path, visitor: FileVisitor[_ >: Path]): Path = ???
+  def walkFileTree(
+      start: Path,
+      options: JavaSet[FileVisitOption],
+      maxDepth: Int,
+      visitor: FileVisitor[_ >: Path]
+  ): Path = ???
+
+  def write(path: Path, bytes: Array[Byte], options: OpenOption*): Path = ???
+  def write(
+      path: Path,
+      lines: JavaIterable[_ <: CharSequence],
+      cs: Charset,
+      options: OpenOption*
+  ): Path                                                                                   = ???
+  def write(path: Path, lines: JavaIterable[_ <: CharSequence], options: OpenOption*): Path = ???
 }
