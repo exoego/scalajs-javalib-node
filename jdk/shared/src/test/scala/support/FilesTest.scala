@@ -60,7 +60,16 @@ class FilesTest extends AnyFunSuite {
     // TODO: nofollow_links symbolic link
   }
 
-  ignore("isExecutable(Path)") {}
+  test("isExecutable(Path)") {
+    assert(!Files.isExecutable(Paths.get("build.sbt")))
+    assert(!Files.isExecutable(Paths.get("no-such-file")))
+    assert(Files.isExecutable(Paths.get("jdk/shared/src/test/resources/executable.sh")))
+    assert(!Files.isExecutable(Paths.get("jdk/shared/src/test/resources/not-executable.sh")))
+
+    // directory is executable
+    assert(Files.isExecutable(Paths.get("project")))
+    assert(Files.isExecutable(Paths.get("jdk/shared")))
+  }
 
   ignore("isHidden(Path)") {}
 

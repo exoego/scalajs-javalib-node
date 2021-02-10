@@ -80,7 +80,14 @@ object Files {
   }
   def isDirectory(path: Path): Boolean = isDirectory(path, Array.empty)
 
-  def isExecutable(path: Path): Boolean = ???
+  def isExecutable(path: Path): Boolean = {
+    try {
+      fs.Fs.accessSync(path.toString, fs.Fs.constants.X_OK)
+      true
+    } catch {
+      case _: Throwable => false
+    }
+  }
 
   def isHidden(path: Path): Boolean = ???
 
