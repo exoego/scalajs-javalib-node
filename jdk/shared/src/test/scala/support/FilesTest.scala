@@ -81,7 +81,11 @@ class FilesTest extends AnyFunSuite {
     assert(Files.isExecutable(Paths.get("jdk/shared")))
   }
 
-  ignore("isHidden(Path)") {}
+  test("isHidden(Path)") {
+    assert(!Files.isHidden(Paths.get("jdk/shared/src/test/resources/executable.sh")))
+    assert(Files.isHidden(Paths.get("jdk/shared/src/test/resources/.hidden")))
+    assert(!Files.isHidden(Paths.get("jdk/shared/src/test/resources/.hidden/foo.txt")))
+  }
 
   test("isReadable(Path)") {
     assert(Files.isReadable(Paths.get("README.md")))

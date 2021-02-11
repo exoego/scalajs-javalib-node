@@ -26,9 +26,11 @@ trait Path {
 
   def subpath(i: Int, i1: Int): Path = ???
 
-  def startsWith(path: Path): Boolean = ???
+  def startsWith(path: Path): Boolean   = ???
+  def startsWith(path: String): Boolean = ???
 
-  def endsWith(path: Path): Boolean = ???
+  def endsWith(path: Path): Boolean   = ???
+  def endsWith(path: String): Boolean = ???
 
   def normalize(): Path = ???
 
@@ -94,10 +96,14 @@ private[java] object PathHelper {
     override def subpath(i: Int, i1: Int): Path = {
       throw new UnsupportedOperationException
     }
-    override def startsWith(path: Path): Boolean = {
-      throw new UnsupportedOperationException
+    override def startsWith(path: Path): Boolean = ???
+    override def startsWith(path: String): Boolean = {
+      file.getName().startsWith(path)
     }
     override def endsWith(path: Path): Boolean = {
+      throw new UnsupportedOperationException
+    }
+    override def endsWith(path: String): Boolean = {
       throw new UnsupportedOperationException
     }
     override def normalize(): Path = {

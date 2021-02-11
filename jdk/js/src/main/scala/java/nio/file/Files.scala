@@ -89,7 +89,12 @@ object Files {
     }
   }
 
-  def isHidden(path: Path): Boolean = ???
+  def isHidden(path: Path): Boolean = {
+    // unix
+    path.startsWith(".")
+
+    // TODO: read attribute on windows
+  }
 
   def isReadable(path: Path): Boolean = {
     try {
