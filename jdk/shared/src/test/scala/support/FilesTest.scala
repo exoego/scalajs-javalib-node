@@ -98,7 +98,56 @@ class FilesTest extends AnyFunSuite {
     assert(!Files.isReadable(Paths.get("project", "no-such-file")))
   }
 
-  ignore("isRegularFile(Path, LinkOption*)") {}
+  test("isRegularFile(Path, LinkOption*)") {
+    assert(!Files.isRegularFile(Paths.get("jdk/shared/src/test/resources/source")))
+    assert(Files.isRegularFile(Paths.get("jdk/shared/src/test/resources/source/hello.txt")))
+    assert(
+      !Files.isRegularFile(
+        Paths.get("jdk/shared/src/test/resources/symlink"),
+        LinkOption.NOFOLLOW_LINKS
+      )
+    )
+    assert(
+      Files.isRegularFile(
+        Paths.get("jdk/shared/src/test/resources/source/hello.txt"),
+        LinkOption.NOFOLLOW_LINKS
+      )
+    )
+
+    assert(!Files.isRegularFile(Paths.get("jdk/shared/src/test/resources/symlink")))
+    assert(
+      !Files.isRegularFile(
+        Paths.get("jdk/shared/src/test/resources/symlink"),
+        LinkOption.NOFOLLOW_LINKS
+      )
+    )
+    assert(Files.isRegularFile(Paths.get("jdk/shared/src/test/resources/symlink/hello.txt")))
+    assert(
+      Files.isRegularFile(
+        Paths.get("jdk/shared/src/test/resources/symlink/hello.txt"),
+        LinkOption.NOFOLLOW_LINKS
+      )
+    )
+
+    assert(Files.isRegularFile(Paths.get("jdk/shared/src/test/resources/regular.txt")))
+    assert(
+      Files.isRegularFile(
+        Paths.get("jdk/shared/src/test/resources/regular.txt"),
+        LinkOption.NOFOLLOW_LINKS
+      )
+    )
+    assert(Files.isRegularFile(Paths.get("jdk/shared/src/test/resources/symbolic.txt")))
+    assert(
+      Files.isRegularFile(
+        Paths.get("jdk/shared/src/test/resources/symbolic.txt"),
+        LinkOption.NOFOLLOW_LINKS
+      )
+    )
+
+    assert(Files.isRegularFile(Paths.get("build.sbt")))
+    assert(Files.isRegularFile(Paths.get("project/build.properties")))
+    assert(!Files.isRegularFile(Paths.get("no-such-file")))
+  }
 
   ignore("isSameFile(Path, Path)") {}
 

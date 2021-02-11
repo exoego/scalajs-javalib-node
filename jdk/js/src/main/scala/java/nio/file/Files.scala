@@ -8,8 +8,9 @@ import java.lang.{Iterable => JavaIterable}
 import java.util.{List => JavaList, Map => JavaMap, Set => JavaSet}
 import java.util.function.BiPredicate
 import java.util.stream.{Stream => JavaStream}
-
 import io.scalajs.nodejs.fs
+
+import scala.annotation.varargs
 
 object Files {
   def copy(in: InputStream, target: Path, options: CopyOption*): Long = ???
@@ -105,7 +106,17 @@ object Files {
     }
   }
 
-  def isRegularFile(path: Path, options: LinkOption*): Boolean = ???
+  @varargs def isRegularFile(path: Path, options: LinkOption*): Boolean = {
+    try {
+      if (options.contains(LinkOption.NOFOLLOW_LINKS)) {
+        fs.Fs.statSync(path.toString).isFile()
+      } else {
+        fs.Fs.lstatSync(path.toString).isFile()
+      }
+    } catch {
+      case _: Throwable => false
+    }
+  }
 
   def isSameFile(path: Path, path2: Path): Boolean = ???
 
