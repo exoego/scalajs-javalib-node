@@ -98,7 +98,13 @@ class FilesTest extends AnyFunSuite {
 
   ignore("isSameFile(Path, Path)") {}
 
-  ignore("isSymbolicLink(Path)") {}
+  test("isSymbolicLink(Path)") {
+    assert(!Files.isSymbolicLink(Paths.get("jdk/shared/src/test/resources/source")))
+    assert(!Files.isSymbolicLink(Paths.get("jdk/shared/src/test/resources/source/hello.txt")))
+    assert(Files.isSymbolicLink(Paths.get("jdk/shared/src/test/resources/symlink")))
+    assert(!Files.isSymbolicLink(Paths.get("jdk/shared/src/test/resources/symlink/hello.txt")))
+    assert(!Files.isSymbolicLink(Paths.get("no-such-file")))
+  }
 
   ignore("isWritable(Path)") {}
 

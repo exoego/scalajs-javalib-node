@@ -104,7 +104,13 @@ object Files {
 
   def isSameFile(path: Path, path2: Path): Boolean = ???
 
-  def isSymbolicLink(path: Path): Boolean = ???
+  def isSymbolicLink(path: Path): Boolean = {
+    try {
+      fs.Fs.lstatSync(path.toString).isSymbolicLink()
+    } catch {
+      case _: Throwable => false
+    }
+  }
 
   def isWritable(path: Path): Boolean = ???
 
