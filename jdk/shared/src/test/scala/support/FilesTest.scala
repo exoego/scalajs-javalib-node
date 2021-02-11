@@ -156,7 +156,16 @@ class FilesTest extends AnyFunSuite {
 
   ignore("setPosixFilePermissions(Path, JavaSet[PosixFilePermission])") {}
 
-  ignore("size(Path)") {}
+  test("size(Path)") {
+    // directory
+    assert(Files.size(Paths.get("jdk/shared/src/test/resources/source")) === 96)
+
+    // file
+    assert(Files.size(Paths.get("jdk/shared/src/test/resources/source/hello.txt")) === 0)
+
+    // symlink
+    assert(Files.size(Paths.get("jdk/shared/src/test/resources/symlink")) === 96)
+  }
 
   ignore("walk(Path, FileVisitOption*)") {}
   ignore("walk(Path, Int, FileVisitOption*)") {}

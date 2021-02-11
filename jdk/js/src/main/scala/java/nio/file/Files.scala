@@ -177,7 +177,7 @@ object Files {
 
   def setPosixFilePermissions(path: Path, perms: JavaSet[PosixFilePermission]): Path = ???
 
-  def size(path: Path): Long = ???
+  def size(path: Path): Long = fs.Fs.statSync(path.toString).size.toLong
 
   def walk(start: Path, options: FileVisitOption*): JavaStream[Path]                = ???
   def walk(start: Path, maxDepth: Int, options: FileVisitOption*): JavaStream[Path] = ???
