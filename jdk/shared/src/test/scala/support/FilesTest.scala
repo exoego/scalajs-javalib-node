@@ -2,7 +2,7 @@ package support
 
 import org.scalatest.funsuite.AnyFunSuite
 
-import java.nio.file.{Files, Paths}
+import java.nio.file.{Files, LinkOption, Paths}
 
 class FilesTest extends AnyFunSuite {
   ignore("copy(InputStream, Path, CopyOption*)") {}
@@ -47,7 +47,7 @@ class FilesTest extends AnyFunSuite {
 
   ignore("getPosixFilePermissions(Path, LinkOption*)") {}
 
-  test("isDirectory(Path, LinkOption*)") {
+  test("isDirectory(Path)") {
     assert(Files.isDirectory(Paths.get("project")))
     assert(Files.isDirectory(Paths.get("./project")))
     assert(Files.isDirectory(Paths.get("./project/")))
@@ -57,7 +57,17 @@ class FilesTest extends AnyFunSuite {
     assert(!Files.isDirectory(Paths.get("project/no-such-file")))
     assert(!Files.isDirectory(Paths.get("project/no-such-file/")))
 
-    // TODO: nofollow_links symbolic link
+    assert(Files.isDirectory(Paths.get("jdk/shared/src/test/resources/source")))
+    assert(Files.isDirectory(Paths.get("jdk/shared/src/test/resources/symlink")))
+  }
+
+  test("isDirectory(Path, LinkOption*)") {
+    val option = LinkOption.NOFOLLOW_LINKS
+    assert(Files.isDirectory(Paths.get("project"), option))
+    assert(!Files.isDirectory(Paths.get("project/build.properties"), option))
+
+    assert(Files.isDirectory(Paths.get("jdk/shared/src/test/resources/source"), option))
+    assert(!Files.isDirectory(Paths.get("jdk/shared/src/test/resources/symlink"), option))
   }
 
   test("isExecutable(Path)") {
