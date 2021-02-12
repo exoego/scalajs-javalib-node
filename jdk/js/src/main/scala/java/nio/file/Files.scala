@@ -139,7 +139,14 @@ object Files {
     }
   }
 
-  def isWritable(path: Path): Boolean = ???
+  def isWritable(path: Path): Boolean = {
+    try {
+      fs.Fs.accessSync(path.toString, fs.Fs.constants.W_OK)
+      true
+    } catch {
+      case _: Throwable => false
+    }
+  }
 
   def lines(path: Path): JavaStream[String] = ???
 

@@ -60,6 +60,7 @@ class FilesTest extends AnyFunSuite {
 
   private val executable    = Paths.get("jdk/shared/src/test/resources/executable.sh")
   private val nonExecutable = Paths.get("jdk/shared/src/test/resources/not-executable.sh")
+  private val nonWritable   = Paths.get("jdk/shared/src/test/resources/not-writable.txt")
 
   private val hiddenDirectory = Paths.get("jdk/shared/src/test/resources/.hidden")
   private val fileInHidden    = Paths.get("jdk/shared/src/test/resources/.hidden/foo.txt")
@@ -158,7 +159,14 @@ class FilesTest extends AnyFunSuite {
     assert(!Files.isSymbolicLink(noSuchFile))
   }
 
-  ignore("isWritable(Path)") {}
+  test("isWritable(Path)") {
+    assert(Files.isWritable(directory))
+    assert(Files.isWritable(fileInSource))
+    assert(Files.isWritable(fileInHidden))
+    assert(Files.isWritable(fileInSymlink))
+    assert(!Files.isWritable(noSuchFile))
+    assert(!Files.isWritable(nonWritable))
+  }
 
   ignore("lines(Path)") {}
 
