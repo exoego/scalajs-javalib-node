@@ -1,3 +1,3 @@
 package java.nio.file
 
-class DirectoryNotEmptyException extends FileSystemException {}
+class DirectoryNotEmptyException(dir: String) extends FileSystemException(dir) {}

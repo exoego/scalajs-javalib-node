@@ -2,7 +2,7 @@ package support
 
 import org.scalatest.funsuite.AnyFunSuite
 
-import java.nio.file.{Files, LinkOption, Path, Paths}
+import java.nio.file.{Files, LinkOption, NoSuchFileException, Path, Paths}
 
 class FilesTest extends AnyFunSuite {
   ignore("copy(InputStream, Path, CopyOption*)") {}
@@ -132,7 +132,23 @@ class FilesTest extends AnyFunSuite {
     assert(!Files.isRegularFile(noSuchFile))
   }
 
-  ignore("isSameFile(Path, Path)") {}
+  test("isSameFile(Path, Path)") {
+    assert(Files.isSameFile(regularText, regularText))
+    assert(Files.isSameFile(symlinkText, symlinkText))
+    assert(!Files.isSameFile(regularText, symlinkText))
+
+    assert(Files.isSameFile(directorySource, directorySource))
+    assert(Files.isSameFile(directorySymlink, directorySymlink))
+    assert(Files.isSameFile(directorySymlink, directorySymlink))
+
+    assert(Files.isSameFile(Paths.get("README.md"), Paths.get("./project/../README.md")))
+    assert(Files.isSameFile(noSuchFile, noSuchFile))
+    assert(Files.isSameFile(noSuchSubDir, noSuchSubDir))
+
+    assertThrows[NoSuchFileException] {
+      Files.isSameFile(noSuchSubDir, noSuchFile)
+    }
+  }
 
   test("isSymbolicLink(Path)") {
     assert(!Files.isSymbolicLink(directorySource))

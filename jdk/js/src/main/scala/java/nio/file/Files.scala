@@ -118,7 +118,18 @@ object Files {
     }
   }
 
-  def isSameFile(path: Path, path2: Path): Boolean = ???
+  def isSameFile(path: Path, path2: Path): Boolean = {
+    if (path == path2) {
+      true
+    } else {
+      try {
+        fs.Fs.statSync(path.toString).ino == fs.Fs.statSync(path2.toString).ino
+      } catch {
+        case _: Throwable =>
+          throw new NoSuchFileException(path.toString)
+      }
+    }
+  }
 
   def isSymbolicLink(path: Path): Boolean = {
     try {
