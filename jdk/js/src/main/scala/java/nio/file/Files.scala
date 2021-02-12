@@ -42,7 +42,8 @@ object Files {
 
   def deleteIfExists(path: Path): Boolean = ???
 
-  def exists(path: Path, options: LinkOption*): Boolean = ???
+  @varargs def exists(path: Path, options: LinkOption*): Boolean =
+    transformStats(path, options)(false)(_ => true)
 
   def find(
       start: Path,
@@ -216,7 +217,7 @@ object Files {
 
   def newOutputStream(path: Path, options: OpenOption*): OutputStream = ???
 
-  def notExists(path: Path, options: LinkOption*): Boolean = ???
+  @varargs def notExists(path: Path, options: LinkOption*): Boolean = !exists(path, options: _*)
 
   def probeContentType(path: Path): String = ???
 

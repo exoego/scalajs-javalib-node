@@ -35,7 +35,22 @@ class FilesTest extends AnyFunSuite {
 
   ignore("deleteIfExists(Path)") {}
 
-  ignore("exists(Path, LinkOption*)") {}
+  test("exists(Path, LinkOption*)") {
+    assert(!Files.exists(noSuchFile))
+    assert(!Files.exists(noSuchFileInDir))
+
+    assert(Files.exists(fileInSymlink))
+    assert(Files.exists(fileInSymlink, LinkOption.NOFOLLOW_LINKS))
+
+    assert(Files.exists(fileInSymlink))
+    assert(Files.exists(fileInSymlink, LinkOption.NOFOLLOW_LINKS))
+
+    assert(!Files.exists(fileInDeletedSymlink))
+    assert(!Files.exists(fileInDeletedSymlink, LinkOption.NOFOLLOW_LINKS))
+
+    assert(!Files.exists(deletedSymlinkFile))
+    assert(Files.exists(deletedSymlinkFile, LinkOption.NOFOLLOW_LINKS))
+  }
 
   ignore("find(Path, Int, BiPredicate[Path, BasicFileAttributes], FileVisitOption*)") {}
 
@@ -82,6 +97,9 @@ class FilesTest extends AnyFunSuite {
 
   private val fileInSource  = Paths.get("jdk/shared/src/test/resources/source/hello.txt")
   private val fileInSymlink = Paths.get("jdk/shared/src/test/resources/symlink/hello.txt")
+  private val fileInDeletedSymlink =
+    Paths.get("jdk/shared/src/test/resources/deleted-symlink/hello.txt")
+  private val deletedSymlinkFile = Paths.get("jdk/shared/src/test/resources/deleted-symlink.txt")
 
   private val regularText = Paths.get("jdk/shared/src/test/resources/regular.txt")
   private val symlinkText = Paths.get("jdk/shared/src/test/resources/symbolic.txt")
@@ -167,7 +185,7 @@ class FilesTest extends AnyFunSuite {
 
     assert(Files.isSameFile(directorySource, directorySource))
     assert(Files.isSameFile(directorySymlink, directorySymlink))
-    assert(Files.isSameFile(directorySymlink, directorySymlink))
+    assert(Files.isSameFile(deletedSymlinkFile, deletedSymlinkFile))
 
     assert(Files.isSameFile(Paths.get("README.md"), Paths.get("./project/../README.md")))
     assert(Files.isSameFile(noSuchFile, noSuchFile))
@@ -182,6 +200,7 @@ class FilesTest extends AnyFunSuite {
     assert(!Files.isSymbolicLink(directorySource))
     assert(!Files.isSymbolicLink(fileInSource))
     assert(Files.isSymbolicLink(directorySymlink))
+    assert(Files.isSymbolicLink(deletedSymlinkFile))
     assert(!Files.isSymbolicLink(fileInSymlink))
     assert(!Files.isSymbolicLink(noSuchFile))
   }
@@ -225,7 +244,22 @@ class FilesTest extends AnyFunSuite {
 
   ignore("newOutputStream(Path, OpenOption*)") {}
 
-  ignore("notExists(Path, LinkOption*)") {}
+  test("notExists(Path, LinkOption*)") {
+    assert(Files.notExists(noSuchFile))
+    assert(Files.notExists(noSuchFileInDir))
+
+    assert(!Files.notExists(fileInSymlink))
+    assert(!Files.notExists(fileInSymlink, LinkOption.NOFOLLOW_LINKS))
+
+    assert(!Files.notExists(fileInSymlink))
+    assert(!Files.notExists(fileInSymlink, LinkOption.NOFOLLOW_LINKS))
+
+    assert(Files.notExists(fileInDeletedSymlink))
+    assert(Files.notExists(fileInDeletedSymlink, LinkOption.NOFOLLOW_LINKS))
+
+    assert(Files.notExists(deletedSymlinkFile))
+    assert(!Files.notExists(deletedSymlinkFile, LinkOption.NOFOLLOW_LINKS))
+  }
 
   ignore("probeContentType(Path)") {}
 
