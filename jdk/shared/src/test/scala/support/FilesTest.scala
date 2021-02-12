@@ -2,7 +2,9 @@ package support
 
 import org.scalatest.funsuite.AnyFunSuite
 
-import java.nio.file.{Files, LinkOption, NoSuchFileException, Path, Paths}
+import java.nio.file.attribute.{PosixFilePermission, PosixFilePermissions}
+import java.nio.file.{Files, LinkOption, NoSuchFileException, Paths}
+import scala.jdk.CollectionConverters._
 
 class FilesTest extends AnyFunSuite {
   ignore("copy(InputStream, Path, CopyOption*)") {}
@@ -45,7 +47,33 @@ class FilesTest extends AnyFunSuite {
 
   ignore("getOwner(Path, LinkOption*)") {}
 
-  ignore("getPosixFilePermissions(Path, LinkOption*)") {}
+  test("getPosixFilePermissions(Path, LinkOption*)") {
+    import PosixFilePermission._
+    assert(Files.getPosixFilePermissions(rrr).asScala === Set(GROUP_READ, OWNER_READ, OTHERS_READ))
+    assert(
+      Files.getPosixFilePermissions(rwxrwxrwx).asScala === Set(
+        GROUP_READ,
+        OWNER_READ,
+        OTHERS_READ,
+        GROUP_EXECUTE,
+        OWNER_EXECUTE,
+        OTHERS_EXECUTE,
+        GROUP_WRITE,
+        OWNER_WRITE,
+        OTHERS_WRITE
+      )
+    )
+
+    assertThrows[NoSuchFileException] {
+      Files.getPosixFilePermissions(noSuchFile).asScala === Set()
+    }
+
+    val mutable = Files.getPosixFilePermissions(rrr)
+    mutable.clear()
+    mutable.add(GROUP_WRITE)
+    assert(mutable.asScala === Set(GROUP_WRITE))
+    assert(mutable.asScala === Set(GROUP_WRITE))
+  }
 
   private val directory        = Paths.get("project")
   private val directorySource  = Paths.get("jdk/shared/src/test/resources/source")
@@ -58,9 +86,8 @@ class FilesTest extends AnyFunSuite {
   private val regularText = Paths.get("jdk/shared/src/test/resources/regular.txt")
   private val symlinkText = Paths.get("jdk/shared/src/test/resources/symbolic.txt")
 
-  private val executable    = Paths.get("jdk/shared/src/test/resources/executable.sh")
-  private val nonExecutable = Paths.get("jdk/shared/src/test/resources/not-executable.sh")
-  private val nonWritable   = Paths.get("jdk/shared/src/test/resources/not-writable.txt")
+  private val rrr       = Paths.get("jdk/shared/src/test/resources/permissions/rrr.txt")
+  private val rwxrwxrwx = Paths.get("jdk/shared/src/test/resources/permissions/rwxrwxrwx.txt")
 
   private val hiddenDirectory = Paths.get("jdk/shared/src/test/resources/.hidden")
   private val fileInHidden    = Paths.get("jdk/shared/src/test/resources/.hidden/foo.txt")
@@ -92,8 +119,8 @@ class FilesTest extends AnyFunSuite {
   test("isExecutable(Path)") {
     assert(!Files.isExecutable(Paths.get("build.sbt")))
     assert(!Files.isExecutable(noSuchFile))
-    assert(Files.isExecutable(executable))
-    assert(!Files.isExecutable(nonExecutable))
+    assert(Files.isExecutable(rwxrwxrwx))
+    assert(!Files.isExecutable(rrr))
 
     // directory is executable
     assert(Files.isExecutable(directory))
@@ -101,7 +128,7 @@ class FilesTest extends AnyFunSuite {
   }
 
   test("isHidden(Path)") {
-    assert(!Files.isHidden(executable))
+    assert(!Files.isHidden(rwxrwxrwx))
     assert(Files.isHidden(hiddenDirectory))
     assert(!Files.isHidden(fileInHidden))
   }
@@ -165,7 +192,7 @@ class FilesTest extends AnyFunSuite {
     assert(Files.isWritable(fileInHidden))
     assert(Files.isWritable(fileInSymlink))
     assert(!Files.isWritable(noSuchFile))
-    assert(!Files.isWritable(nonWritable))
+    assert(!Files.isWritable(rrr))
   }
 
   ignore("lines(Path)") {}

@@ -11,6 +11,7 @@ import java.util.stream.{Stream => JavaStream}
 import io.scalajs.nodejs.fs
 
 import scala.annotation.varargs
+import scala.jdk.CollectionConverters._
 
 object Files {
   def copy(in: InputStream, target: Path, options: CopyOption*): Long = ???
@@ -62,22 +63,61 @@ object Files {
 
   def getOwner(path: Path, options: LinkOption*): UserPrincipal = ???
 
-  def getPosixFilePermissions(path: Path, options: LinkOption*): JavaSet[PosixFilePermission] = ???
+  private def transformStats[T](path: Path, options: Seq[LinkOption])(
+      fallback: => T
+  )(tansformer: fs.Stats => T): T = {
+    try {
+      val stat: fs.Stats =
+        if (options.contains(LinkOption.NOFOLLOW_LINKS)) {
+          fs.Fs.lstatSync(path.toString)
+        } else {
+          fs.Fs.statSync(path.toString)
+        }
+      tansformer(stat)
+    } catch {
+      case _: Throwable => fallback
+    }
+  }
+
+  @varargs def getPosixFilePermissions(
+      path: Path,
+      options: LinkOption*
+  ): JavaSet[PosixFilePermission] = {
+    transformStats(path, options)(throw new NoSuchFileException(path.toString)) { stat =>
+      val set = scala.collection.mutable.Set[PosixFilePermission]()
+      if ((stat.mode & fs.Fs.constants.S_IRUSR) != 0) {
+        set.add(PosixFilePermission.OWNER_READ)
+      }
+      if ((stat.mode & fs.Fs.constants.S_IWUSR) != 0) {
+        set.add(PosixFilePermission.OWNER_WRITE)
+      }
+      if ((stat.mode & fs.Fs.constants.S_IXUSR) != 0) {
+        set.add(PosixFilePermission.OWNER_EXECUTE)
+      }
+      if ((stat.mode & fs.Fs.constants.S_IRGRP) != 0) {
+        set.add(PosixFilePermission.GROUP_READ)
+      }
+      if ((stat.mode & fs.Fs.constants.S_IWGRP) != 0) {
+        set.add(PosixFilePermission.GROUP_WRITE)
+      }
+      if ((stat.mode & fs.Fs.constants.S_IXGRP) != 0) {
+        set.add(PosixFilePermission.GROUP_EXECUTE)
+      }
+      if ((stat.mode & fs.Fs.constants.S_IROTH) != 0) {
+        set.add(PosixFilePermission.OTHERS_READ)
+      }
+      if ((stat.mode & fs.Fs.constants.S_IWOTH) != 0) {
+        set.add(PosixFilePermission.OTHERS_WRITE)
+      }
+      if ((stat.mode & fs.Fs.constants.S_IXOTH) != 0) {
+        set.add(PosixFilePermission.OTHERS_EXECUTE)
+      }
+      set.asJava
+    }
+  }
 
   @varargs def isDirectory(path: Path, options: LinkOption*): Boolean = {
-    if (options.contains(LinkOption.NOFOLLOW_LINKS)) {
-      try {
-        fs.Fs.lstatSync(path.toString).isDirectory()
-      } catch {
-        case _: Throwable => false
-      }
-    } else {
-      try {
-        fs.Fs.statSync(path.toString).isDirectory()
-      } catch {
-        case _: Throwable => false
-      }
-    }
+    transformStats(path, options)(false)(_.isDirectory())
   }
 
   def isExecutable(path: Path): Boolean = {
@@ -106,15 +146,7 @@ object Files {
   }
 
   @varargs def isRegularFile(path: Path, options: LinkOption*): Boolean = {
-    try {
-      if (options.contains(LinkOption.NOFOLLOW_LINKS)) {
-        fs.Fs.statSync(path.toString).isFile()
-      } else {
-        fs.Fs.lstatSync(path.toString).isFile()
-      }
-    } catch {
-      case _: Throwable => false
-    }
+    transformStats(path, options)(false)(_.isFile())
   }
 
   def isSameFile(path: Path, path2: Path): Boolean = {
