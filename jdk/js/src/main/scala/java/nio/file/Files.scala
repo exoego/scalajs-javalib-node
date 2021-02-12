@@ -65,7 +65,7 @@ object Files {
 
   private def transformStats[T](path: Path, options: Seq[LinkOption])(
       fallback: => T
-  )(tansformer: fs.Stats => T): T = {
+  )(transformer: fs.Stats => T): T = {
     try {
       val stat: fs.Stats =
         if (options.contains(LinkOption.NOFOLLOW_LINKS)) {
@@ -73,7 +73,7 @@ object Files {
         } else {
           fs.Fs.statSync(path.toString)
         }
-      tansformer(stat)
+      transformer(stat)
     } catch {
       case _: Throwable => fallback
     }
