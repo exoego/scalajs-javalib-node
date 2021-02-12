@@ -2,7 +2,7 @@ package support
 
 import org.scalatest.funsuite.AnyFunSuite
 
-import java.nio.file.{Files, LinkOption, Paths}
+import java.nio.file.{Files, LinkOption, Path, Paths}
 
 class FilesTest extends AnyFunSuite {
   ignore("copy(InputStream, Path, CopyOption*)") {}
@@ -47,116 +47,99 @@ class FilesTest extends AnyFunSuite {
 
   ignore("getPosixFilePermissions(Path, LinkOption*)") {}
 
-  test("isDirectory(Path)") {
-    assert(Files.isDirectory(Paths.get("project")))
-    assert(Files.isDirectory(Paths.get("./project")))
-    assert(Files.isDirectory(Paths.get("./project/")))
-    assert(Files.isDirectory(Paths.get("project/")))
-    assert(Files.isDirectory(Paths.get("project/target")))
-    assert(!Files.isDirectory(Paths.get("project/build.properties")))
-    assert(!Files.isDirectory(Paths.get("project/no-such-file")))
-    assert(!Files.isDirectory(Paths.get("project/no-such-file/")))
+  private val directory        = Paths.get("project")
+  private val directorySource  = Paths.get("jdk/shared/src/test/resources/source")
+  private val directorySymlink = Paths.get("jdk/shared/src/test/resources/symlink")
+  private val subDirectory     = Paths.get("project/target")
 
-    assert(Files.isDirectory(Paths.get("jdk/shared/src/test/resources/source")))
-    assert(Files.isDirectory(Paths.get("jdk/shared/src/test/resources/symlink")))
+  private val fileInSource  = Paths.get("jdk/shared/src/test/resources/source/hello.txt")
+  private val fileInSymlink = Paths.get("jdk/shared/src/test/resources/symlink/hello.txt")
+
+  private val regularText = Paths.get("jdk/shared/src/test/resources/regular.txt")
+  private val symlinkText = Paths.get("jdk/shared/src/test/resources/symbolic.txt")
+
+  private val executable    = Paths.get("jdk/shared/src/test/resources/executable.sh")
+  private val nonExecutable = Paths.get("jdk/shared/src/test/resources/not-executable.sh")
+
+  private val hiddenDirectory = Paths.get("jdk/shared/src/test/resources/.hidden")
+  private val fileInHidden    = Paths.get("jdk/shared/src/test/resources/.hidden/foo.txt")
+
+  private val noSuchFileInDir = Paths.get("project", "no-such-file")
+  private val noSuchFile      = Paths.get("no-such-file")
+  private val noSuchSubDir    = Paths.get("no-such-dir/no-such-sub")
+
+  test("isDirectory(Path)") {
+    assert(Files.isDirectory(directory))
+    assert(Files.isDirectory(subDirectory))
+    assert(Files.isDirectory(directorySource))
+    assert(Files.isDirectory(directorySymlink))
+
+    assert(!Files.isDirectory(fileInSource))
+    assert(!Files.isDirectory(noSuchFileInDir))
+    assert(!Files.isDirectory(noSuchSubDir))
   }
 
   test("isDirectory(Path, LinkOption*)") {
     val option = LinkOption.NOFOLLOW_LINKS
-    assert(Files.isDirectory(Paths.get("project"), option))
-    assert(!Files.isDirectory(Paths.get("project/build.properties"), option))
+    assert(Files.isDirectory(directory, option))
+    assert(Files.isDirectory(directorySource, option))
+    assert(!Files.isDirectory(directorySymlink, option))
 
-    assert(Files.isDirectory(Paths.get("jdk/shared/src/test/resources/source"), option))
-    assert(!Files.isDirectory(Paths.get("jdk/shared/src/test/resources/symlink"), option))
+    assert(!Files.isDirectory(regularText, option))
   }
 
   test("isExecutable(Path)") {
     assert(!Files.isExecutable(Paths.get("build.sbt")))
-    assert(!Files.isExecutable(Paths.get("no-such-file")))
-    assert(Files.isExecutable(Paths.get("jdk/shared/src/test/resources/executable.sh")))
-    assert(!Files.isExecutable(Paths.get("jdk/shared/src/test/resources/not-executable.sh")))
+    assert(!Files.isExecutable(noSuchFile))
+    assert(Files.isExecutable(executable))
+    assert(!Files.isExecutable(nonExecutable))
 
     // directory is executable
-    assert(Files.isExecutable(Paths.get("project")))
+    assert(Files.isExecutable(directory))
     assert(Files.isExecutable(Paths.get("jdk/shared")))
   }
 
   test("isHidden(Path)") {
-    assert(!Files.isHidden(Paths.get("jdk/shared/src/test/resources/executable.sh")))
-    assert(Files.isHidden(Paths.get("jdk/shared/src/test/resources/.hidden")))
-    assert(!Files.isHidden(Paths.get("jdk/shared/src/test/resources/.hidden/foo.txt")))
+    assert(!Files.isHidden(executable))
+    assert(Files.isHidden(hiddenDirectory))
+    assert(!Files.isHidden(fileInHidden))
   }
 
   test("isReadable(Path)") {
-    assert(Files.isReadable(Paths.get("README.md")))
-    assert(Files.isReadable(Paths.get("./README.md")))
-    assert(!Files.isReadable(Paths.get("no-such-file")))
+    assert(Files.isReadable(regularText))
+    assert(!Files.isReadable(noSuchFile))
 
-    assert(Files.isReadable(Paths.get("project/build.properties")))
-    assert(Files.isReadable(Paths.get("project/build.properties")))
-    assert(Files.isReadable(Paths.get("project", "build.properties")))
-    assert(!Files.isReadable(Paths.get("project", "no-such-file")))
+    assert(Files.isReadable(regularText))
+    assert(!Files.isReadable(noSuchFileInDir))
   }
 
   test("isRegularFile(Path, LinkOption*)") {
-    assert(!Files.isRegularFile(Paths.get("jdk/shared/src/test/resources/source")))
-    assert(Files.isRegularFile(Paths.get("jdk/shared/src/test/resources/source/hello.txt")))
-    assert(
-      !Files.isRegularFile(
-        Paths.get("jdk/shared/src/test/resources/symlink"),
-        LinkOption.NOFOLLOW_LINKS
-      )
-    )
-    assert(
-      Files.isRegularFile(
-        Paths.get("jdk/shared/src/test/resources/source/hello.txt"),
-        LinkOption.NOFOLLOW_LINKS
-      )
-    )
+    assert(!Files.isRegularFile(directorySource))
+    assert(Files.isRegularFile(fileInSource))
+    assert(!Files.isRegularFile(directorySymlink, LinkOption.NOFOLLOW_LINKS))
+    assert(Files.isRegularFile(fileInSource, LinkOption.NOFOLLOW_LINKS))
 
-    assert(!Files.isRegularFile(Paths.get("jdk/shared/src/test/resources/symlink")))
-    assert(
-      !Files.isRegularFile(
-        Paths.get("jdk/shared/src/test/resources/symlink"),
-        LinkOption.NOFOLLOW_LINKS
-      )
-    )
-    assert(Files.isRegularFile(Paths.get("jdk/shared/src/test/resources/symlink/hello.txt")))
-    assert(
-      Files.isRegularFile(
-        Paths.get("jdk/shared/src/test/resources/symlink/hello.txt"),
-        LinkOption.NOFOLLOW_LINKS
-      )
-    )
+    assert(!Files.isRegularFile(directorySymlink))
+    assert(!Files.isRegularFile(directorySymlink, LinkOption.NOFOLLOW_LINKS))
+    assert(Files.isRegularFile(fileInSymlink))
+    assert(Files.isRegularFile(fileInSymlink, LinkOption.NOFOLLOW_LINKS))
 
-    assert(Files.isRegularFile(Paths.get("jdk/shared/src/test/resources/regular.txt")))
-    assert(
-      Files.isRegularFile(
-        Paths.get("jdk/shared/src/test/resources/regular.txt"),
-        LinkOption.NOFOLLOW_LINKS
-      )
-    )
-    assert(Files.isRegularFile(Paths.get("jdk/shared/src/test/resources/symbolic.txt")))
-    assert(
-      Files.isRegularFile(
-        Paths.get("jdk/shared/src/test/resources/symbolic.txt"),
-        LinkOption.NOFOLLOW_LINKS
-      )
-    )
+    assert(Files.isRegularFile(regularText))
+    assert(Files.isRegularFile(regularText, LinkOption.NOFOLLOW_LINKS))
+    assert(Files.isRegularFile(symlinkText))
+    assert(Files.isRegularFile(symlinkText, LinkOption.NOFOLLOW_LINKS))
 
-    assert(Files.isRegularFile(Paths.get("build.sbt")))
-    assert(Files.isRegularFile(Paths.get("project/build.properties")))
-    assert(!Files.isRegularFile(Paths.get("no-such-file")))
+    assert(!Files.isRegularFile(noSuchFile))
   }
 
   ignore("isSameFile(Path, Path)") {}
 
   test("isSymbolicLink(Path)") {
-    assert(!Files.isSymbolicLink(Paths.get("jdk/shared/src/test/resources/source")))
-    assert(!Files.isSymbolicLink(Paths.get("jdk/shared/src/test/resources/source/hello.txt")))
-    assert(Files.isSymbolicLink(Paths.get("jdk/shared/src/test/resources/symlink")))
-    assert(!Files.isSymbolicLink(Paths.get("jdk/shared/src/test/resources/symlink/hello.txt")))
-    assert(!Files.isSymbolicLink(Paths.get("no-such-file")))
+    assert(!Files.isSymbolicLink(directorySource))
+    assert(!Files.isSymbolicLink(fileInSource))
+    assert(Files.isSymbolicLink(directorySymlink))
+    assert(!Files.isSymbolicLink(fileInSymlink))
+    assert(!Files.isSymbolicLink(noSuchFile))
   }
 
   ignore("isWritable(Path)") {}
@@ -217,13 +200,13 @@ class FilesTest extends AnyFunSuite {
 
   test("size(Path)") {
     // directory
-    assert(Files.size(Paths.get("jdk/shared/src/test/resources/source")) === 96)
+    assert(Files.size(directorySource) === 96)
 
     // file
-    assert(Files.size(Paths.get("jdk/shared/src/test/resources/source/hello.txt")) === 0)
+    assert(Files.size(fileInSource) === 0)
 
     // symlink
-    assert(Files.size(Paths.get("jdk/shared/src/test/resources/symlink")) === 96)
+    assert(Files.size(directorySymlink) === 96)
   }
 
   ignore("walk(Path, FileVisitOption*)") {}
