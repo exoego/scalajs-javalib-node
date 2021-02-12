@@ -64,7 +64,7 @@ object Files {
 
   def getPosixFilePermissions(path: Path, options: LinkOption*): JavaSet[PosixFilePermission] = ???
 
-  def isDirectory(path: Path, options: Array[LinkOption]): Boolean = {
+  @varargs def isDirectory(path: Path, options: LinkOption*): Boolean = {
     if (options.contains(LinkOption.NOFOLLOW_LINKS)) {
       try {
         fs.Fs.lstatSync(path.toString).isDirectory()
@@ -79,7 +79,6 @@ object Files {
       }
     }
   }
-  def isDirectory(path: Path): Boolean = isDirectory(path, Array.empty)
 
   def isExecutable(path: Path): Boolean = {
     try {
