@@ -1,6 +1,6 @@
 package java.nio.file
 
-import java.io.{BufferedReader, BufferedWriter, InputStream, OutputStream}
+import java.io.{BufferedReader, BufferedWriter, IOException, InputStream, OutputStream}
 import java.nio.channels.SeekableByteChannel
 import java.nio.charset.Charset
 import java.nio.file.attribute._
@@ -10,6 +10,7 @@ import java.util.function.BiPredicate
 import java.util.stream.{Stream => JavaStream}
 import io.scalajs.nodejs.fs
 
+import java.util
 import scala.annotation.varargs
 import scala.jdk.CollectionConverters._
 
@@ -221,11 +222,31 @@ object Files {
 
   def probeContentType(path: Path): String = null
 
-  def readAllBytes(path: Path): Array[Byte] = ???
+  def readAllBytes(path: Path): Array[Byte] = {
+    try {
+      fs.Fs.readFileSync(path.toString).map(_.toByte).toArray
+    } catch {
+      case ex: Throwable => throw new IOException(ex.getCause)
+    }
+  }
 
-  def readAllLines(path: Path): JavaList[String] = ???
+  def readAllLines(path: Path): JavaList[String] = readAllLinesInternal(path, "utf8")
 
-  def readAllLines(path: Path, cs: Charset): JavaList[String] = ???
+  def readAllLines(path: Path, cs: Charset): JavaList[String] =
+    readAllLinesInternal(path, cs.displayName())
+
+  private def readAllLinesInternal(path: Path, cs: String): JavaList[String] = {
+    try {
+      val javaList = new util.ArrayList[String]()
+      fs.Fs
+        .readFileSync(path.toString, cs)
+        .linesIterator
+        .foreach(line => javaList.add(line))
+      javaList
+    } catch {
+      case ex: Throwable => throw new IOException(ex.getCause)
+    }
+  }
 
   def readAttributes[A <: BasicFileAttributes](
       path: Path,

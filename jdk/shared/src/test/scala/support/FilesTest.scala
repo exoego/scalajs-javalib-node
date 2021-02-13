@@ -2,6 +2,8 @@ package support
 
 import org.scalatest.funsuite.AnyFunSuite
 
+import java.io.IOException
+import java.nio.charset.Charset
 import java.nio.file.attribute.{PosixFilePermission, PosixFilePermissions}
 import java.nio.file.{Files, LinkOption, NoSuchFileException, Paths}
 import scala.jdk.CollectionConverters._
@@ -94,6 +96,8 @@ class FilesTest extends AnyFunSuite {
   private val directorySource  = Paths.get("jdk/shared/src/test/resources/source")
   private val directorySymlink = Paths.get("jdk/shared/src/test/resources/symlink")
   private val subDirectory     = Paths.get("project/target")
+
+  private val sjisTxt = Paths.get("jdk/shared/src/test/resources/utf16be.txt")
 
   private val fileInSource  = Paths.get("jdk/shared/src/test/resources/source/hello.txt")
   private val fileInSymlink = Paths.get("jdk/shared/src/test/resources/symlink/hello.txt")
@@ -270,11 +274,47 @@ class FilesTest extends AnyFunSuite {
     assert(Files.probeContentType(fileInSource) === null)
   }
 
-  ignore("readAllBytes(Path)") {}
+  test("readAllBytes(Path)") {
+    assert(
+      Files.readAllBytes(fileInSource) === Array[Byte](
+        102, 111, 111, 10, 98, 97, 114, 10, -26, -105, -91, -26, -100, -84, -24, -86, -98, 10
+      )
+    )
+    assert(
+      Files.readAllBytes(fileInSymlink) === Array[Byte](
+        102, 111, 111, 10, 98, 97, 114, 10, -26, -105, -91, -26, -100, -84, -24, -86, -98, 10
+      )
+    )
+    assertThrows[IOException] {
+      Files.readAllBytes(directory)
+    }
+    assertThrows[IOException] {
+      Files.readAllBytes(noSuchFile)
+    }
+  }
 
-  ignore("readAllLines(Path)") {}
+  test("readAllLines(Path)") {
+    assert(Files.readAllLines(fileInSource).asScala === Seq("foo", "bar", "日本語"))
+    assert(Files.readAllLines(fileInSymlink).asScala === Seq("foo", "bar", "日本語"))
+    assertThrows[IOException] {
+      Files.readAllLines(directory)
+    }
+    assertThrows[IOException] {
+      Files.readAllLines(noSuchFile)
+    }
+  }
 
-  ignore("readAllLines(Path, Charset)") {}
+  test("readAllLines(Path, Charset)") {
+    val utf16le = Charset.forName("UTF-16LE")
+    assert(Files.readAllLines(sjisTxt, utf16le).asScala === Seq("\uFEFFUTF-16LE", "日本語"))
+    assert(Files.readAllLines(fileInSymlink, utf16le).asScala !== Seq("foo", "bar", "buz"))
+    assertThrows[IOException] {
+      Files.readAllLines(directory, utf16le)
+    }
+    assertThrows[IOException] {
+      Files.readAllLines(noSuchFile, utf16le)
+    }
+  }
 
   ignore("readAttributes[A <: BasicFileAttributes](Path, Class[A], LinkOption*)") {}
 
@@ -295,7 +335,7 @@ class FilesTest extends AnyFunSuite {
     assert(Files.size(directorySource) === 96)
 
     // file
-    assert(Files.size(fileInSource) === 0)
+    assert(Files.size(fileInSource) === 18)
 
     // symlink
     assert(Files.size(directorySymlink) === 96)
