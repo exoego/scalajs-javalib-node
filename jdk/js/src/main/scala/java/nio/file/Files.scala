@@ -219,7 +219,7 @@ object Files {
 
   @varargs def notExists(path: Path, options: LinkOption*): Boolean = !exists(path, options: _*)
 
-  def probeContentType(path: Path): String = ???
+  def probeContentType(path: Path): String = null
 
   def readAllBytes(path: Path): Array[Byte] = ???
 

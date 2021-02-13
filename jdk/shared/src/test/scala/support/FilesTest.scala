@@ -261,7 +261,14 @@ class FilesTest extends AnyFunSuite {
     assert(!Files.notExists(deletedSymlinkFile, LinkOption.NOFOLLOW_LINKS))
   }
 
-  ignore("probeContentType(Path)") {}
+  test("probeContentType(Path)") {
+    // Return null on any files by default ?
+    assert(Files.probeContentType(noSuchSubDir) === null)
+    assert(Files.probeContentType(noSuchFile) === null)
+    assert(Files.probeContentType(directory) === null)
+    assert(Files.probeContentType(fileInHidden) === null)
+    assert(Files.probeContentType(fileInSource) === null)
+  }
 
   ignore("readAllBytes(Path)") {}
 
