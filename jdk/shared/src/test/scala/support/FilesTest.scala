@@ -4,7 +4,7 @@ import org.scalatest.funsuite.AnyFunSuite
 
 import java.io.IOException
 import java.nio.charset.Charset
-import java.nio.file.attribute.{PosixFilePermission, PosixFilePermissions}
+import java.nio.file.attribute.{FileAttribute, PosixFilePermission, PosixFilePermissions}
 import java.nio.file.{Files, LinkOption, NoSuchFileException, Paths}
 import scala.jdk.CollectionConverters._
 
@@ -25,9 +25,22 @@ class FilesTest extends AnyFunSuite {
 
   ignore("createSymbolicLink(Path, Path, FileAttribute[_])") {}
 
-  ignore("createTempDirectory(Path, String, FileAttribute[_])") {}
+  test("createTempDirectory(Path, String, FileAttribute[_])") {
+    val base    = Paths.get("./")
+    val tempDir = Files.createTempDirectory(base, "foobar")
+    assert(tempDir.toString.contains("/foobar"))
+    assert(Files.exists(tempDir))
 
-  ignore("createTempDirectory(String, FileAttribute[_])") {}
+    // TODO: attrs
+  }
+
+  test("createTempDirectory(String, FileAttribute[_])") {
+    val tempDir = Files.createTempDirectory("foobar")
+    assert(tempDir.toString.contains("/foobar"))
+    assert(Files.exists(tempDir))
+
+    // TODO: attrs
+  }
 
   ignore("createTempFile(Path, String, String, FileAttribute[_])") {}
 

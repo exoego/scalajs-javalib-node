@@ -9,6 +9,8 @@ import java.util.{List => JavaList, Map => JavaMap, Set => JavaSet}
 import java.util.function.BiPredicate
 import java.util.stream.{Stream => JavaStream}
 import io.scalajs.nodejs.fs
+import io.scalajs.nodejs.path
+import io.scalajs.nodejs.os
 
 import java.util
 import scala.annotation.varargs
@@ -31,9 +33,24 @@ object Files {
 
   def createSymbolicLink(link: Path, target: Path, attrs: FileAttribute[_]): Path = ???
 
-  def createTempDirectory(dir: Path, prefix: String, attrs: FileAttribute[_]): Path = ???
+  @varargs def createTempDirectory(dir: Path, prefix: String, attrs: FileAttribute[_]*): Path = {
+    createTempDirectoryInternal(dir.toString, prefix, attrs: _*)
+  }
 
-  def createTempDirectory(prefix: String, attrs: FileAttribute[_]): Path = ???
+  @varargs def createTempDirectory(prefix: String, attrs: FileAttribute[_]*): Path = {
+    createTempDirectoryInternal(os.OS.tmpdir(), prefix, attrs: _*)
+  }
+
+  private def createTempDirectoryInternal(
+      dir: String,
+      prefix: String,
+      attrs: FileAttribute[_]*
+  ): Path = {
+    val joined     = path.Path.join(dir, prefix)
+    val created    = fs.Fs.mkdtempSync(joined)
+    val normalized = path.Path.resolve(created)
+    Paths.get(normalized)
+  }
 
   def createTempFile(dir: Path, prefix: String, suffix: String, attrs: FileAttribute[_]): Path = ???
 
