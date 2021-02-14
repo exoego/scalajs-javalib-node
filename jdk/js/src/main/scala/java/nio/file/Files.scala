@@ -24,7 +24,12 @@ object Files {
 
   @varargs def copy(source: Path, target: Path, options: CopyOption*): Path = ???
 
-  @varargs def createDirectories(dir: Path, attrs: FileAttribute[_]*): Path = ???
+  @varargs def createDirectories(dir: Path, attrs: FileAttribute[_]*): Path = {
+    val dirStr = dir.toString
+    fs.Fs.mkdirSync(dirStr, fs.MkdirOptions(recursive = true))
+    // TODO: attrs
+    dir
+  }
 
   @varargs def createDirectory(dir: Path, attrs: FileAttribute[_]*): Path = {
     val dirStr = dir.toString

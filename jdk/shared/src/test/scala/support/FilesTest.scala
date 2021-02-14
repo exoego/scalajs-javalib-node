@@ -15,7 +15,22 @@ class FilesTest extends AnyFunSuite {
 
   ignore("copy(Path, Path, CopyOption*)") {}
 
-  ignore("createDirectories(Path, FileAttribute[_]*)") {}
+  test("createDirectories(Path, FileAttribute[_]*)") {
+    val tmpDir = Files.createTempDirectory("createDirectories")
+    // No throw
+    Files.createDirectories(tmpDir)
+
+    val created = Files.createDirectories(tmpDir.resolve("sub"))
+    assert(Files.exists(created))
+    assert(Files.isDirectory(created))
+    assert(created.getFileName.toString == "sub")
+
+    val nestedPath = tmpDir.resolve("1").resolve("2").resolve("3")
+    assert(Files.notExists(nestedPath))
+    val createdDeep = Files.createDirectories(nestedPath)
+    assert(Files.exists(createdDeep))
+    assert(Files.isDirectory(createdDeep))
+  }
 
   test("createDirectory(Path, FileAttribute[_]*)") {
     val tmpDir = Files.createTempDirectory("createDirectory")
