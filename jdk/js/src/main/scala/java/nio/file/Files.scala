@@ -50,7 +50,16 @@ object Files {
 
   def createLink(link: Path, existing: Path): Path = ???
 
-  @varargs def createSymbolicLink(link: Path, target: Path, attrs: FileAttribute[_]*): Path = ???
+  @varargs def createSymbolicLink(link: Path, target: Path, attrs: FileAttribute[_]*): Path = {
+    val newPath = link.toString
+    if (Files.exists(link)) {
+      throw new FileAlreadyExistsException(newPath)
+    }
+    val existingPath = target.toString
+    fs.Fs.symlinkSync(existingPath, newPath)
+    // TODO: attrs
+    link
+  }
 
   @varargs def createTempDirectory(dir: Path, prefix: String, attrs: FileAttribute[_]*): Path = {
     createTempDirectoryInternal(dir.toString, prefix, attrs: _*)
@@ -93,10 +102,14 @@ object Files {
     val joined   = path.Path.join(dir, fileName)
     fs.Fs.writeFileSync(joined, "")
     Paths.get(joined)
+
+    // TODO: attrs
   }
 
   def delete(path: Path): Unit = {
     if (Files.isRegularFile(path)) {
+      fs.Fs.unlinkSync(path.toString)
+    } else if (Files.isSymbolicLink(path)) {
       fs.Fs.unlinkSync(path.toString)
     } else if (Files.isDirectory(path)) {
       try {

@@ -61,7 +61,18 @@ class FilesTest extends AnyFunSuite {
 
   ignore("createLink(Path, Path)") {}
 
-  ignore("createSymbolicLink(Path, Path, FileAttribute[_])") {}
+  test("createSymbolicLink(Path, Path, FileAttribute[_])") {
+    val sourceDir = Files.createTempDirectory("source")
+    val targetDir = Files.createTempDirectory("source").resolve("tmp-symlink")
+    val created   = Files.createSymbolicLink(targetDir, sourceDir)
+
+    assert(Files.isSymbolicLink(created))
+    assert(Files.exists(created))
+
+    assertThrows[FileAlreadyExistsException] {
+      Files.createSymbolicLink(sourceDir, targetDir)
+    }
+  }
 
   test("createTempDirectory(Path, String, FileAttribute[_])") {
     val base    = Files.createTempDirectory("more")
@@ -123,7 +134,13 @@ class FilesTest extends AnyFunSuite {
     }
     assert(Files.exists(nonEmptyDir))
 
-    // todo: symbolic link
+    val symbolicLink = Files.createSymbolicLink(
+      Files.createTempDirectory("deleteme").resolve("sym"),
+      Files.createTempDirectory("empty")
+    )
+    assert(Files.exists(symbolicLink))
+    Files.delete(symbolicLink)
+    assert(Files.notExists(symbolicLink))
 
     // todo: opened by other process
   }
