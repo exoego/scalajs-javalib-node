@@ -5,7 +5,7 @@ import org.scalatest.funsuite.AnyFunSuite
 import java.io.IOException
 import java.nio.charset.Charset
 import java.nio.file.attribute.{FileAttribute, PosixFilePermission, PosixFilePermissions}
-import java.nio.file.{Files, LinkOption, NoSuchFileException, Paths}
+import java.nio.file.{FileAlreadyExistsException, Files, LinkOption, NoSuchFileException, Paths}
 import scala.jdk.CollectionConverters._
 
 class FilesTest extends AnyFunSuite {
@@ -17,7 +17,23 @@ class FilesTest extends AnyFunSuite {
 
   ignore("createDirectories(Path, FileAttribute[_]*)") {}
 
-  ignore("createDirectory(Path, FileAttribute[_]*)") {}
+  test("createDirectory(Path, FileAttribute[_]*)") {
+    val tmpDir = Files.createTempDirectory("createDirectory")
+    assertThrows[FileAlreadyExistsException] {
+      Files.createDirectory(tmpDir)
+    }
+
+    val created = Files.createDirectory(tmpDir.resolve("sub"))
+    assert(Files.exists(created))
+    assert(Files.isDirectory(created))
+    assert(created.getFileName.toString == "sub")
+
+    val nestedPath = tmpDir.resolve("1").resolve("2").resolve("3")
+    assert(Files.notExists(nestedPath))
+    assertThrows[NoSuchFileException] {
+      Files.createDirectory(nestedPath)
+    }
+  }
 
   ignore("createFile(Path, FileAttribute[_]*)") {}
 

@@ -35,7 +35,8 @@ trait Path {
   def normalize(): Path = ???
 
   def resolve(other: String): Path = {
-    this.resolve(this.getFileSystem.getPath(other))
+    val file = new File(this.toString, other)
+    PathHelper.fromFile(file)
   }
   def resolveSibling(other: Path): Path = {
     if (other == null) throw new NullPointerException
@@ -104,7 +105,7 @@ private[java] object PathHelper {
       throw new UnsupportedOperationException
     }
     override def endsWith(path: String): Boolean = {
-      throw new UnsupportedOperationException
+      file.getName().endsWith(path)
     }
     override def normalize(): Path = {
       throw new UnsupportedOperationException

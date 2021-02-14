@@ -26,7 +26,20 @@ object Files {
 
   def createDirectories(dir: Path, attrs: FileAttribute[_]*): Path = ???
 
-  def createDirectory(dir: Path, attrs: FileAttribute[_]*): Path = ???
+  @varargs def createDirectory(dir: Path, attrs: FileAttribute[_]*): Path = {
+    val dirStr = dir.toString
+    if (Files.exists(dir)) {
+      throw new FileAlreadyExistsException(dirStr)
+    }
+
+    try {
+      fs.Fs.mkdirSync(dirStr)
+      // TODO: attrs
+    } catch {
+      case _: Throwable => throw new NoSuchFileException(dirStr)
+    }
+    dir
+  }
 
   def createFile(path: Path, attrs: FileAttribute[_]*): Path = ???
 
