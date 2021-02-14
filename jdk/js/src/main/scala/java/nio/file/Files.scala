@@ -18,13 +18,13 @@ import scala.jdk.CollectionConverters._
 
 object Files {
 
-  def copy(in: InputStream, target: Path, options: CopyOption*): Long = ???
+  @varargs def copy(in: InputStream, target: Path, options: CopyOption*): Long = ???
 
   def copy(source: Path, out: OutputStream): Long = ???
 
-  def copy(source: Path, tareget: Path, options: CopyOption*): Path = ???
+  @varargs def copy(source: Path, target: Path, options: CopyOption*): Path = ???
 
-  def createDirectories(dir: Path, attrs: FileAttribute[_]*): Path = ???
+  @varargs def createDirectories(dir: Path, attrs: FileAttribute[_]*): Path = ???
 
   @varargs def createDirectory(dir: Path, attrs: FileAttribute[_]*): Path = {
     val dirStr = dir.toString
@@ -41,11 +41,11 @@ object Files {
     dir
   }
 
-  def createFile(path: Path, attrs: FileAttribute[_]*): Path = ???
+  @varargs def createFile(path: Path, attrs: FileAttribute[_]*): Path = ???
 
   def createLink(link: Path, existing: Path): Path = ???
 
-  def createSymbolicLink(link: Path, target: Path, attrs: FileAttribute[_]): Path = ???
+  @varargs def createSymbolicLink(link: Path, target: Path, attrs: FileAttribute[_]*): Path = ???
 
   @varargs def createTempDirectory(dir: Path, prefix: String, attrs: FileAttribute[_]*): Path = {
     createTempDirectoryInternal(dir.toString, prefix, attrs: _*)
@@ -66,9 +66,14 @@ object Files {
     Paths.get(normalized)
   }
 
-  def createTempFile(dir: Path, prefix: String, suffix: String, attrs: FileAttribute[_]): Path = ???
+  @varargs def createTempFile(
+      dir: Path,
+      prefix: String,
+      suffix: String,
+      attrs: FileAttribute[_]*
+  ): Path = ???
 
-  def createTempFile(prefix: String, suffix: String, attrs: FileAttribute[_]): Path = ???
+  @varargs def createTempFile(prefix: String, suffix: String, attrs: FileAttribute[_]*): Path = ???
 
   def delete(path: Path): Unit = ???
 
@@ -77,16 +82,16 @@ object Files {
   @varargs def exists(path: Path, options: LinkOption*): Boolean =
     transformStats(path, options)(false)(_ => true)
 
-  def find(
+  @varargs def find(
       start: Path,
       maxDepth: Int,
       matcher: BiPredicate[Path, BasicFileAttributes],
       options: FileVisitOption*
   ): JavaStream[Path] = ???
 
-  def getAttribute(path: Path, attribute: String, options: LinkOption*): AnyRef = ???
+  @varargs def getAttribute(path: Path, attribute: String, options: LinkOption*): AnyRef = ???
 
-  def getFileAttributeView[V <: FileAttributeView](
+  @varargs def getFileAttributeView[V <: FileAttributeView](
       path: Path,
       `type`: Class[V],
       options: LinkOption*
@@ -94,7 +99,7 @@ object Files {
 
   def getFileStore(path: Path): FileStore = ???
 
-  def getOwner(path: Path, options: LinkOption*): UserPrincipal = ???
+  @varargs def getOwner(path: Path, options: LinkOption*): UserPrincipal = ???
 
   private def transformStats[T](path: Path, options: Seq[LinkOption])(
       fallback: => T
@@ -218,19 +223,20 @@ object Files {
 
   def list(dir: Path): JavaStream[String] = ???
 
-  def move(source: Path, target: Path, options: CopyOption*): Path = ???
+  @varargs def move(source: Path, target: Path, options: CopyOption*): Path = ???
 
   def newBufferedReader(path: Path): BufferedReader = ???
 
   def newBufferedReader(path: Path, cs: Charset): BufferedReader = ???
 
-  def newBufferedWriter(path: Path, cs: Charset, options: OpenOption*): BufferedWriter = ???
+  @varargs def newBufferedWriter(path: Path, cs: Charset, options: OpenOption*): BufferedWriter =
+    ???
 
-  def newBufferedWriter(path: Path, options: OpenOption*): BufferedWriter = ???
+  @varargs def newBufferedWriter(path: Path, options: OpenOption*): BufferedWriter = ???
 
-  def newByteChannel(path: Path, options: OpenOption*): SeekableByteChannel = ???
+  @varargs def newByteChannel(path: Path, options: OpenOption*): SeekableByteChannel = ???
 
-  def newByteChannel(
+  @varargs def newByteChannel(
       path: Path,
       options: JavaSet[_ <: OpenOption],
       attrs: FileAttribute[_]*
@@ -245,9 +251,9 @@ object Files {
 
   def newDirectoryStream(dir: Path, glob: String): DirectoryStream[Path] = ???
 
-  def newInputStream(path: Path, options: OpenOption*): InputStream = ???
+  @varargs def newInputStream(path: Path, options: OpenOption*): InputStream = ???
 
-  def newOutputStream(path: Path, options: OpenOption*): OutputStream = ???
+  @varargs def newOutputStream(path: Path, options: OpenOption*): OutputStream = ???
 
   @varargs def notExists(path: Path, options: LinkOption*): Boolean = !exists(path, options: _*)
 
@@ -279,13 +285,13 @@ object Files {
     }
   }
 
-  def readAttributes[A <: BasicFileAttributes](
+  @varargs def readAttributes[A <: BasicFileAttributes](
       path: Path,
       `type`: Class[A],
       options: LinkOption*
   ): A = ???
 
-  def readAttributes[A <: BasicFileAttributes](
+  @varargs def readAttributes[A <: BasicFileAttributes](
       path: Path,
       Sattributes: String,
       options: LinkOption*
@@ -293,7 +299,12 @@ object Files {
 
   def readSymbolicLink(link: Path): Path = ???
 
-  def setAttribute(path: Path, attribute: String, value: AnyRef, options: LinkOption*): Path = ???
+  @varargs def setAttribute(
+      path: Path,
+      attribute: String,
+      value: AnyRef,
+      options: LinkOption*
+  ): Path = ???
 
   def setLastModifiedTime(path: Path, time: FileTime): Path = ???
 
@@ -303,8 +314,8 @@ object Files {
 
   def size(path: Path): Long = fs.Fs.statSync(path.toString).size.toLong
 
-  def walk(start: Path, options: FileVisitOption*): JavaStream[Path]                = ???
-  def walk(start: Path, maxDepth: Int, options: FileVisitOption*): JavaStream[Path] = ???
+  @varargs def walk(start: Path, options: FileVisitOption*): JavaStream[Path]                = ???
+  @varargs def walk(start: Path, maxDepth: Int, options: FileVisitOption*): JavaStream[Path] = ???
 
   def walkFileTree(start: Path, visitor: FileVisitor[_ >: Path]): Path = ???
   def walkFileTree(
@@ -314,12 +325,16 @@ object Files {
       visitor: FileVisitor[_ >: Path]
   ): Path = ???
 
-  def write(path: Path, bytes: Array[Byte], options: OpenOption*): Path = ???
-  def write(
+  @varargs def write(path: Path, bytes: Array[Byte], options: OpenOption*): Path = ???
+  @varargs def write(
       path: Path,
       lines: JavaIterable[_ <: CharSequence],
       cs: Charset,
       options: OpenOption*
-  ): Path                                                                                   = ???
-  def write(path: Path, lines: JavaIterable[_ <: CharSequence], options: OpenOption*): Path = ???
+  ): Path = ???
+  @varargs def write(
+      path: Path,
+      lines: JavaIterable[_ <: CharSequence],
+      options: OpenOption*
+  ): Path = ???
 }
