@@ -5,7 +5,14 @@ import org.scalatest.funsuite.AnyFunSuite
 import java.io.IOException
 import java.nio.charset.Charset
 import java.nio.file.attribute.{FileAttribute, PosixFilePermission, PosixFilePermissions}
-import java.nio.file.{FileAlreadyExistsException, Files, LinkOption, NoSuchFileException, Paths}
+import java.nio.file.{
+  DirectoryNotEmptyException,
+  FileAlreadyExistsException,
+  Files,
+  LinkOption,
+  NoSuchFileException,
+  Paths
+}
 import scala.jdk.CollectionConverters._
 
 class FilesTest extends AnyFunSuite {
@@ -94,7 +101,32 @@ class FilesTest extends AnyFunSuite {
     // TODO: attrs
   }
 
-  ignore("delete(Path)") {}
+  test("delete(Path)") {
+    val tmpFile = Files.createTempFile("deleteme", ".txt")
+    assert(Files.exists(tmpFile))
+    Files.delete(tmpFile)
+    assert(Files.notExists(tmpFile))
+    assertThrows[NoSuchFileException] {
+      Files.delete(tmpFile)
+    }
+
+    val emptyDir = Files.createTempDirectory("deleteme")
+    assert(Files.exists(emptyDir))
+    Files.delete(emptyDir)
+    assert(Files.notExists(emptyDir))
+
+    val nonEmptyDir = Files.createTempDirectory("nonEmpty")
+    Files.createTempFile(nonEmptyDir, "foo", ".txt")
+    assert(Files.exists(nonEmptyDir))
+    assertThrows[DirectoryNotEmptyException] {
+      Files.delete(nonEmptyDir)
+    }
+    assert(Files.exists(nonEmptyDir))
+
+    // todo: symbolic link
+
+    // todo: opened by other process
+  }
 
   ignore("deleteIfExists(Path)") {}
 

@@ -95,7 +95,19 @@ object Files {
     Paths.get(joined)
   }
 
-  def delete(path: Path): Unit = ???
+  def delete(path: Path): Unit = {
+    if (Files.isRegularFile(path)) {
+      fs.Fs.unlinkSync(path.toString)
+    } else if (Files.isDirectory(path)) {
+      try {
+        fs.Fs.rmdirSync(path.toString)
+      } catch {
+        case _: Throwable => throw new DirectoryNotEmptyException(path.toString)
+      }
+    } else if (Files.notExists(path)) {
+      throw new NoSuchFileException(path.toString)
+    }
+  }
 
   def deleteIfExists(path: Path): Boolean = ???
 
