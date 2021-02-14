@@ -67,8 +67,7 @@ class FilesTest extends AnyFunSuite {
 
   test("createTempDirectory(String, FileAttribute[_])") {
     val tempDir = Files.createTempDirectory("foobar")
-    assume(System.getProperty("java.io.tmpdir") != null)
-    assert(tempDir.toString.contains(System.getProperty("java.io.tmpdir")))
+    assert(tempDir.toString.contains("/foobar"))
     assert(Files.exists(tempDir))
 
     // TODO: attrs
