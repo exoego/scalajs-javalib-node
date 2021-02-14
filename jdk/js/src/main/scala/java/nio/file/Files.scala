@@ -17,10 +17,6 @@ import scala.annotation.varargs
 import scala.jdk.CollectionConverters._
 
 object Files {
-  if (System.getProperty("java.io.tmpdir") == null) {
-    val tmpdir = os.OS.tmpdir()
-    System.setProperty("java.io.tmpdir", tmpdir)
-  }
 
   def copy(in: InputStream, target: Path, options: CopyOption*): Long = ???
 
