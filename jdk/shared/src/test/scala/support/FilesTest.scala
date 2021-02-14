@@ -59,8 +59,9 @@ class FilesTest extends AnyFunSuite {
   test("createTempDirectory(Path, String, FileAttribute[_])") {
     val base    = Files.createTempDirectory("more")
     val tempDir = Files.createTempDirectory(base, "foobar")
-    assert("/more[^/]*/foobar".r.findFirstIn(tempDir.toString).isDefined)
+    assert("/more[^/]+/foobar[^/]+$".r.findFirstIn(tempDir.toString).isDefined)
     assert(Files.exists(tempDir))
+    assert(Files.isDirectory(tempDir))
 
     // TODO: attrs
   }
@@ -69,13 +70,29 @@ class FilesTest extends AnyFunSuite {
     val tempDir = Files.createTempDirectory("foobar")
     assert(tempDir.toString.contains("/foobar"))
     assert(Files.exists(tempDir))
+    assert(Files.isDirectory(tempDir))
 
     // TODO: attrs
   }
 
-  test("createTempFile(Path, String, String, FileAttribute[_])") {}
+  test("createTempFile(Path, String, String, FileAttribute[_])") {
+    val base    = Files.createTempDirectory("more")
+    val tmpFile = Files.createTempFile(base, "foobar", ".txt")
+    assert("/more[^/]+/foobar[^/]+\\.txt$".r.findFirstIn(tmpFile.toString).isDefined)
+    assert(Files.exists(tmpFile))
+    assert(Files.isRegularFile(tmpFile))
 
-  test("createTempFile(String, String, FileAttribute[_])") {}
+    // TODO: attrs
+  }
+
+  test("createTempFile(String, String, FileAttribute[_])") {
+    val tmpFile = Files.createTempFile("foobar", ".md")
+    assert("/foobar[^/]+\\.md$".r.findFirstIn(tmpFile.toString).isDefined)
+    assert(Files.exists(tmpFile))
+    assert(Files.isRegularFile(tmpFile))
+
+    // TODO: attrs
+  }
 
   ignore("delete(Path)") {}
 

@@ -15,9 +15,9 @@ import io.scalajs.nodejs.os
 import java.util
 import scala.annotation.varargs
 import scala.jdk.CollectionConverters._
+import scala.util.Random
 
 object Files {
-
   @varargs def copy(in: InputStream, target: Path, options: CopyOption*): Long = ???
 
   def copy(source: Path, out: OutputStream): Long = ???
@@ -57,7 +57,7 @@ object Files {
   }
 
   @varargs def createTempDirectory(prefix: String, attrs: FileAttribute[_]*): Path = {
-    createTempDirectoryInternal(os.OS.tmpdir(), prefix, attrs: _*)
+    createTempDirectoryInternal(defaultTempDir(), prefix, attrs: _*)
   }
 
   private def createTempDirectoryInternal(
@@ -76,9 +76,24 @@ object Files {
       prefix: String,
       suffix: String,
       attrs: FileAttribute[_]*
-  ): Path = ???
+  ): Path = createTempFileInternal(dir.toString, prefix, suffix, attrs: _*)
 
-  @varargs def createTempFile(prefix: String, suffix: String, attrs: FileAttribute[_]*): Path = ???
+  @varargs def createTempFile(prefix: String, suffix: String, attrs: FileAttribute[_]*): Path =
+    createTempFileInternal(defaultTempDir(), prefix, suffix, attrs: _*)
+
+  private def createTempFileInternal(
+      dir: String,
+      prefix: String,
+      suffix: String,
+      attrs: FileAttribute[_]*
+  ): Path = {
+    val random   = Random.between(1000000000000000000L, Long.MaxValue)
+    val suffix2  = if (suffix == null) ".tmp" else suffix
+    val fileName = s"${prefix}${random}${suffix2}"
+    val joined   = path.Path.join(dir, fileName)
+    fs.Fs.writeFileSync(joined, "")
+    Paths.get(joined)
+  }
 
   def delete(path: Path): Unit = ???
 
@@ -342,4 +357,6 @@ object Files {
       lines: JavaIterable[_ <: CharSequence],
       options: OpenOption*
   ): Path = ???
+
+  private def defaultTempDir(): String = os.OS.tmpdir()
 }
