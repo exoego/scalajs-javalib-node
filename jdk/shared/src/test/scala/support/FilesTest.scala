@@ -25,10 +25,10 @@ class FilesTest extends AnyFunSuite {
 
   ignore("createSymbolicLink(Path, Path, FileAttribute[_])") {}
 
-  test("createTempDirectory(Path, String, FileAttribute[_])") {
-    val base    = Paths.get("./")
+  ignore("createTempDirectory(Path, String, FileAttribute[_])") {
+    val base    = Paths.get(System.getProperty("java.io.tmpdir"), "more")
     val tempDir = Files.createTempDirectory(base, "foobar")
-    assert(tempDir.toString.contains("/foobar"))
+    assert(tempDir.toString.contains("/more/foobar"))
     assert(Files.exists(tempDir))
 
     // TODO: attrs
@@ -36,7 +36,7 @@ class FilesTest extends AnyFunSuite {
 
   test("createTempDirectory(String, FileAttribute[_])") {
     val tempDir = Files.createTempDirectory("foobar")
-    assert(tempDir.toString.contains("/foobar"))
+    assert(tempDir.toString.contains(System.getProperty("java.io.tmpdir")))
     assert(Files.exists(tempDir))
 
     // TODO: attrs
