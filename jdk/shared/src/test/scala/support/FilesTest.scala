@@ -231,7 +231,40 @@ class FilesTest extends AnyFunSuite {
     // todo: opened by other process
   }
 
-  ignore("deleteIfExists(Path)") {}
+  test("deleteIfExists(Path)") {
+    val tmpDir = Files.createTempDirectory("d-i-e")
+
+    // non-exist
+    assert(Files.deleteIfExists(noSuchFile) === false)
+
+    // file
+    val file = Files.createFile(tmpDir.resolve("file.txt"))
+    assert(Files.deleteIfExists(file))
+    assert(Files.notExists(file))
+
+    // empty directory
+    val emptyDir = Files.createDirectory(tmpDir.resolve("empty-dir"))
+    assert(Files.deleteIfExists(emptyDir))
+    assert(Files.notExists(emptyDir))
+
+    // non-empty dir
+    assertThrows[DirectoryNotEmptyException] {
+      Files.deleteIfExists(directorySource)
+    }
+    assert(Files.exists(directorySource))
+
+    // symbolic file
+    val file2        = Files.createFile(tmpDir.resolve("2.txt"))
+    val symbolicFile = Files.createSymbolicLink(tmpDir.resolve("3.txt"), file2)
+    assert(Files.deleteIfExists(symbolicFile))
+    assert(Files.notExists(symbolicFile))
+
+    // symbolic dir
+    val dir1        = Files.createDirectory(tmpDir.resolve("sub1"))
+    val symbolicDir = Files.createSymbolicLink(tmpDir.resolve("3sub2"), dir1)
+    assert(Files.deleteIfExists(symbolicDir))
+    assert(Files.notExists(symbolicFile))
+  }
 
   test("exists(Path, LinkOption*)") {
     assert(!Files.exists(noSuchFile))

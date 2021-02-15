@@ -176,7 +176,14 @@ object Files {
     }
   }
 
-  def deleteIfExists(path: Path): Boolean = ???
+  def deleteIfExists(path: Path): Boolean = {
+    if (notExists(path)) {
+      false
+    } else {
+      delete(path)
+      true
+    }
+  }
 
   @varargs def exists(path: Path, options: LinkOption*): Boolean =
     transformStats(path, options)(false)(_ => true)
