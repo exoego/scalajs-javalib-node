@@ -439,7 +439,7 @@ object Files {
       throw new IOException(s"$path is a directory")
     }
     val fd       = fs.Fs.openSync(path.toString, "w")
-    val jsBuffer = lines.asScala.mkString(os.OS.EOL)
+    val jsBuffer = lines.asScala.mkString(start = "", sep = os.OS.EOL, end = os.OS.EOL)
     // TODO: options
     fs.Fs.writeFileSync(
       fd,

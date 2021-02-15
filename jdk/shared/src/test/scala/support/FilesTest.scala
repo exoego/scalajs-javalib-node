@@ -526,6 +526,7 @@ class FilesTest extends AnyFunSuite {
     assert(written === tmpFile)
     assert(Files.readAllLines(written).asScala.toSeq === Seq("abc"))
     Files.write(tmpFile, Array[Byte](100, 101, 102))
+    assert(Files.size(tmpFile) === 3)
     // Overwrite, not append
     assert(Files.readAllLines(written).asScala.toSeq === Seq("def"))
 
@@ -545,6 +546,7 @@ class FilesTest extends AnyFunSuite {
     val written = Files.write(tmpFile, Seq("abc").asJava, utf16le)
     assert(written === tmpFile)
     assert(Files.readAllLines(written, utf16le).asScala.toSeq === Seq("abc"))
+    assert(Files.size(tmpFile) === 8)
   }
   test("write(Path, JavaIterable[_ <: CharSequence], OpenOption*)") {
     val tmpFile = Files.createTempFile("foo", ".txt")
@@ -552,7 +554,9 @@ class FilesTest extends AnyFunSuite {
     val written = Files.write(tmpFile, Seq("abc").asJava)
     assert(written === tmpFile)
     assert(Files.readAllLines(written).asScala.toSeq === Seq("abc"))
+    assert(Files.size(tmpFile) === 4)
     Files.write(tmpFile, Seq("a", "b", "c").asJava)
+    assert(Files.size(tmpFile) === 6)
     // Overwrite, not append
     assert(Files.readAllLines(written).asScala.toSeq === Seq("a", "b", "c"))
 
