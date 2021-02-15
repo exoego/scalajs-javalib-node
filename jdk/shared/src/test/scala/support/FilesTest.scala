@@ -457,7 +457,24 @@ class FilesTest extends AnyFunSuite {
   ignore("walkFileTree(Path, FileVisitor[_ >: Path])") {}
   ignore("walkFileTree(Path, JavaSet[FileVisitOption], maxDepth:Int, FileVisitor[_ >: Path])") {}
 
-  ignore("write(Path, Array[Byte], OpenOption*)") {}
+  test("write(Path, Array[Byte], OpenOption*)") {
+    val tmpFile = Files.createTempFile("foo", ".txt")
+    assert(Files.size(tmpFile) === 0)
+    val written = Files.write(tmpFile, Array[Byte](97, 98, 99))
+    assert(written === tmpFile)
+    assert(Files.readAllLines(written).asScala.toSeq === Seq("abc"))
+    Files.write(tmpFile, Array[Byte](100, 101, 102))
+    // Overwrite, not append
+    assert(Files.readAllLines(written).asScala.toSeq === Seq("def"))
+
+    Files.delete(tmpFile)
+    // Create if not exists
+    Files.write(tmpFile, Array[Byte](97, 98, 99))
+
+    assertThrows[IOException] {
+      Files.write(directory, Array[Byte](97, 98, 99))
+    }
+  }
   ignore("write(Path, JavaIterable[_ <: CharSequence], Charset, OpenOption*)") {}
   ignore("write(Path, JavaIterable[_ <: CharSequence], OpenOption*)") {}
 

@@ -15,6 +15,7 @@ import io.scalajs.nodejs.os
 import java.util
 import scala.annotation.varargs
 import scala.jdk.CollectionConverters._
+import scala.scalajs.js
 import scala.util.Random
 
 object Files {
@@ -368,7 +369,16 @@ object Files {
       visitor: FileVisitor[_ >: Path]
   ): Path = ???
 
-  @varargs def write(path: Path, bytes: Array[Byte], options: OpenOption*): Path = ???
+  @varargs def write(path: Path, bytes: Array[Byte], options: OpenOption*): Path = {
+    if (Files.isDirectory(path)) {
+      throw new IOException(s"$path is a directory")
+    }
+    val fd       = fs.Fs.openSync(path.toString, "w")
+    val jsBuffer = js.typedarray.byteArray2Int8Array(bytes)
+    // TODO: options
+    fs.Fs.writeSync(fd, jsBuffer)
+    path
+  }
   @varargs def write(
       path: Path,
       lines: JavaIterable[_ <: CharSequence],
