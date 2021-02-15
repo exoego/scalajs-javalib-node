@@ -47,7 +47,26 @@ object Files {
     dir
   }
 
-  @varargs def createFile(path: Path, attrs: FileAttribute[_]*): Path = ???
+  @varargs def createFile(path: Path, attrs: FileAttribute[_]*): Path = {
+    // TODO: attrs
+    try {
+      fs.Fs.writeFileSync(
+        path.toString,
+        "",
+        fs.FileAppendOptions(
+          flag = "wx"
+        )
+      )
+    } catch {
+      case _: Throwable =>
+        if (Files.exists(path.getParent)) {
+          throw new FileAlreadyExistsException(path.toString)
+        } else {
+          throw new IOException()
+        }
+    }
+    path
+  }
 
   def createLink(link: Path, existing: Path): Path = ???
 

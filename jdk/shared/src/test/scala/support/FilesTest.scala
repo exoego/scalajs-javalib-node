@@ -57,7 +57,21 @@ class FilesTest extends AnyFunSuite {
     }
   }
 
-  ignore("createFile(Path, FileAttribute[_]*)") {}
+  test("createFile(Path, FileAttribute[_]*)") {
+    val dir  = Files.createTempDirectory("createFile")
+    val file = dir.resolve("foo.txt")
+    assert(Files.notExists(file))
+    assert(Files.createFile(file) === file)
+    assert(Files.exists(file))
+    assertThrows[FileAlreadyExistsException] {
+      Files.createFile(file)
+    }
+
+    val nonExistSubDir = dir.resolve("sub")
+    assertThrows[IOException] {
+      Files.createFile(nonExistSubDir.resolve("bar.txt"))
+    }
+  }
 
   ignore("createLink(Path, Path)") {}
 
