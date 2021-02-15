@@ -48,30 +48,38 @@ class FileInputStream(descriptor: FileDescriptor) extends InputStream {
   }
 
   override def read(): Int = {
+    val buffer = Array[Byte](1)
+    if (read(buffer) == -1) {
+      -1
+    } else {
+      buffer(0)
+    }
+  }
+
+  private var position: Long = 0
+
+  override def read(buffer: Array[Byte], off: Int, len: Int): Int = {
+    if (buffer == null) {
+      throw new NullPointerException
+    }
     openCheck()
-    val buffer     = new Array[Byte](1)
     val bufferSize = buffer.length
-    val singleByte = Buffer.from(buffer.toJSArray.asInstanceOf[js.Array[Int]])
-    val bytesRead = Fs
-      .asInstanceOf[js.Dynamic]
-      .readSync(this.descriptor.internal, singleByte, 0, bufferSize, null)
-      .asInstanceOf[Int]
+    val jsBuffer   = Buffer.alloc(bufferSize)
+    val bytesRead  = Fs.readSync(this.descriptor.internal, jsBuffer, 0, bufferSize, position.toInt)
+    for (i <- buffer.indices) {
+      buffer(i) = jsBuffer(i).toByte
+    }
+    position += bytesRead
     if (bytesRead > 0) {
-      singleByte(0)
+      bytesRead
     } else {
       -1
     }
   }
 
-  override def read(b: Array[Byte], off: Int, len: Int): Int = {
-    if (b == null) {
-      throw new NullPointerException
-    }
-    super.read(b, off, len)
-  }
-
   override def skip(n: Long): Long = {
     if (n < 0) throw new IOException()
+    position += n
     super.skip(n)
   }
 

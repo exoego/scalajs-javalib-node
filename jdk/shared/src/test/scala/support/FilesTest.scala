@@ -2,21 +2,50 @@ package support
 
 import org.scalatest.funsuite.AnyFunSuite
 
-import java.io.IOException
+import java.io._
 import java.nio.charset.Charset
-import java.nio.file.attribute.{FileAttribute, PosixFilePermission, PosixFilePermissions}
-import java.nio.file.{
-  DirectoryNotEmptyException,
-  FileAlreadyExistsException,
-  Files,
-  LinkOption,
-  NoSuchFileException,
-  Paths
-}
+import java.nio.file.attribute.PosixFilePermission
+import java.nio.file._
 import scala.jdk.CollectionConverters._
 
 class FilesTest extends AnyFunSuite {
-  ignore("copy(InputStream, Path, CopyOption*)") {}
+
+  private def using[T <: AutoCloseable](resource: T)(block: T => Unit): Unit = {
+    try {
+      block(resource)
+    } finally {
+      resource.close()
+    }
+  }
+
+  test("copy(InputStream, Path, CopyOption*)") {
+    val sourceFile = Files.createTempFile("foo", ".txt")
+    val tmpDir     = Files.createTempDirectory("foo")
+    using(new FileInputStream(sourceFile.toFile)) { in =>
+      val targetFile = tmpDir.resolve("newFile1.txt")
+      assert(Files.copy(in, targetFile) === 0)
+    }
+
+    Files.write(sourceFile, Seq("abc").asJava)
+    using(new FileInputStream(sourceFile.toFile)) { in =>
+      val targetFile = tmpDir.resolve("newFile2.txt")
+      assert(Files.copy(in, targetFile) === 4)
+      assert(Files.readAllLines(targetFile).asScala === Seq("abc"))
+    }
+
+    assertThrows[IOException] {
+      val closedStream = new FileInputStream(sourceFile.toFile)
+      closedStream.close()
+      Files.copy(closedStream, tmpDir.resolve("empty.txt"))
+    }
+
+    using(new FileInputStream(sourceFile.toFile)) { in =>
+      val targetFile = tmpDir.resolve("newFile1.txt")
+      assertThrows[FileAlreadyExistsException] {
+        Files.copy(in, targetFile)
+      }
+    }
+  }
 
   ignore("copy(Path, OutputStream)") {}
 

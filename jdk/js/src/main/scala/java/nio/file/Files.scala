@@ -19,7 +19,27 @@ import scala.scalajs.js
 import scala.util.Random
 
 object Files {
-  @varargs def copy(in: InputStream, target: Path, options: CopyOption*): Long = ???
+  @varargs def copy(in: InputStream, target: Path, options: CopyOption*): Long = {
+    // TODO: options
+    if (Files.exists(target)) {
+      throw new FileAlreadyExistsException(target.toString)
+    }
+
+    val bytes = new Array[Byte](1024)
+    val fd    = fs.Fs.openSync(target.toString, "w")
+
+    var bytesTotal: Int = 0
+    var bytesRead: Int  = 0
+    while ({
+      bytesRead = in.read(bytes, bytesTotal, bytes.length)
+      bytesRead != -1
+    }) {
+      val jsBuffer = js.typedarray.byteArray2Int8Array(bytes)
+      fs.Fs.writeSync(fd, jsBuffer, offset = 0, length = bytesRead)
+      bytesTotal += bytesRead
+    }
+    bytesTotal
+  }
 
   def copy(source: Path, out: OutputStream): Long = ???
 
