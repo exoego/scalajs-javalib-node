@@ -20,7 +20,50 @@ class FilesTest extends AnyFunSuite {
 
   ignore("copy(Path, OutputStream)") {}
 
-  ignore("copy(Path, Path, CopyOption*)") {}
+  test("copy(Path, Path, CopyOption*)") {
+    // If source is directory, create an empty dir
+    val root        = Files.createTempDirectory("root")
+    val nonEmptyDir = Files.createTempDirectory(root, "nonEmptyDir")
+    Files.createTempFile(nonEmptyDir, "file", ".txt")
+
+    val targetDir = root.resolve("targetDir")
+    assert(Files.copy(nonEmptyDir, targetDir) === targetDir)
+    assert(Files.exists(targetDir))
+    assertThrows[FileAlreadyExistsException] {
+      Files.copy(nonEmptyDir, targetDir)
+    }
+
+    // Copy file
+    val sourceFile = Files.createFile(root.resolve("foo.txt"))
+    Files.write(sourceFile, Seq("abc").asJava)
+    val newFile = root.resolve("newFile.txt")
+    assert(Files.copy(sourceFile, newFile) === newFile)
+    assert(Files.readAllLines(newFile).asScala.toSeq === Seq("abc"))
+    assert(!Files.isSameFile(sourceFile, newFile))
+    assertThrows[FileAlreadyExistsException] {
+      Files.copy(sourceFile, newFile)
+    }
+
+    // Source is symbolic link
+    val symbolicSource = Files.createSymbolicLink(
+      root.resolve("symbolic"),
+      sourceFile
+    )
+    val newFile2 = root.resolve("newFile2.txt")
+    assert(Files.copy(symbolicSource, newFile2) === newFile2)
+    assert(Files.readAllLines(newFile).asScala.toSeq === Seq("abc"))
+    assert(!Files.isSameFile(symbolicSource, newFile2))
+
+    // Fail if source not exists
+    assertThrows[IOException] {
+      Files.copy(root.resolve("not-exist"), root)
+    }
+
+    // Do nothing if same file
+    Seq(sourceFile, root).foreach { path =>
+      Files.copy(path, path)
+    }
+  }
 
   test("createDirectories(Path, FileAttribute[_]*)") {
     val tmpDir = Files.createTempDirectory("createDirectories")
@@ -319,8 +362,13 @@ class FilesTest extends AnyFunSuite {
     assert(Files.isSameFile(noSuchFile, noSuchFile))
     assert(Files.isSameFile(noSuchSubDir, noSuchSubDir))
 
-    assertThrows[NoSuchFileException] {
-      Files.isSameFile(noSuchSubDir, noSuchFile)
+    Seq(noSuchFile, noSuchSubDir).foreach { notExist =>
+      assertThrows[NoSuchFileException] {
+        Files.isSameFile(notExist, directory)
+      }
+      assertThrows[NoSuchFileException] {
+        Files.isSameFile(directory, notExist)
+      }
     }
   }
 

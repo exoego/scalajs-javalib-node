@@ -23,7 +23,23 @@ object Files {
 
   def copy(source: Path, out: OutputStream): Long = ???
 
-  @varargs def copy(source: Path, target: Path, options: CopyOption*): Path = ???
+  @varargs def copy(source: Path, target: Path, options: CopyOption*): Path = {
+    if (Files.exists(target)) {
+      if (Files.isSameFile(source, target)) {
+        // do nothing
+      } else {
+        throw new FileAlreadyExistsException(target.toString)
+      }
+    } else if (Files.notExists(source)) {
+      throw new NoSuchFileException(source.toString)
+    } else if (Files.isDirectory(source)) {
+      Files.createDirectories(target)
+    } else {
+      fs.Fs.copyFileSync(source.toString, target.toString, 0)
+    }
+    // TODO options
+    target
+  }
 
   @varargs def createDirectories(dir: Path, attrs: FileAttribute[_]*): Path = {
     val dirStr = dir.toString
