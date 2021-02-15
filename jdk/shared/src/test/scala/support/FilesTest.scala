@@ -475,7 +475,31 @@ class FilesTest extends AnyFunSuite {
       Files.write(directory, Array[Byte](97, 98, 99))
     }
   }
-  ignore("write(Path, JavaIterable[_ <: CharSequence], Charset, OpenOption*)") {}
-  ignore("write(Path, JavaIterable[_ <: CharSequence], OpenOption*)") {}
+  test("write(Path, JavaIterable[_ <: CharSequence], Charset, OpenOption*)") {
+    val tmpFile = Files.createTempFile("foo", ".txt")
+    assert(Files.size(tmpFile) === 0)
 
+    val utf16le = Charset.forName("UTF-16LE")
+    val written = Files.write(tmpFile, Seq("abc").asJava, utf16le)
+    assert(written === tmpFile)
+    assert(Files.readAllLines(written, utf16le).asScala.toSeq === Seq("abc"))
+  }
+  test("write(Path, JavaIterable[_ <: CharSequence], OpenOption*)") {
+    val tmpFile = Files.createTempFile("foo", ".txt")
+    assert(Files.size(tmpFile) === 0)
+    val written = Files.write(tmpFile, Seq("abc").asJava)
+    assert(written === tmpFile)
+    assert(Files.readAllLines(written).asScala.toSeq === Seq("abc"))
+    Files.write(tmpFile, Seq("a", "b", "c").asJava)
+    // Overwrite, not append
+    assert(Files.readAllLines(written).asScala.toSeq === Seq("a", "b", "c"))
+
+    Files.delete(tmpFile)
+    // Create if not exists
+    Files.write(tmpFile, Seq("abc").asJava)
+
+    assertThrows[IOException] {
+      Files.write(directory, Seq("abc").asJava)
+    }
+  }
 }

@@ -384,12 +384,37 @@ object Files {
       lines: JavaIterable[_ <: CharSequence],
       cs: Charset,
       options: OpenOption*
-  ): Path = ???
+  ): Path = {
+    writeInternal(path, lines, cs.displayName(), options: _*)
+  }
   @varargs def write(
       path: Path,
       lines: JavaIterable[_ <: CharSequence],
       options: OpenOption*
-  ): Path = ???
+  ): Path = {
+    writeInternal(path, lines, "utf8", options: _*)
+  }
+  private def writeInternal(
+      path: Path,
+      lines: JavaIterable[_ <: CharSequence],
+      encoding: String,
+      options: OpenOption*
+  ): Path = {
+    if (Files.isDirectory(path)) {
+      throw new IOException(s"$path is a directory")
+    }
+    val fd       = fs.Fs.openSync(path.toString, "w")
+    val jsBuffer = lines.asScala.mkString(os.OS.EOL)
+    // TODO: options
+    fs.Fs.writeFileSync(
+      fd,
+      jsBuffer,
+      fs.FileAppendOptions(
+        encoding = encoding
+      )
+    )
+    path
+  }
 
   private def defaultTempDir(): String = os.OS.tmpdir()
 }
