@@ -107,9 +107,7 @@ object Files {
   }
 
   def delete(path: Path): Unit = {
-    if (Files.isRegularFile(path)) {
-      fs.Fs.unlinkSync(path.toString)
-    } else if (Files.isSymbolicLink(path)) {
+    if (Files.isRegularFile(path) || Files.isSymbolicLink(path)) {
       fs.Fs.unlinkSync(path.toString)
     } else if (Files.isDirectory(path)) {
       try {
