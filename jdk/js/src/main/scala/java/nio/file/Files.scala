@@ -234,7 +234,11 @@ object Files {
       options: LinkOption*
   ): V = ???
 
-  def getFileStore(path: Path): FileStore = ???
+  def getFileStore(path: Path): FileStore = {
+    throw new UnsupportedOperationException(
+      "Files.getFileStore is not supported since Node.js v14 do not have API to detect file store."
+    )
+  }
 
   @varargs def getOwner(path: Path, options: LinkOption*): UserPrincipal = {
     throw new UnsupportedOperationException(

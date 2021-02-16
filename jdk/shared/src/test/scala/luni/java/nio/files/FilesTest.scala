@@ -331,15 +331,17 @@ class FilesTest extends AnyFunSuite {
 
   ignore("getFileAttributeView[V <: FileAttributeView](Path, Class[V], LinkOption*)") {}
 
-  ignore("getFileStore(Path)") {}
+  test("getFileStore(Path)") {
+    assume(Support_PlatformFile.onNodeJS())
+    assertThrows[UnsupportedOperationException] {
+      Files.getFileStore(fileInSource)
+    }
+  }
 
   test("getOwner(Path, LinkOption*)") {
-    if (Support_PlatformFile.onNodeJS()) {
-      assertThrows[UnsupportedOperationException] {
-        Files.getOwner(fileInSource)
-      }
-    } else {
-      assert(Files.getOwner(fileInSource).getName.nonEmpty)
+    assume(Support_PlatformFile.onNodeJS())
+    assertThrows[UnsupportedOperationException] {
+      Files.getOwner(fileInSource)
     }
   }
 
