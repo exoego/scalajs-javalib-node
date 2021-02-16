@@ -41,7 +41,28 @@ object Files {
     bytesTotal
   }
 
-  def copy(source: Path, out: OutputStream): Long = ???
+  def copy(source: Path, out: OutputStream): Long = {
+    if (Files.notExists(source)) {
+      throw new FileAlreadyExistsException(source.toString)
+    }
+
+    val bufferLength = 1024
+    val buffer       = new js.typedarray.Int8Array(bufferLength)
+    val readFd       = fs.Fs.openSync(source.toString, "r")
+
+    var bytesTotal: Int = 0
+    var bytesRead: Int  = 0
+    while ({
+      bytesRead =
+        fs.Fs.readSync(readFd, buffer, offset = 0, length = bufferLength, position = bytesTotal)
+      bytesRead > 0
+    }) {
+      val bytes = js.typedarray.int8Array2ByteArray(buffer.subarray(0, bytesRead))
+      out.write(bytes)
+      bytesTotal += bytesRead
+    }
+    bytesTotal
+  }
 
   @varargs def copy(source: Path, target: Path, options: CopyOption*): Path = {
     if (Files.exists(target)) {

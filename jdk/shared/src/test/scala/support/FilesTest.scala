@@ -17,6 +17,7 @@ class FilesTest extends AnyFunSuite {
       resource.close()
     }
   }
+  private val utf16leCharset: Charset = Charset.forName("UTF-16LE")
 
   test("copy(InputStream, Path, CopyOption*)") {
     val sourceFile = Files.createTempFile("foo", ".txt")
@@ -47,7 +48,28 @@ class FilesTest extends AnyFunSuite {
     }
   }
 
-  ignore("copy(Path, OutputStream)") {}
+  test("copy(Path, OutputStream)") {
+    val tmpFile = Files.createTempFile("foo", ".txt")
+    using(new FileOutputStream(tmpFile.toFile)) { out =>
+      assert(Files.copy(regularText, out) === 3)
+      assert(Files.readAllLines(tmpFile).asScala.toSeq === Seq("txt"))
+    }
+    // overwrite
+    using(new FileOutputStream(tmpFile.toFile)) { out =>
+      assert(Files.copy(utf16leTxt, out) === 28)
+      assert(
+        Files.readAllLines(tmpFile, utf16leCharset).asScala.toSeq === Seq("\uFEFFUTF-16LE", "日本語")
+      )
+    }
+    // missing source
+    using(new FileOutputStream(tmpFile.toFile)) { out =>
+      assertThrows[IOException] {
+        Files.copy(noSuchFile, out)
+      }
+      assert(Files.size(tmpFile) === 0)
+      assert(Files.readAllLines(tmpFile).asScala.toSeq === Seq())
+    }
+  }
 
   test("copy(Path, Path, CopyOption*)") {
     // If source is directory, create an empty dir
@@ -326,7 +348,7 @@ class FilesTest extends AnyFunSuite {
   private val directorySymlink = Paths.get("jdk/shared/src/test/resources/symlink")
   private val subDirectory     = Paths.get("project/target")
 
-  private val sjisTxt = Paths.get("jdk/shared/src/test/resources/utf16be.txt")
+  private val utf16leTxt = Paths.get("jdk/shared/src/test/resources/utf16be.txt")
 
   private val fileInSource  = Paths.get("jdk/shared/src/test/resources/source/hello.txt")
   private val fileInSymlink = Paths.get("jdk/shared/src/test/resources/symlink/hello.txt")
@@ -539,8 +561,8 @@ class FilesTest extends AnyFunSuite {
   }
 
   test("readAllLines(Path, Charset)") {
-    val utf16le = Charset.forName("UTF-16LE")
-    assert(Files.readAllLines(sjisTxt, utf16le).asScala === Seq("\uFEFFUTF-16LE", "日本語"))
+    val utf16le = utf16leCharset
+    assert(Files.readAllLines(utf16leTxt, utf16le).asScala === Seq("\uFEFFUTF-16LE", "日本語"))
     assert(Files.readAllLines(fileInSymlink, utf16le).asScala !== Seq("foo", "bar", "buz"))
     assertThrows[IOException] {
       Files.readAllLines(directory, utf16le)
@@ -604,7 +626,7 @@ class FilesTest extends AnyFunSuite {
     val tmpFile = Files.createTempFile("foo", ".txt")
     assert(Files.size(tmpFile) === 0)
 
-    val utf16le = Charset.forName("UTF-16LE")
+    val utf16le = utf16leCharset
     val written = Files.write(tmpFile, Seq("abc").asJava, utf16le)
     assert(written === tmpFile)
     assert(Files.readAllLines(written, utf16le).asScala.toSeq === Seq("abc"))
