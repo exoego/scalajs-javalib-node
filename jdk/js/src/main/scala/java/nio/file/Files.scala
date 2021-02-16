@@ -125,7 +125,17 @@ object Files {
     path
   }
 
-  def createLink(link: Path, existing: Path): Path = ???
+  def createLink(link: Path, existing: Path): Path = {
+    if (Files.exists(link)) {
+      throw new FileAlreadyExistsException(link.toString)
+    }
+    try {
+      fs.Fs.linkSync(existing.toString, link.toString)
+    } catch {
+      case e: Throwable => throw new IOException(e.getMessage)
+    }
+    link
+  }
 
   @varargs def createSymbolicLink(link: Path, target: Path, attrs: FileAttribute[_]*): Path = {
     val newPath = link.toString

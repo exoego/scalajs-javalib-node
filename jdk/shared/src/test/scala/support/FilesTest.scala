@@ -167,7 +167,26 @@ class FilesTest extends AnyFunSuite {
     }
   }
 
-  ignore("createLink(Path, Path)") {}
+  test("createLink(Path, Path)") {
+    val baseDir = Files.createTempDirectory("tmp")
+
+    val link1 = baseDir.resolve("link1")
+    assert(Files.createLink(link1, regularText) === link1)
+    assert(Files.exists(link1))
+    assert(Files.isRegularFile(link1))
+    assert(Files.isSymbolicLink(link1) === false)
+    assertThrows[FileAlreadyExistsException] {
+      Files.createLink(link1, regularText)
+    }
+    // TODO: check node number is equal
+
+    // directory
+    val link2 = baseDir.resolve("link2")
+    assertThrows[IOException] {
+      Files.createLink(link2, directorySource)
+    }
+    assert(Files.notExists(link2))
+  }
 
   test("createSymbolicLink(Path, Path, FileAttribute[_])") {
     val sourceDir = Files.createTempDirectory("source")
