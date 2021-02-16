@@ -6,7 +6,7 @@ import support.Support_PlatformFile
 import java.io._
 import java.nio.charset.Charset
 import java.nio.file._
-import java.nio.file.attribute.PosixFilePermission
+import java.nio.file.attribute.{FileOwnerAttributeView, PosixFileAttributeView, PosixFilePermission}
 import scala.jdk.CollectionConverters._
 
 class FilesTest extends AnyFunSuite {
@@ -325,24 +325,24 @@ class FilesTest extends AnyFunSuite {
     assert(Files.exists(deletedSymlinkFile, LinkOption.NOFOLLOW_LINKS))
   }
 
-  ignore("find(Path, Int, BiPredicate[Path, BasicFileAttributes], FileVisitOption*)") {}
-
-  ignore("getAttribute(Path, String, LinkOption*)") {}
-
-  ignore("getFileAttributeView[V <: FileAttributeView](Path, Class[V], LinkOption*)") {}
-
-  test("getFileStore(Path)") {
-    assume(Support_PlatformFile.onNodeJS())
-    assertThrows[UnsupportedOperationException] {
-      Files.getFileStore(fileInSource)
-    }
+  ignore("find(Path, Int, BiPredicate[Path, BasicFileAttributes], FileVisitOption*)") {
+    // Pending due to missing java.util.stream.Stream
   }
 
-  test("getOwner(Path, LinkOption*)") {
-    assume(Support_PlatformFile.onNodeJS())
-    assertThrows[UnsupportedOperationException] {
-      Files.getOwner(fileInSource)
-    }
+  ignore("getAttribute(Path, String, LinkOption*)") {
+    // Node.js have no corresponding API
+  }
+
+  ignore("getFileAttributeView[V <: FileAttributeView](Path, Class[V], LinkOption*)") {
+    // Node.js have no corresponding API
+  }
+
+  ignore("getFileStore(Path)") {
+    // Node.js have no corresponding API
+  }
+
+  ignore("getOwner(Path, LinkOption*)") {
+    // Node.js have no API to get user name associated with a uid
   }
 
   test("getPosixFilePermissions(Path, LinkOption*)") {
@@ -608,11 +608,15 @@ class FilesTest extends AnyFunSuite {
 
   ignore("readSymbolicLink(Path)") {}
 
-  ignore("setAttribute(Path, String, AnyRef, LinkOption*)") {}
+  ignore("setAttribute(Path, String, AnyRef, LinkOption*)") {
+    // Node.js have no API to get user name associated with a uid
+  }
 
   ignore("setLastModifiedTime(Path, FileTime)") {}
 
-  ignore("setOwner(Path, UserPrincipal)") {}
+  ignore("setOwner(Path, UserPrincipal)") {
+    // Node.js have no API to get user name associated with a uid
+  }
 
   ignore("setPosixFilePermissions(Path, JavaSet[PosixFilePermission])") {}
 

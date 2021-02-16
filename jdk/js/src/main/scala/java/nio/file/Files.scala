@@ -234,17 +234,9 @@ object Files {
       options: LinkOption*
   ): V = ???
 
-  def getFileStore(path: Path): FileStore = {
-    throw new UnsupportedOperationException(
-      "Files.getFileStore is not supported since Node.js v14 do not have API to detect file store."
-    )
-  }
+  def getFileStore(path: Path): FileStore = ???
 
-  @varargs def getOwner(path: Path, options: LinkOption*): UserPrincipal = {
-    throw new UnsupportedOperationException(
-      "Files.getOwner is not supported since Node.js v14 do not have API to get username associated with a uid."
-    )
-  }
+  @varargs def getOwner(path: Path, options: LinkOption*): UserPrincipal = ???
 
   private def transformStats[T](path: Path, options: Seq[LinkOption])(
       fallback: => T
