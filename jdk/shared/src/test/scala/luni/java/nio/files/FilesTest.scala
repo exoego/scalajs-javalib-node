@@ -1,11 +1,12 @@
-package support
+package luni.java.nio.files
 
 import org.scalatest.funsuite.AnyFunSuite
+import support.Support_PlatformFile
 
 import java.io._
 import java.nio.charset.Charset
-import java.nio.file.attribute.PosixFilePermission
 import java.nio.file._
+import java.nio.file.attribute.PosixFilePermission
 import scala.jdk.CollectionConverters._
 
 class FilesTest extends AnyFunSuite {
@@ -332,7 +333,15 @@ class FilesTest extends AnyFunSuite {
 
   ignore("getFileStore(Path)") {}
 
-  ignore("getOwner(Path, LinkOption*)") {}
+  test("getOwner(Path, LinkOption*)") {
+    if (Support_PlatformFile.onNodeJS()) {
+      assertThrows[UnsupportedOperationException] {
+        Files.getOwner(fileInSource)
+      }
+    } else {
+      assert(Files.getOwner(fileInSource).getName.nonEmpty)
+    }
+  }
 
   test("getPosixFilePermissions(Path, LinkOption*)") {
     import PosixFilePermission._

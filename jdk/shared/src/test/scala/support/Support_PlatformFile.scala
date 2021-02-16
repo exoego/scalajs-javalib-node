@@ -11,4 +11,8 @@ object Support_PlatformFile {
     }
     pre + platformId + post
   }
+
+  def onNodeJS(): Boolean = {
+    System.getProperty("java.vm.name") == "Scala.js"
+  }
 }

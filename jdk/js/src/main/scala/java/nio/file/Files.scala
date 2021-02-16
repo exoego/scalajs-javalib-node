@@ -236,7 +236,11 @@ object Files {
 
   def getFileStore(path: Path): FileStore = ???
 
-  @varargs def getOwner(path: Path, options: LinkOption*): UserPrincipal = ???
+  @varargs def getOwner(path: Path, options: LinkOption*): UserPrincipal = {
+    throw new UnsupportedOperationException(
+      "Files.getOwner is not supported since Node.js v14 do not have API to get username associated with a uid."
+    )
+  }
 
   private def transformStats[T](path: Path, options: Seq[LinkOption])(
       fallback: => T
