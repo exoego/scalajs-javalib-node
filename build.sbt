@@ -34,7 +34,7 @@ lazy val commonJsSettings = Seq(
     ),
   scalaJSLinkerConfig in Test ~= { _.withModuleKind(ModuleKind.CommonJSModule) },
   libraryDependencies ++= Seq(
-    "net.exoego" %%% "scala-js-nodejs-v14" % "0.12.0"
+    "net.exoego" %%% "scala-js-nodejs-v14" % "0.13.0"
   )
 )
 
