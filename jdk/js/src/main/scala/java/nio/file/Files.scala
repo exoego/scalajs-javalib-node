@@ -426,11 +426,20 @@ object Files {
       path: Path,
       `type`: Class[A],
       options: LinkOption*
-  ): A = ???
+  ): A = {
+    if (Files.notExists(path, options: _*)) {
+      throw new NoSuchFileException(path.toString)
+    } else if (`type` == classOf[BasicFileAttributes]) {
+      val attrs = transformStats(path, options)(???)(stats => new NodeJsFileAttributes(stats))
+      attrs.asInstanceOf[A]
+    } else {
+      throw new UnsupportedOperationException(s"Unsupported class ${`type`}")
+    }
+  }
 
-  @varargs def readAttributes[A <: BasicFileAttributes](
+  @varargs def readAttributes(
       path: Path,
-      Sattributes: String,
+      attributes: String,
       options: LinkOption*
   ): JavaMap[String, AnyRef] = ???
 

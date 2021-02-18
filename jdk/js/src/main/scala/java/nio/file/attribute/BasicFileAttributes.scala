@@ -1,6 +1,7 @@
 package java.nio.file.attribute
 
 import java.util
+import io.scalajs.nodejs.fs.Stats
 
 trait BasicFileAttributes {
   def lastModifiedTime: FileTime
@@ -28,4 +29,26 @@ trait PosixFileAttributes extends BasicFileAttributes {
   def group: GroupPrincipal
 
   def permissions: util.Set[PosixFilePermission]
+}
+
+private[file] class NodeJsFileAttributes(stats: Stats) extends BasicFileAttributes {
+  @inline private def toLong(d: Double): Long = d.toLong
+
+  override def lastModifiedTime: FileTime = FileTime.fromMillis(toLong(stats.mtimeMs))
+
+  override def lastAccessTime: FileTime = FileTime.fromMillis(toLong(stats.atimeMs))
+
+  override def creationTime: FileTime = FileTime.fromMillis(toLong(stats.birthtimeMs))
+
+  override def isRegularFile: Boolean = stats.isFile()
+
+  override def isDirectory: Boolean = stats.isDirectory()
+
+  override def isSymbolicLink: Boolean = stats.isSymbolicLink()
+
+  override def isOther: Boolean = !isRegularFile && !isDirectory && !isSymbolicLink
+
+  override def size: Long = toLong(stats.size)
+
+  override def fileKey: String = s"(dev=${stats.dev},ino=${stats.ino})"
 }

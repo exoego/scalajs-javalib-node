@@ -1,12 +1,11 @@
 package luni.java.nio.files
 
 import org.scalatest.funsuite.AnyFunSuite
-import support.Support_PlatformFile
 
 import java.io._
 import java.nio.charset.Charset
 import java.nio.file._
-import java.nio.file.attribute.{FileOwnerAttributeView, PosixFileAttributeView, PosixFilePermission}
+import java.nio.file.attribute._
 import scala.jdk.CollectionConverters._
 
 class FilesTest extends AnyFunSuite {
@@ -602,7 +601,71 @@ class FilesTest extends AnyFunSuite {
     }
   }
 
-  ignore("readAttributes[A <: BasicFileAttributes](Path, Class[A], LinkOption*)") {}
+  test("readAttributes[A <: BasicFileAttributes](Path, Class[A], LinkOption*)") {
+    // directory and symlink without NOFOLLOW_LINK
+    Seq(directorySource, directorySymlink).foreach { dir =>
+      val dirAttr: BasicFileAttributes = Files.readAttributes(dir, classOf[BasicFileAttributes])
+      assert(dirAttr.isDirectory)
+      assert(!dirAttr.isOther)
+      assert(!dirAttr.isRegularFile)
+      assert(!dirAttr.isSymbolicLink)
+      assert(dirAttr.size() > 0L)
+      assert(dirAttr.fileKey() !== null)
+      assert(dirAttr.creationTime().toMillis > 0L)
+      assert(dirAttr.lastAccessTime().toMillis > 0L)
+      assert(dirAttr.lastModifiedTime().toMillis > 0L)
+      assert(dirAttr.lastAccessTime().compareTo(dirAttr.creationTime()) > 0)
+      assert(dirAttr.lastModifiedTime().compareTo(dirAttr.creationTime()) > 0)
+    }
+
+    // symbolic link with NOFOLLOW_LINK
+    val symAttr: BasicFileAttributes = Files.readAttributes(
+      directorySymlink,
+      classOf[BasicFileAttributes],
+      LinkOption.NOFOLLOW_LINKS
+    )
+    assert(!symAttr.isDirectory)
+    assert(!symAttr.isOther)
+    assert(!symAttr.isRegularFile)
+    assert(symAttr.isSymbolicLink)
+    assert(symAttr.size() > 0L)
+    assert(symAttr.fileKey() !== null)
+    assert(symAttr.creationTime().toMillis > 0L)
+    assert(symAttr.lastAccessTime().toMillis > 0L)
+    assert(symAttr.lastModifiedTime().toMillis > 0L)
+    assert(symAttr.lastAccessTime().compareTo(symAttr.creationTime()) === 0)
+    assert(symAttr.lastModifiedTime().compareTo(symAttr.creationTime()) === 0)
+
+    // files
+    Seq(fileInSource, fileInHidden, fileInSymlink).foreach { file =>
+      Seq(Seq.empty[LinkOption], Seq(LinkOption.NOFOLLOW_LINKS)).foreach { options =>
+        val fileAttr: BasicFileAttributes =
+          Files.readAttributes(file, classOf[BasicFileAttributes], options: _*)
+        assert(!fileAttr.isDirectory)
+        assert(!fileAttr.isOther)
+        assert(fileAttr.isRegularFile)
+        assert(!fileAttr.isSymbolicLink)
+        assert(fileAttr.size() > 0L)
+        assert(fileAttr.fileKey() !== null)
+        assert(fileAttr.creationTime().toMillis > 0L)
+        assert(fileAttr.lastAccessTime().toMillis > 0L)
+        assert(fileAttr.lastModifiedTime().toMillis > 0L)
+        assert(fileAttr.lastAccessTime().compareTo(fileAttr.creationTime()) > 0)
+        assert(fileAttr.lastModifiedTime().compareTo(fileAttr.creationTime()) > 0)
+      }
+    }
+
+    // non-exist
+    assertThrows[IOException] {
+      Files.readAttributes(noSuchFile, classOf[BasicFileAttributes])
+    }
+    assertThrows[IOException] {
+      Files.readAttributes(deletedSymlinkFile, classOf[BasicFileAttributes])
+    }
+    assertThrows[IOException] {
+      Files.readAttributes(fileInDeletedSymlink, classOf[BasicFileAttributes])
+    }
+  }
 
   ignore("readAttributes[A <: BasicFileAttributes](Path, String, LinkOption*)") {}
 
