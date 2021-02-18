@@ -656,18 +656,80 @@ class FilesTest extends AnyFunSuite {
     }
 
     // non-exist
-    assertThrows[IOException] {
-      Files.readAttributes(noSuchFile, classOf[BasicFileAttributes])
-    }
-    assertThrows[IOException] {
-      Files.readAttributes(deletedSymlinkFile, classOf[BasicFileAttributes])
-    }
-    assertThrows[IOException] {
-      Files.readAttributes(fileInDeletedSymlink, classOf[BasicFileAttributes])
+    Seq(noSuchFile, noSuchFile, fileInDeletedSymlink).foreach { nonExist =>
+      assertThrows[IOException] {
+        Files.readAttributes(nonExist, classOf[BasicFileAttributes])
+      }
     }
   }
 
-  ignore("readAttributes[A <: BasicFileAttributes](Path, String, LinkOption*)") {}
+  test("readAttributes(Path, String, LinkOption*)") {
+    // unavailabel attrs
+    assertThrows[IllegalArgumentException] {
+      Files.readAttributes(directory, "").asScala
+    }
+    assertThrows[IllegalArgumentException] {
+      Files.readAttributes(directory, "basic:").asScala
+    }
+    assertThrows[IllegalArgumentException] {
+      Files.readAttributes(directory, "no-such-attribute").asScala
+    }
+    assertThrows[IllegalArgumentException] {
+      Files.readAttributes(directory, "*,no-such-attribute").asScala
+    }
+
+    // unsupported type
+    assertThrows[UnsupportedOperationException] {
+      Files.readAttributes(directory, "unknowntype:size").asScala
+    }
+
+    // directory and symlink without NOFOLLOW_LINK
+    Seq(directorySource, directorySymlink).foreach { dir =>
+      Seq("*", "*,*", "*,size", "basic:*").foreach { attrs =>
+        val dirAttr = Files.readAttributes(dir, attrs).asScala
+        assert(dirAttr("isDirectory") === true)
+        assert(dirAttr("isOther") === false)
+        assert(dirAttr("isRegularFile") === false)
+        assert(dirAttr("isSymbolicLink") === false)
+        assert(dirAttr("size").asInstanceOf[Long] > 0L)
+        assert(dirAttr("fileKey") !== null)
+        assert(dirAttr("creationTime").asInstanceOf[FileTime].toMillis > 0L)
+        assert(dirAttr("lastAccessTime").asInstanceOf[FileTime].toMillis > 0L)
+        assert(dirAttr("lastModifiedTime").asInstanceOf[FileTime].toMillis > 0L)
+      }
+
+      Seq("isDirectory", "basic:isDirectory").foreach { attrs =>
+        val dirAttr = Files.readAttributes(dir, attrs).asScala
+        assert(dirAttr("isDirectory") === true)
+        assert(dirAttr.size === 1)
+      }
+
+      Seq("creationTime,size", "basic:size,creationTime", "basic:size,creationTime").foreach {
+        attrs =>
+          val dirAttr = Files.readAttributes(dir, attrs).asScala
+          assert(dirAttr("size").asInstanceOf[Long] > 0L)
+          assert(dirAttr("creationTime").asInstanceOf[FileTime].toMillis > 0L)
+          assert(dirAttr.size === 2)
+      }
+    }
+
+    // symbolic link with NOFOLLOW_LINK
+    val symAttr = Files
+      .readAttributes(
+        directorySymlink,
+        "*",
+        LinkOption.NOFOLLOW_LINKS
+      )
+      .asScala
+    assert(symAttr("isDirectory") === false)
+
+    // non-exist
+    Seq(noSuchFile, noSuchFile, fileInDeletedSymlink).foreach { nonExist =>
+      assertThrows[IOException] {
+        Files.readAttributes(nonExist, "*")
+      }
+    }
+  }
 
   ignore("readSymbolicLink(Path)") {}
 

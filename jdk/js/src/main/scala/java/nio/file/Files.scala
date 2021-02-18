@@ -14,6 +14,7 @@ import io.scalajs.nodejs.os
 
 import java.util
 import scala.annotation.varargs
+import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.scalajs.js
 import scala.util.Random
@@ -437,11 +438,52 @@ object Files {
     }
   }
 
+  private lazy val basicFileAttributesKeys = Set(
+    "isDirectory",
+    "isOther",
+    "isRegularFile",
+    "isSymbolicLink",
+    "size",
+    "fileKey",
+    "creationTime",
+    "lastAccessTime",
+    "lastModifiedTime"
+  )
+
   @varargs def readAttributes(
       path: Path,
       attributes: String,
       options: LinkOption*
-  ): JavaMap[String, AnyRef] = ???
+  ): JavaMap[String, Any] = {
+    if (attributes.contains(":") && !attributes.startsWith("basic:")) {
+      val unsupportedType = attributes.substring(0, attributes.indexOf(":"))
+      throw new UnsupportedOperationException(s"View '${unsupportedType}' not available")
+    }
+
+    val attrs = readAttributes(path, classOf[BasicFileAttributes], options: _*)
+    val keys = {
+      val keySet  = attributes.substring(attributes.indexOf(':') + 1).split(",").toSet
+      val keyDiff = keySet.diff(basicFileAttributesKeys) - "*"
+      if (keyDiff.nonEmpty) {
+        throw new IllegalArgumentException(s"Unknown attributes `${keyDiff.mkString(",")}`")
+      } else if (keySet.contains("*")) {
+        basicFileAttributesKeys
+      } else {
+        keySet
+      }
+    }
+    val mapBuilder = mutable.Map[String, Any]()
+    if (keys("isDirectory")) mapBuilder.put("isDirectory", attrs.isDirectory)
+    if (keys("isOther")) mapBuilder.put("isOther", attrs.isOther)
+    if (keys("isRegularFile")) mapBuilder.put("isRegularFile", attrs.isRegularFile)
+    if (keys("isSymbolicLink")) mapBuilder.put("isSymbolicLink", attrs.isSymbolicLink)
+    if (keys("size")) mapBuilder.put("size", attrs.size)
+    if (keys("fileKey")) mapBuilder.put("fileKey", attrs.fileKey)
+    if (keys("creationTime")) mapBuilder.put("creationTime", attrs.creationTime)
+    if (keys("lastAccessTime")) mapBuilder.put("lastAccessTime", attrs.lastAccessTime)
+    if (keys("lastModifiedTime")) mapBuilder.put("lastModifiedTime", attrs.lastModifiedTime)
+    mapBuilder.asJava
+  }
 
   def readSymbolicLink(link: Path): Path = ???
 
