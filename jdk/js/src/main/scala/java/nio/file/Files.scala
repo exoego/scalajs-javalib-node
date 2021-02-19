@@ -428,10 +428,10 @@ object Files {
       `type`: Class[A],
       options: LinkOption*
   ): A = {
-    if (Files.notExists(path, options: _*)) {
-      throw new NoSuchFileException(path.toString)
-    } else if (`type` == classOf[BasicFileAttributes]) {
-      val attrs = transformStats(path, options)(???)(stats => new NodeJsFileAttributes(stats))
+    if (`type` == classOf[BasicFileAttributes]) {
+      val attrs = transformStats(path, options)(throw new NoSuchFileException(path.toString))(
+        stats => new NodeJsFileAttributes(stats)
+      )
       attrs.asInstanceOf[A]
     } else {
       throw new UnsupportedOperationException(s"Unsupported class ${`type`}")
@@ -505,13 +505,82 @@ object Files {
   @varargs def walk(start: Path, options: FileVisitOption*): JavaStream[Path]                = ???
   @varargs def walk(start: Path, maxDepth: Int, options: FileVisitOption*): JavaStream[Path] = ???
 
-  def walkFileTree(start: Path, visitor: FileVisitor[_ >: Path]): Path = ???
+  def walkFileTree(start: Path, visitor: FileVisitor[_ >: Path]): Path = {
+    walkFileTree(start, util.Collections.emptySet(), Int.MaxValue, visitor)
+  }
   def walkFileTree(
       start: Path,
       options: JavaSet[FileVisitOption],
       maxDepth: Int,
       visitor: FileVisitor[_ >: Path]
-  ): Path = ???
+  ): Path = {
+    import FileVisitResult._
+    if (maxDepth < 0) {
+      throw new IllegalArgumentException
+    }
+
+    val linkOptions = if (options.contains(FileVisitOption.FOLLOW_LINKS)) {
+      Seq.empty
+    } else {
+      Seq(LinkOption.NOFOLLOW_LINKS)
+    }
+
+    def readAttr(path: Path): BasicFileAttributes =
+      Files.readAttributes(path, classOf[BasicFileAttributes], linkOptions: _*)
+
+    def visit(start: Path): FileVisitResult = {
+      if (isSymbolicLink(start) || isRegularFile(start)) {
+        visitFile(start)
+      } else if (isDirectory(start)) {
+        visitDirectory(start)
+      } else {
+        CONTINUE
+      }
+    }
+
+    def visitFile(start: Path): FileVisitResult = {
+      val result = try {
+        visitor.visitFile(start, readAttr(start))
+      } catch {
+        case ioe: IOException =>
+          println(start)
+          println(ioe)
+          visitor.visitFileFailed(start, ioe)
+      }
+      result match {
+        case SKIP_SUBTREE => CONTINUE
+        case otherwise    => otherwise
+      }
+    }
+
+    def visitDirectory(start: Path): FileVisitResult = {
+      visitor.preVisitDirectory(start, readAttr(start)) match {
+        case TERMINATE =>
+          TERMINATE
+        case SKIP_SUBTREE =>
+          visitor.postVisitDirectory(start, null)
+          CONTINUE
+        case SKIP_SIBLINGS =>
+          SKIP_SIBLINGS
+        case CONTINUE =>
+          val startString = start.toString
+          val startPath   = Paths.get(startString)
+          var active      = true
+          for (entryName <- fs.Fs.readdirSync(startString) if active) {
+            val nioPath = startPath.resolve(entryName)
+            visit(nioPath) match {
+              case TERMINATE               => return TERMINATE
+              case SKIP_SIBLINGS           => active = false
+              case SKIP_SUBTREE | CONTINUE =>
+            }
+          }
+          visitor.postVisitDirectory(start, null)
+      }
+    }
+
+    visit(start)
+    start
+  }
 
   @varargs def write(path: Path, bytes: Array[Byte], options: OpenOption*): Path = {
     if (Files.isDirectory(path)) {

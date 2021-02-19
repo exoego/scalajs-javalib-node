@@ -7,6 +7,7 @@ import java.nio.charset.Charset
 import java.nio.file._
 import java.nio.file.attribute._
 import scala.jdk.CollectionConverters._
+import scala.collection.mutable.ListBuffer
 
 class FilesTest extends AnyFunSuite {
 
@@ -373,6 +374,7 @@ class FilesTest extends AnyFunSuite {
   }
 
   private val directory        = Paths.get("project")
+  private val resourceRoot     = Paths.get("jdk/shared/src/test/resources")
   private val directorySource  = Paths.get("jdk/shared/src/test/resources/source")
   private val directorySymlink = Paths.get("jdk/shared/src/test/resources/symlink")
   private val subDirectory     = Paths.get("project/target")
@@ -759,7 +761,39 @@ class FilesTest extends AnyFunSuite {
   ignore("walk(Path, FileVisitOption*)") {}
   ignore("walk(Path, Int, FileVisitOption*)") {}
 
-  ignore("walkFileTree(Path, FileVisitor[_ >: Path])") {}
+  test("walkFileTree(Path, FileVisitor[_ >: Path])") {
+    val fileCollector = new FileCollector()
+    assert(Files.walkFileTree(fileInSource, fileCollector) === fileInSource)
+    assert(fileCollector.collectFiles() === Seq(fileInSource))
+
+    val fileCollector2 = new FileCollector()
+    assert(Files.walkFileTree(rrr.getParent, fileCollector2) === rrr.getParent)
+    assert(fileCollector2.collectFiles() === Seq(rrr, rwxrwxrwx))
+
+    val fileCollector3 = new FileCollector()
+    assert(Files.walkFileTree(resourceRoot, fileCollector3) === resourceRoot)
+    // order not guaranteed
+    assert(
+      fileCollector3.collectFiles().map(_.toString).toSet === Set(
+        fileInHidden,
+        directorySymlink,
+        regularText,
+        fileInSource,
+        deletedSymlinkFile,
+        utf16leTxt,
+        symlinkText,
+        rrr,
+        rwxrwxrwx
+      ).map(_.toString)
+    )
+
+    // todo: file TERMINATE
+    // todo: file SKIP_SUBTREE
+    // todo: file SKIP_SIBLINGS
+    // todo: dir TERMINATE
+    // todo: dir SKIP_SUBTREE
+    // todo: dir SKIP_SIBLINGS
+  }
   ignore("walkFileTree(Path, JavaSet[FileVisitOption], maxDepth:Int, FileVisitor[_ >: Path])") {}
 
   test("write(Path, Array[Byte], OpenOption*)") {
@@ -811,4 +845,20 @@ class FilesTest extends AnyFunSuite {
       Files.write(directory, Seq("abc").asJava)
     }
   }
+}
+
+private class FileCollector extends SimpleFileVisitor[Path] {
+  private val buffer: ListBuffer[Path] = ListBuffer.empty
+
+  override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
+    buffer.addOne(file)
+    FileVisitResult.CONTINUE
+  }
+
+  override def visitFileFailed(file: Path, exc: IOException): FileVisitResult = {
+    println(s"failed: ${file}")
+    super.visitFileFailed(file, exc)
+  }
+
+  def collectFiles(): Seq[Path] = buffer.toSeq
 }
