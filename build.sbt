@@ -7,6 +7,7 @@ val scala213Ver     = "2.13.4"
 val selfVersion     = "0.1-SNAPSHOT"
 
 lazy val commonSettings = Seq(
+  parallelExecution in Test := false,
   description := "Attempt to implement Java standard libary for Scala.js on top of Node.js",
   version := selfVersion,
   organization := "net.exoego",
