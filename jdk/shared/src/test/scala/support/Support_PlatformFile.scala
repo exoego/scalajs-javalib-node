@@ -1,7 +1,9 @@
 package support
 
-object Support_PlatformFile {
+trait Support_PlatformFile {
   private var platformId: String = _
+
+  val isScalaJS = System.getProperty("java.vm.name") == "Scala.js"
 
   def getNewPlatformFile(pre: String, post: String): String = {
     if (platformId == null) {

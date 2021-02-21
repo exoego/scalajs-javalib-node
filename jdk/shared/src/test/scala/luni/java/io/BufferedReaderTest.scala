@@ -17,11 +17,11 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     }
   }
 
-  ignore("readLine_IgnoresEbcdic85Characters") {
+  test("readLine_IgnoresEbcdic85Characters") {
     assertLines("A\u0085B", "A\u0085B")
   }
 
-  ignore("readLine_Separators") {
+  test("readLine_Separators") {
     assertLines("A\nB\nC", "A", "B", "C")
     assertLines("A\rB\rC", "A", "B", "C")
     assertLines("A\r\nB\r\nC", "A", "B", "C")
@@ -43,15 +43,15 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     assert(bufferedReader.readLine == null)
   }
 
-  ignore("ConstructorLjava_io_Reader") {
+  test("ConstructorLjava_io_Reader") {
     assert(true, "Used in tests")
   }
 
-  ignore("ConstructorLjava_io_ReaderI") {
+  test("ConstructorLjava_io_ReaderI") {
     assert(true, "Used in tests")
   }
 
-  ignore("close") {
+  test("close") {
     br = new BufferedReader(new StringReader(testString))
     br.close()
     assertThrows[IOException] {
@@ -59,7 +59,7 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     }
   }
 
-  ignore("markI") {
+  test("markI") {
     br = new BufferedReader(new StringReader(testString))
     br.skip(500)
     br.mark(1000)
@@ -126,12 +126,12 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     reader.close()
   }
 
-  ignore("markSupported") {
+  test("markSupported") {
     br = new BufferedReader(new StringReader(testString))
     assert(br.markSupported)
   }
 
-  ignore("read") {
+  test("read") {
     br = new BufferedReader(new StringReader(testString))
     val r = br.read
     assert(testString.charAt(0) == r)
@@ -153,11 +153,11 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
   }
 
   // FIXME: Issue in CharArrayReader ?
-  ignore("regression test for HARMONY-841") {
+  test("regression test for HARMONY-841") {
     assert(new BufferedReader(new CharArrayReader(new Array[Char](5), 1, 0), 2).read == -1)
   }
 
-  ignore("read$CII") {
+  test("read$CII") {
     val ca    = new Array[Char](2)
     var toRet = new BufferedReader(new StringReader(new String(new Array[Byte](0))))
     assertThrows[NullPointerException] {
@@ -238,7 +238,7 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     }
   }
 
-  ignore("read_$CII_Exception") {
+  test("read_$CII_Exception") {
     br = new BufferedReader(new StringReader(testString))
     val nullCharArray: Array[Char] = null
     val charArray                  = testString.toCharArray
@@ -285,18 +285,18 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     }
   }
 
-  ignore("readLine") {
+  test("readLine") {
     br = new BufferedReader(new StringReader(testString))
     val r = br.readLine
     assert("Test_All_Tests" == r)
   }
 
-  ignore("ready") {
+  test("ready") {
     br = new BufferedReader(new StringReader(testString))
     assert(br.ready)
   }
 
-  ignore("reset") {
+  test("reset") {
     br = new BufferedReader(new StringReader(testString))
     br.skip(500)
     br.mark(900)
@@ -313,7 +313,7 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     }
   }
 
-  ignore("reset_IOException") {
+  test("reset_IOException") {
     val expected = Array[Int]('1', '2', '3', '4', '5', '6', '7', '8', '9', '0', -1)
     br = new BufferedReader(new StringReader("1234567890"), 9)
     br.mark(9)
@@ -337,7 +337,7 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     }
   }
 
-  ignore("skipJ") {
+  test("skipJ") {
     br = new BufferedReader(new StringReader(testString))
     br.skip(500)
     val buf = new Array[Char](testString.length)

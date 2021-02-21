@@ -1,12 +1,10 @@
 package luni.java.net
 
 import java.net.{MalformedURLException, URI, URISyntaxException}
-
 import org.scalatest.funsuite.AnyFunSuite
+import support.Support_PlatformFile
 
-class URITest extends AnyFunSuite {
-
-  private val isScalaJS = System.getProperty("java.vm.name") == "Scala.js"
+class URITest extends AnyFunSuite with Support_PlatformFile {
 
   private var uris: Array[URI] = null
 
@@ -74,7 +72,7 @@ class URITest extends AnyFunSuite {
     uris
   }
 
-  ignore("ConstructorLjava_lang_String") {
+  test("ConstructorLjava_lang_String") {
     val constructorTests = Array[String](
       "http://user@www.google.com:45/search?q=helpinfo#somefragment",         // http with authority, query and fragment
       "ftp://ftp.is.co.za/rfc/rfc1808.txt",                                   // ftp
@@ -178,14 +176,14 @@ class URITest extends AnyFunSuite {
     }
   }
 
-  ignore("Regression test for HARMONY-23") {
+  test("Regression test for HARMONY-23") {
     val e = intercept[URISyntaxException] {
       new URI("%3")
     }
     assert(isScalaJS || 0 == e.getIndex)
   }
 
-  ignore("Regression test for HARMONY-25") {
+  test("Regression test for HARMONY-25") {
     // if port value is negative, the authority should be considered registry-based.
     var uri = new URI("http://host:-8096/path/index.html")
     assert(-1 == uri.getPort)
@@ -202,7 +200,7 @@ class URITest extends AnyFunSuite {
     }
   }
 
-  ignore("URI_String") {
+  test("URI_String") {
     val e = intercept[URISyntaxException] {
       new URI(":abc@mymail.com")
     }
@@ -219,7 +217,7 @@ class URITest extends AnyFunSuite {
     assert(isScalaJS || 0 == e2.getIndex)
   }
 
-  ignore("ConstructorLjava_lang_StringLjava_lang_StringLjava_lang_String") {
+  test("ConstructorLjava_lang_StringLjava_lang_StringLjava_lang_String") {
     val uri = new URI("mailto", "mduerst@ifi.unizh.ch", null)
     assert(uri.getUserInfo == null)
     assert(uri.getHost == null)
@@ -245,7 +243,7 @@ class URITest extends AnyFunSuite {
   }
 
   // check for URISyntaxException for invalid Server Authority
-  ignore(
+  test(
     "ConstructorLjava_lang_StringLjava_lang_StringLjava_lang_StringILjava_lang_StringLjava_lang_StringLjava_lang_String"
   ) {
     construct1("http", "user", "host\u00DFname", -1, "/file", "query", "fragment") // unicode chars in host name
@@ -315,7 +313,7 @@ class URITest extends AnyFunSuite {
     }
   }
 
-  ignore("ConstructorLjava_lang_StringLjava_lang_StringLjava_lang_StringLjava_lang_String") {
+  test("ConstructorLjava_lang_StringLjava_lang_StringLjava_lang_StringLjava_lang_String") {
     assertThrows[URISyntaxException] {
       new URI("http", "www.joe.com", "relative", "jimmy")
     }
@@ -346,7 +344,7 @@ class URITest extends AnyFunSuite {
     }
   }
 
-  ignore(
+  test(
     "ConstructorLjava_lang_StringLjava_lang_StringLjava_lang_StringLjava_lang_StringLjava_lang_String"
   ) {
     assertThrows[URISyntaxException] {
@@ -370,7 +368,7 @@ class URITest extends AnyFunSuite {
 //    assert("ht12-3+tp:///p%23a%25E2%2582%25ACth?q%5Eu%2525ery#f/r%C3%9Fag" == uri.toASCIIString)
   }
 
-  ignore("fiveArgConstructor") {
+  test("fiveArgConstructor") {
     var uri = new URI("ftp", "[0001:1234::0001]", "/dir1/dir2", "query", "frag")
     assert("[0001:1234::0001]" == uri.getHost)
 
@@ -384,7 +382,7 @@ class URITest extends AnyFunSuite {
     }
   }
 
-  ignore("compareToLjava_lang_Object") {
+  test("compareToLjava_lang_Object") {
     val compareToData = Array[(String, String, String)](
       // scheme tests
       ("http:test", "", ">"),            // scheme null, scheme not null
@@ -444,7 +442,7 @@ class URITest extends AnyFunSuite {
     }
   }
 
-  ignore("compareTo2") {
+  test("compareTo2") {
     // test URIs with host names with different casing
     var uri  = new URI("http://AbC.cOm/root/news")
     var uri2 = new URI("http://aBc.CoM/root/news")
@@ -461,13 +459,13 @@ class URITest extends AnyFunSuite {
     assert(uri2.compareTo(uri) < 0)
   }
 
-  ignore("createLjava_lang_String") {
+  test("createLjava_lang_String") {
     assertThrows[IllegalArgumentException] {
       URI.create("a scheme://reg/")
     }
   }
 
-  ignore("equalsLjava_lang_Object") {
+  test("equalsLjava_lang_Object") {
     val equalsData = Array[(String, String, Boolean)](
       ("", "", true), // null frags
       ("/path", "/path#frag", false),
@@ -519,7 +517,7 @@ class URITest extends AnyFunSuite {
     }
   }
 
-  ignore("equals2") {
+  test("equals2") {
     var uri = new URI("http:///~/dictionary")
     var uri2 =
       new URI(uri.getScheme, uri.getAuthority, uri.getPath(), uri.getQuery, uri.getFragment)
@@ -539,7 +537,7 @@ class URITest extends AnyFunSuite {
     assert(uri2 == uri)
   }
 
-  ignore("getAuthority") {
+  test("getAuthority") {
     val getAuthorityResults = Array(
       "user` info@host",
       "user\u00DF\u00A3info@host:80",
@@ -570,7 +568,7 @@ class URITest extends AnyFunSuite {
     assert(new URI(null, null, null, 127, null, null, null).getAuthority == null)
   }
 
-  ignore("getAuthority2: tests for URIs with empty string authority component") {
+  test("getAuthority2: tests for URIs with empty string authority component") {
     var uri = new URI("file:///tmp/")
     assert(uri.getAuthority == null)
     assert(uri.getHost == null)
@@ -601,7 +599,7 @@ class URITest extends AnyFunSuite {
     }
   }
 
-  ignore("getFragment") {
+  test("getFragment") {
     val getFragmentResults = Array(
       "fr^ ag",
       "fr\u00E4\u00E8g",
@@ -626,7 +624,7 @@ class URITest extends AnyFunSuite {
     }
   }
 
-  ignore("getHost") {
+  test("getHost") {
     val getHostResults = Array(
       "host",
       "host",
@@ -650,7 +648,7 @@ class URITest extends AnyFunSuite {
     }
   }
 
-  ignore("getPath") {
+  test("getPath") {
     val getPathResults = Array(
       "/a path",
       "/a\u20ACpath",
@@ -674,7 +672,7 @@ class URITest extends AnyFunSuite {
     }
   }
 
-  ignore("getPort") {
+  test("getPort") {
     val getPortResults = Array(-1, 80, 0, /*80, -1,*/ 80, 81, 0, -1, -1, -1, -1, -1, -1, -1)
     (getUris zip getPortResults).foreach {
       case (uri, expected) =>
@@ -682,7 +680,7 @@ class URITest extends AnyFunSuite {
     }
   }
 
-  ignore("getPort2: if port value is negative, the authority should be consider registry based.") {
+  test("getPort2: if port value is negative, the authority should be consider registry based.") {
     var uri = new URI("http://myhost:-8096/site/index.html")
     assert(-1 == uri.getPort)
     assert(uri.getHost == null)
@@ -698,7 +696,7 @@ class URITest extends AnyFunSuite {
     }
   }
 
-  ignore("getQuery") {
+  test("getQuery") {
     val getQueryResults = Array(
       "qu` ery",
       "qu\u00A9\u00AEery",
@@ -722,7 +720,7 @@ class URITest extends AnyFunSuite {
     }
   }
 
-  ignore("getRawAuthority") {
+  test("getRawAuthority") {
     val getRawAuthorityResults = Array(
       "user%60%20info@host",
       "user%C3%9F%C2%A3info@host:80",
@@ -771,7 +769,7 @@ class URITest extends AnyFunSuite {
     }
   }
 
-  ignore("getRawPath") {
+  test("getRawPath") {
     val getRawPathResults = Array(
       "/a%20path",
       "/a%E2%82%ACpath",
@@ -795,7 +793,7 @@ class URITest extends AnyFunSuite {
     }
   }
 
-  ignore("getRawQuery") {
+  test("getRawQuery") {
     val getRawQueryResults = Array(
       "qu%60%20ery",
       "qu%C2%A9%C2%AEery",
@@ -844,7 +842,7 @@ class URITest extends AnyFunSuite {
     }
   }
 
-  ignore("getRawUserInfo") {
+  test("getRawUserInfo") {
     val getRawUserInfoResults = Array(
       "user%60%20info",
       "user%C3%9F%C2%A3info",
@@ -868,7 +866,7 @@ class URITest extends AnyFunSuite {
     }
   }
 
-  ignore("getScheme") {
+  test("getScheme") {
     val getSchemeResults = Array(
       "http",
       "http",
@@ -892,7 +890,7 @@ class URITest extends AnyFunSuite {
     }
   }
 
-  ignore("getSchemeSpecificPart") {
+  test("getSchemeSpecificPart") {
     val getSspResults = Array(
       "//user` info@host/a path?qu` ery",
       "//user\u00DF\u00A3info@host:80/a\u20ACpath?qu\u00A9\u00AEery",
@@ -916,7 +914,7 @@ class URITest extends AnyFunSuite {
     }
   }
 
-  ignore("getUserInfo") {
+  test("getUserInfo") {
     val getUserInfoResults = Array(
       "user` info",
       "user\u00DF\u00A3info",
@@ -940,7 +938,7 @@ class URITest extends AnyFunSuite {
     }
   }
 
-  ignore("hashCode") {
+  test("hashCode") {
     val hashCodeData = Array[(String, String, Boolean)](
       ("", "", true), // null frags
       ("/path", "/path#frag", false),
@@ -991,7 +989,7 @@ class URITest extends AnyFunSuite {
     }
   }
 
-  ignore("isAbsolute") {
+  test("isAbsolute") {
     val isAbsoluteData = Array[(String, Boolean)](
       ("mailto:user@ca.ibm.com", true),
       ("urn:isbn:123498989h", true),
@@ -1015,7 +1013,7 @@ class URITest extends AnyFunSuite {
     }
   }
 
-  ignore("isOpaque") {
+  test("isOpaque") {
     val isOpaqueData = Array[(String, Boolean)](
       ("mailto:user@ca.ibm.com", true),
       ("urn:isbn:123498989h", true),
@@ -1039,7 +1037,7 @@ class URITest extends AnyFunSuite {
     }
   }
 
-  ignore("normalize") {
+  test("normalize") {
     val normalizeData = Array[(String, String)](
       // normal
       ("/", "/"),
@@ -1119,7 +1117,7 @@ class URITest extends AnyFunSuite {
     }
   }
 
-  ignore("normalize2: windows drive letter") {
+  test("normalize2: windows drive letter") {
     val uri1 = new URI("file:/D:/one/two/../../three")
     val uri2 = uri1.normalize
     assert("file:/D:/three" == uri2.toString)
@@ -1128,7 +1126,7 @@ class URITest extends AnyFunSuite {
     assert("/D:/three" == uri2.getRawSchemeSpecificPart)
   }
 
-  ignore("normalize3: return same URI if it has a normalized path already") {
+  test("normalize3: return same URI if it has a normalized path already") {
     var uri1 = new URI("http://host/D:/one/two/three")
     var uri2 = uri1.normalize
     assert(uri1 eq uri2)
@@ -1138,7 +1136,7 @@ class URITest extends AnyFunSuite {
     assert(uri1 eq uri2)
   }
 
-  ignore("parseServerAuthority") {
+  test("parseServerAuthority") {
     // registry based uris
     val uris = Array[URI](
       // port number not digits
@@ -1222,7 +1220,7 @@ class URITest extends AnyFunSuite {
     assert(URI.create("file://C:/1.txt").parseServerAuthority != null)
   }
 
-  ignore("relativizeLjava_net_URI") {
+  test("relativizeLjava_net_URI") {
     val relativizeData = Array[(String, String, String)](
       // 1st is base, 2nd is the one to relativize, 3rd is expected
       ("http://www.google.com/dir1/dir2", "mailto:test", "mailto:test"), // rel =
@@ -1284,7 +1282,7 @@ class URITest extends AnyFunSuite {
     assert(new URI("file:///~/first") == b.relativize(a))
   }
 
-  ignore("relativize2") {
+  test("relativize2") {
     var a = new URI("http://host/dir")
     var b = new URI("http://host/dir/file?query")
 // FIXME
@@ -1322,7 +1320,7 @@ class URITest extends AnyFunSuite {
     assert(relative.getScheme == null)
   }
 
-  ignore("resolveLjava_net_URI") {
+  test("resolveLjava_net_URI") {
     val resolveData = Array[(String, String, String)](
       // authority in given URI
       (
@@ -1369,7 +1367,7 @@ class URITest extends AnyFunSuite {
     }
   }
 
-  ignore("resolve2") {
+  test("resolve2") {
     val uri1 = new URI("file:/D:/one/two/three")
     val uri2 = uri1.resolve(new URI(".."))
     assert("file:/D:/one/" == uri2.toString)
@@ -1403,7 +1401,7 @@ class URITest extends AnyFunSuite {
     }
   }
 
-  ignore("toASCIIString2") {
+  test("toASCIIString2") {
     val toASCIIStringData = Array[String](
       "http://www.test.com/\u00DF/dir/",
       "http://www.test.com/\u20AC/dir",
@@ -1450,7 +1448,7 @@ class URITest extends AnyFunSuite {
     }
   }
 
-  ignore("toURL") {
+  test("toURL") {
     assume(!isScalaJS, "URI.toURL is not implemented yet")
     val absoluteUrisCanBeUrl = Array[String](
       "mailto:noreply@apache.org",
