@@ -41,8 +41,7 @@ class FileInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with Suppo
     is.close()
   }
 
-  // TODO: FileDescriptor
-  ignore("ConstructorLjava_io_FileDescriptor") {
+  test("ConstructorLjava_io_FileDescriptor") {
     val fos = new FileOutputStream(fileName)
     val fis = new FileInputStream(fos.getFD)
     fos.close()

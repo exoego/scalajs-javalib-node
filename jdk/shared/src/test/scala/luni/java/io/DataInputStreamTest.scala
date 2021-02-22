@@ -269,6 +269,7 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
 //    assert(DataInputStream.readUTF(dis) === unihw)
   }
 
+  // TODO: DataInputStream.readUTF is not implemented in Scala-js
 //  ignore("readUTFLjava_io_DataInput: Regression test for HARMONY-5336") {
 //    new TestDataInputStream().readUTF
 //  }

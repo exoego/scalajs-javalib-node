@@ -44,12 +44,12 @@ class FileReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     assert(" After test string" == new String(buf, 0, r))
   }
 
-  // TODO: FileDescriptor
-  ignore("ConstructorLjava_io_FileDescriptor") {
+  test("ConstructorLjava_io_FileDescriptor") {
     bw = new BufferedWriter(new FileWriter(f.getPath()))
     bw.write(" After test string", 0, 18)
     bw.close()
     val fis = new FileInputStream(f.getPath())
+
     br = new FileReader(fis.getFD)
     val buf = new Array[Char](100)
     val r   = br.read(buf)

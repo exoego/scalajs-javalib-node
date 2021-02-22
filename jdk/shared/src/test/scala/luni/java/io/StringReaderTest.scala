@@ -86,21 +86,4 @@ class StringReaderTest extends AnyFunSuite with BeforeAndAfterEach {
 
   // Regression test for HARMONY-5077
   private[io] var finish = false
-
-  ignore("todo: Thread.yield") {
-    //  test("synchronization") {
-    //    val anything = "Hello world"
-    //    val sr = new StringReader(anything)
-    //    val other = new Thread(() => {
-    //      sr.close()
-    //      finish = true
-    //    })
-    //    anything.synchronized {
-    //      other.start()
-    //      while ( {
-    //        !finish
-    //      }) Thread.`yield`()
-    //    }
-    //  }
-  }
 }
