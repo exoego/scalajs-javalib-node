@@ -3,6 +3,7 @@ package java.io
 import io.scalajs.nodejs.buffer.Buffer
 import io.scalajs.nodejs.fs.Fs
 
+import java.nio.channels.FileChannel
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters._
 
@@ -56,4 +57,6 @@ class FileOutputStream(private[this] val fd: FileDescriptor) extends OutputStrea
   }
 
   val getFD: FileDescriptor = fd
+
+  def getChannel(): FileChannel = throw new NotImplementedError("getChannel")
 }

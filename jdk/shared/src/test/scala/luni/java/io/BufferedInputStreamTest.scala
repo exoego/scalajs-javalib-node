@@ -101,7 +101,7 @@ class BufferedInputStreamTest
     )
     val available = bis.available
     bis.close()
-    assert(available != 0)
+    assert(available !== 0)
     assertThrows[IOException] {
       bis.available()
     }
@@ -126,7 +126,7 @@ class BufferedInputStreamTest
     }
   }
 
-  // do not end :(
+  // FIXME: do not end :(
   ignore("markI") {
     val buf1 = new Array[Byte](100)
     val buf2 = new Array[Byte](100)
@@ -341,17 +341,16 @@ class BufferedInputStreamTest
     val buf = new BufferedInputStream(null, 5)
     assert(0 == buf.skip(0))
   }
+}
 
-  object MockBufferedInputStream {
-    var buf: Array[Byte] = _
+object MockBufferedInputStream {
+  var buf: Array[Byte] = _
+}
+
+class MockBufferedInputStream(is: InputStream, size: Int) extends BufferedInputStream(is, size) {
+  MockBufferedInputStream.buf = this.buf
+
+  def this(is: InputStream) = {
+    this(is, 4096)
   }
-
-  class MockBufferedInputStream(is: InputStream, size: Int) extends BufferedInputStream(is, size) {
-    MockBufferedInputStream.buf = this.buf
-
-    def this(is: InputStream) = {
-      this(is, 4096)
-    }
-  }
-
 }

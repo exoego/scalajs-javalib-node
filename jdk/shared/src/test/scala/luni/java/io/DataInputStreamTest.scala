@@ -44,7 +44,7 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     dis = new DataInputStream(new ByteArrayInputStream(bos.toByteArray))
   }
 
-  ignore("ConstructorLjava_io_InputStream") {
+  test("ConstructorLjava_io_InputStream") {
     try {
       os.writeChar('t')
       os.close()
@@ -54,7 +54,7 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     }
   }
 
-  ignore("read$B") {
+  test("read$B") {
     os.write(fileString.getBytes())
     os.close()
     openDataInputStream()
@@ -63,7 +63,7 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     assert(new String(rbytes, 0, fileString.length()) == fileString)
   }
 
-  ignore("read$BII") {
+  test("read$BII") {
     os.write(fileString.getBytes())
     os.close()
     openDataInputStream()
@@ -72,42 +72,42 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     assert(new String(rbytes, 0, fileString.length()) == fileString)
   }
 
-  ignore("readBoolean") {
+  test("readBoolean") {
     os.writeBoolean(true)
     os.close()
     openDataInputStream()
     assert(dis.readBoolean())
   }
 
-  ignore("readByte") {
+  test("readByte") {
     os.writeByte(127.toByte)
     os.close()
     openDataInputStream()
     assert(dis.readByte() == 127.toByte)
   }
 
-  ignore("readChar") {
+  test("readChar") {
     os.writeChar('t')
     os.close()
     openDataInputStream()
     assert('t' == dis.readChar())
   }
 
-  ignore("readDouble") {
+  test("readDouble") {
     os.writeDouble(2345.76834720202)
     os.close()
     openDataInputStream()
     assert(2345.76834720202 == dis.readDouble())
   }
 
-  ignore("readFloat") {
+  test("readFloat") {
     os.writeFloat(29.08764f)
     os.close()
     openDataInputStream()
     assert(dis.readFloat() == 29.08764f)
   }
 
-  ignore("readFully$B") {
+  test("readFully$B") {
     os.write(fileString.getBytes())
     os.close()
     openDataInputStream()
@@ -116,7 +116,7 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     assert(new String(rbytes, 0, fileString.length()) == fileString)
   }
 
-  ignore("readFully$BII") {
+  test("readFully$BII") {
     os.write(fileString.getBytes())
     os.close()
     openDataInputStream()
@@ -218,42 +218,42 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     }
   }
 
-  ignore("readInt") {
+  test("readInt") {
     os.writeInt(768347202)
     os.close()
     openDataInputStream()
     assert(768347202 == dis.readInt)
   }
 
-  ignore("readLong") {
+  test("readLong") {
     os.writeLong(9875645283333L)
     os.close()
     openDataInputStream()
     assert(9875645283333L == dis.readLong)
   }
 
-  ignore("readShort") {
+  test("readShort") {
     os.writeShort(9875)
     os.close()
     openDataInputStream()
     assert(dis.readShort == 9875.toShort)
   }
 
-  ignore("readUnsignedByte") {
+  test("readUnsignedByte") {
     os.writeByte(-127.toByte)
     os.close()
     openDataInputStream()
     assert(129 == dis.readUnsignedByte)
   }
 
-  ignore("readUnsignedShort") {
+  test("readUnsignedShort") {
     os.writeShort(9875)
     os.close()
     openDataInputStream()
     assert(9875 == dis.readUnsignedShort)
   }
 
-  ignore("readUTF") {
+  test("readUTF") {
     os.writeUTF(unihw)
     os.close()
     openDataInputStream()
@@ -261,51 +261,19 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     assert(dis.readUTF == unihw)
   }
 
-  class TestDataInputStream extends DataInput {
-    def readBoolean = false
-
-    def readByte: Byte = 0.toByte
-
-    def readChar: Char = 0.toChar
-
-    def readDouble = 0.0
-
-    def readFloat: Float = 0.0.toFloat
-
-    def readFully(buffer: Array[Byte]): Unit = {}
-
-    def readFully(buffer: Array[Byte], offset: Int, count: Int): Unit = {}
-
-    def readInt = 0
-
-    def readLine: String = null
-
-    def readLong: Long = 0.toLong
-
-    def readShort: Short = 0.toShort
-
-    def readUnsignedByte = 0
-
-    def readUnsignedShort = 0
-
-    def readUTF: String = DataInputStream.readUTF(this)
-
-    def skipBytes(count: Int) = 0
-  }
-
-  ignore("readUTFLjava_io_DataInput") {
+  test("readUTFLjava_io_DataInput") {
     os.writeUTF(unihw)
     os.close()
     openDataInputStream()
     assert(dis.available == unihw.length + 2)
-//    assert(DataInputStream.readUTF(dis) == unihw)
+//    assert(DataInputStream.readUTF(dis) === unihw)
   }
 
 //  ignore("readUTFLjava_io_DataInput: Regression test for HARMONY-5336") {
 //    new TestDataInputStream().readUTF
 //  }
 
-  ignore("skipBytesI") {
+  test("skipBytesI") {
     val fileBytes = fileString.getBytes
     os.write(fileBytes)
     os.close()
@@ -324,5 +292,36 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     }
     assert(skipped == fileString.length)
   }
+}
 
+class TestDataInputStream extends DataInput {
+  def readBoolean = false
+
+  def readByte: Byte = 0.toByte
+
+  def readChar: Char = 0.toChar
+
+  def readDouble = 0.0
+
+  def readFloat: Float = 0.0.toFloat
+
+  def readFully(buffer: Array[Byte]): Unit = {}
+
+  def readFully(buffer: Array[Byte], offset: Int, count: Int): Unit = {}
+
+  def readInt = 0
+
+  def readLine: String = null
+
+  def readLong: Long = 0.toLong
+
+  def readShort: Short = 0.toShort
+
+  def readUnsignedByte = 0
+
+  def readUnsignedShort = 0
+
+  def readUTF: String = DataInputStream.readUTF(this)
+
+  def skipBytes(count: Int) = 0
 }

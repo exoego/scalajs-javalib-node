@@ -33,7 +33,7 @@ class FileReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     f.delete()
   }
 
-  ignore("ConstructorLjava_io_File") {
+  test("ConstructorLjava_io_File") {
     bw = new BufferedWriter(new FileWriter(f.getPath()))
     bw.write(" After test string", 0, 18)
     bw.close()
@@ -58,7 +58,7 @@ class FileReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     assert(" After test string" == new String(buf, 0, r))
   }
 
-  ignore("ConstructorLjava_lang_String") {
+  test("ConstructorLjava_lang_String") {
     bw = new BufferedWriter(new FileWriter(f.getPath()))
     bw.write(" After test string", 0, 18)
     bw.close()

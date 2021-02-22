@@ -3,6 +3,7 @@ package java.io
 import io.scalajs.nodejs.buffer.Buffer
 import io.scalajs.nodejs.fs.{BigIntStats, Fs, Stats}
 
+import java.nio.channels.FileChannel
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters._
 
@@ -84,4 +85,6 @@ class FileInputStream(descriptor: FileDescriptor) extends InputStream {
   }
 
   def getFD(): FileDescriptor = this.descriptor
+
+  def getChannel(): FileChannel = throw new NotImplementedError("getChannel")
 }

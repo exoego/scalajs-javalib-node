@@ -7,8 +7,7 @@ trait Support_PlatformFile {
 
   def getNewPlatformFile(pre: String, post: String): String = {
     if (platformId == null) {
-      var property = System.getProperty("com.ibm.oti.configuration")
-      if (property == null) property = "JDK"
+      val property = System.getProperty("com.ibm.oti.configuration", "JDK")
       platformId = property + System.getProperty("java.vm.version").replace('.', '-')
     }
     pre + platformId + post
