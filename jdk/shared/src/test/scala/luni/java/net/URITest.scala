@@ -2,9 +2,9 @@ package luni.java.net
 
 import java.net.{MalformedURLException, URI, URISyntaxException}
 import org.scalatest.funsuite.AnyFunSuite
-import support.Support_PlatformFile
+import support.TestSupport
 
-class URITest extends AnyFunSuite with Support_PlatformFile {
+class URITest extends AnyFunSuite with TestSupport {
 
   private var uris: Array[URI] = null
 

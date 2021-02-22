@@ -2,12 +2,12 @@ package luni.java.io
 
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.funsuite.AnyFunSuite
-import support.Support_PlatformFile
+import support.TestSupport
 
 import java.io._
 import java.nio.channels.ClosedChannelException
 
-class FileInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with Support_PlatformFile {
+class FileInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with TestSupport {
   var fileName: String = _
 
   private var is: FileInputStream = _

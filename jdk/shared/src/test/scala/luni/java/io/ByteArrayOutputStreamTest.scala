@@ -3,12 +3,9 @@ package luni.java.io
 import java.io.ByteArrayOutputStream
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.funsuite.AnyFunSuite
-import support.Support_PlatformFile
+import support.TestSupport
 
-class ByteArrayOutputStreamTest
-    extends AnyFunSuite
-    with BeforeAndAfterEach
-    with Support_PlatformFile {
+class ByteArrayOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with TestSupport {
   private[io] var bos: ByteArrayOutputStream = _
 
   var fileString =

@@ -10,11 +10,11 @@ import java.io.{
 }
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.funsuite.AnyFunSuite
-import support.Support_PlatformFile
+import support.TestSupport
 
 import java.nio.channels.ClosedChannelException
 
-class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with Support_PlatformFile {
+class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with TestSupport {
   private[io] var fileName: String = _
 
   private[io] var fos: FileOutputStream = _

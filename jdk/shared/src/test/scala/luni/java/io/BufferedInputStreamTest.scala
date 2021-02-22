@@ -13,12 +13,9 @@ import java.io.{
 }
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.funsuite.AnyFunSuite
-import support.Support_PlatformFile
+import support.TestSupport
 
-class BufferedInputStreamTest
-    extends AnyFunSuite
-    with BeforeAndAfterEach
-    with Support_PlatformFile {
+class BufferedInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with TestSupport {
   var fileName: String = _
 
   private var is: BufferedInputStream = _
