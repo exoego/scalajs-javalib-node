@@ -361,7 +361,24 @@ object Files {
 
   def list(dir: Path): JavaStream[String] = ???
 
-  @varargs def move(source: Path, target: Path, options: CopyOption*): Path = ???
+  @varargs def move(source: Path, target: Path, options: CopyOption*): Path = {
+    if (options.contains(StandardCopyOption.COPY_ATTRIBUTES)) {
+      throw new UnsupportedOperationException()
+    } else if (notExists(source)) {
+      throw new NoSuchFileException(source.toString)
+    } else if (source != target) {
+      // file, file
+      // dir,dir
+      // file,dir
+
+      if (exists(target)) {
+        if (!options.contains(StandardCopyOption.REPLACE_EXISTING)) {
+          throw new FileAlreadyExistsException(target.toString)
+        }
+      } else {}
+    }
+    source
+  }
 
   def newBufferedReader(path: Path): BufferedReader = ???
 

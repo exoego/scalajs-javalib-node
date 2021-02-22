@@ -511,7 +511,37 @@ class FilesTest extends AnyFunSuite {
 
   ignore("list(Path)") {}
 
-  ignore("move(Path, Path, CopyOption*)") {}
+  test("move(Path, Path, CopyOption*)") {
+    Seq(fileInSource, directory).foreach { path =>
+      Files.move(path, path)
+      Files.move(path, path, StandardCopyOption.ATOMIC_MOVE)
+      Files.move(path, path, StandardCopyOption.REPLACE_EXISTING)
+
+      assertThrows[UnsupportedOperationException] {
+        Files.move(path, path, StandardCopyOption.COPY_ATTRIBUTES)
+      }
+    }
+    Seq(noSuchFile, noSuchFileInDir).foreach { path =>
+      assertThrows[IOException] {
+        Files.move(path, path)
+      }
+      assertThrows[IOException] {
+        Files.move(path, path, StandardCopyOption.ATOMIC_MOVE)
+      }
+      assertThrows[IOException] {
+        Files.move(path, path, StandardCopyOption.REPLACE_EXISTING)
+      }
+      assertThrows[UnsupportedOperationException] {
+        Files.move(path, path, StandardCopyOption.COPY_ATTRIBUTES)
+      }
+    }
+
+    val src    = Files.createTempFile("source", ".txt")
+    val target = Files.createTempFile("target", ".txt")
+    assertThrows[FileAlreadyExistsException] {
+      Files.move(src, target)
+    }
+  }
 
   ignore("newBufferedReader(Path)") {}
 
