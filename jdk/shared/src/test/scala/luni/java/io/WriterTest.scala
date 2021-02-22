@@ -10,7 +10,7 @@ class WriterTest extends AnyFunSuite {
     val testChar = ' '
     val writer   = new MockWriter(20)
     writer.append(testChar)
-    assert(String.valueOf(testChar) == String.valueOf(writer.getContents))
+    assert(String.valueOf(testChar) === String.valueOf(writer.getContents))
     writer.close()
   }
 
@@ -18,7 +18,7 @@ class WriterTest extends AnyFunSuite {
     val testString = "My Test String"
     val writer     = new MockWriter(20)
     writer.append(testString)
-    assert(testString == String.valueOf(writer.getContents))
+    assert(testString === String.valueOf(writer.getContents))
     writer.close()
   }
 
@@ -26,7 +26,7 @@ class WriterTest extends AnyFunSuite {
     val testString = "My Test String"
     val writer     = new MockWriter(20)
     writer.append(testString, 1, 3)
-    assert(testString.substring(1, 3) == String.valueOf(writer.getContents))
+    assert(testString.substring(1, 3) === String.valueOf(writer.getContents))
     writer.close()
   }
 

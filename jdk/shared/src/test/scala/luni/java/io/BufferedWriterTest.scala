@@ -32,7 +32,7 @@ class BufferedWriterTest extends AnyFunSuite with BeforeAndAfterEach {
     assume(sw != null && bw != null)
     bw = new BufferedWriter(sw)
     sw.write("Hi")
-    assert("Hi" == sw.toString)
+    assert("Hi" === sw.toString)
   }
 
   test("ConstructorLjava_io_WriterI") {
@@ -56,7 +56,7 @@ class BufferedWriterTest extends AnyFunSuite with BeforeAndAfterEach {
     assert(!mw.isFlushCalled, "Flush was called in the underlying stream")
 
     // on the other hand the BufferedWriter itself should flush the buffer
-    assert("a" == mw.getWritten, "BufferdWriter do not flush itself before close")
+    assert("a" === mw.getWritten, "BufferdWriter do not flush itself before close")
   }
 
   test("close2") {
@@ -68,7 +68,7 @@ class BufferedWriterTest extends AnyFunSuite with BeforeAndAfterEach {
     bw.write("This should not cause a flush")
     assert(sw.toString.equals(""), "Bytes written without flush")
     bw.flush()
-    assert("This should not cause a flush" == sw.toString, "Bytes not flushed")
+    assert("This should not cause a flush" === sw.toString, "Bytes not flushed")
   }
 
   test("newLine") {
@@ -77,14 +77,17 @@ class BufferedWriterTest extends AnyFunSuite with BeforeAndAfterEach {
     bw.newLine()
     bw.write("World")
     bw.flush()
-    assert(sw.toString == "Hello" + separator + "World", "Incorrect string written: " + sw.toString)
+    assert(
+      sw.toString === "Hello" + separator + "World",
+      "Incorrect string written: " + sw.toString
+    )
   }
 
   test("write$CII") {
     val testCharArray = testString.toCharArray
     bw.write(testCharArray, 500, 1000)
     bw.flush()
-    assert(sw.toString == testString.substring(500, 1500), "Incorrect string written")
+    assert(sw.toString === testString.substring(500, 1500), "Incorrect string written")
   }
 
   test("write_$CII_Exception") {
@@ -110,13 +113,13 @@ class BufferedWriterTest extends AnyFunSuite with BeforeAndAfterEach {
     bw.write('T')
     assert(sw.toString.equals(""), "Char written without flush")
     bw.flush()
-    assert("T" == sw.toString, "Incorrect char written")
+    assert("T" === sw.toString, "Incorrect char written")
   }
 
   test("writeLjava_lang_StringII") {
     bw.write(testString)
     bw.flush()
-    assert(sw.toString == testString, "Incorrect string written")
+    assert(sw.toString === testString, "Incorrect string written")
   }
 
   test("write_LStringII_Exception") {

@@ -10,7 +10,7 @@ class FileNotFoundExceptionTest extends AnyFunSuite {
     val ex = intercept[FileNotFoundException] {
       throw new FileNotFoundException()
     }
-    assert(ex.getMessage == null)
+    assert(ex.getMessage === null)
   }
 
   test("ConstructorLjava_lang_String") {
@@ -18,7 +18,7 @@ class FileNotFoundExceptionTest extends AnyFunSuite {
     val ex = intercept[FileNotFoundException] {
       throw new FileNotFoundException(message)
     }
-    assert(ex.getMessage == message)
+    assert(ex.getMessage === message)
   }
 
 }

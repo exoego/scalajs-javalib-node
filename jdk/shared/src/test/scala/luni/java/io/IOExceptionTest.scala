@@ -10,14 +10,14 @@ class IOExceptionTest extends AnyFunSuite {
     val ex = intercept[IOException] {
       throw new IOException()
     }
-    assert(ex.getMessage == null)
+    assert(ex.getMessage === null)
   }
 
   test("ConstructorLjava_lang_String") {
     val ex = intercept[IOException] {
       throw new IOException("Some error message")
     }
-    assert(ex.getMessage == "Some error message")
+    assert(ex.getMessage === "Some error message")
   }
 
 }

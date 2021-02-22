@@ -88,19 +88,19 @@ class FileTimeTest extends AnyFunSuite {
     val one   = FileTime.fromMillis(1)
 
     // Reflexive
-    assert(zero1 == zero1)
-    assert(zero2 == zero2)
-    assert(one == one)
+    assert(zero1 === zero1)
+    assert(zero2 === zero2)
+    assert(one === one)
 
     // Symmetric
-    assert(zero1 == zero2)
-    assert(zero2 == zero1)
-    assert(one != zero1)
-    assert(zero1 != one)
+    assert(zero1 === zero2)
+    assert(zero2 === zero1)
+    assert(one !== zero1)
+    assert(zero1 !== one)
 
     // Transitive
     val zero3 = FileTime.fromMillis(0)
-    assert(zero1 == zero2 && zero2 == zero3 && zero3 == zero1)
+    assert(zero1 === zero2 && zero2 === zero3 && zero3 === zero1)
   }
 
   test("hashCode") {
@@ -109,17 +109,17 @@ class FileTimeTest extends AnyFunSuite {
     val one   = FileTime.fromMillis(1)
 
     // Reflexive
-    assert(zero1.hashCode() == zero1.hashCode())
-    assert(zero2.hashCode() == zero2.hashCode())
-    assert(one.hashCode() == one.hashCode())
+    assert(zero1.hashCode() === zero1.hashCode())
+    assert(zero2.hashCode() === zero2.hashCode())
+    assert(one.hashCode() === one.hashCode())
 
     // Symmetric
-    assert(zero1.hashCode() == zero2.hashCode())
-    assert(one.hashCode() != zero1.hashCode())
+    assert(zero1.hashCode() === zero2.hashCode())
+    assert(one.hashCode() !== zero1.hashCode())
 
     // Transitive
     val zero3 = FileTime.fromMillis(0)
-    assert(zero1 == zero2 && zero2 == zero3 && zero3 == zero1)
+    assert(zero1 === zero2 && zero2 === zero3 && zero3 === zero1)
   }
 
   test("toString") {

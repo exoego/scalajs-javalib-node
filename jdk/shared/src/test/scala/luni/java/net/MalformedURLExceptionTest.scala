@@ -17,7 +17,7 @@ class MalformedURLExceptionTest extends AnyFunSuite {
     val ex = intercept[MalformedURLException] {
       throw new MalformedURLException(myString)
     }
-    assert(ex.getMessage == myString)
+    assert(ex.getMessage === myString)
   }
 
 }

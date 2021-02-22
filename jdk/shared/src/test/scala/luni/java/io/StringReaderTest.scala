@@ -32,7 +32,7 @@ class StringReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     sr.reset()
     val buf = new Array[Char](10)
     sr.read(buf, 0, 2)
-    assert(new String(buf, 0, 2) == testString.substring(5, 7))
+    assert(new String(buf, 0, 2) === testString.substring(5, 7))
   }
 
   test("markSupported") {
@@ -43,16 +43,16 @@ class StringReaderTest extends AnyFunSuite with BeforeAndAfterEach {
   test("read") {
     sr = new StringReader(testString)
     val r = sr.read
-    assert('T' == r)
+    assert('T' === r)
     sr = new StringReader(new String(Array[Char]('\u8765')))
-    assert(sr.read == '\u8765')
+    assert(sr.read === '\u8765')
   }
 
   test("read$CII") {
     sr = new StringReader(testString)
     val buf = new Array[Char](testString.length)
     val r   = sr.read(buf, 0, testString.length)
-    assert(r == testString.length)
+    assert(r === testString.length)
     assert(new String(buf, 0, r).equals(testString))
   }
 

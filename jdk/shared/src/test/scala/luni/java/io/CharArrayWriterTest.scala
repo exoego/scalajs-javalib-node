@@ -23,12 +23,12 @@ class CharArrayWriterTest extends AnyFunSuite with BeforeAndAfterEach {
 
   test("Constructor") {
     cw = new CharArrayWriter()
-    assert(0 == cw.size)
+    assert(0 === cw.size)
   }
 
   test("ConstructorI") {
     cw = new CharArrayWriter(90)
-    assert(0 == cw.size)
+    assert(0 === cw.size)
   }
 
   test("close") {
@@ -46,13 +46,13 @@ class CharArrayWriterTest extends AnyFunSuite with BeforeAndAfterEach {
     cr = new CharArrayReader(cw.toCharArray)
     val c = new Array[Char](100)
     cr.read(c, 0, 5)
-    assert("Hello" == new String(c, 0, 5))
+    assert("Hello" === new String(c, 0, 5))
   }
 
   test("size") {
-    assert(0 == cw.size)
+    assert(0 === cw.size)
     cw.write(hw, 5, 5)
-    assert(5 == cw.size)
+    assert(5 === cw.size)
   }
 
   test("toCharArray") {
@@ -60,13 +60,13 @@ class CharArrayWriterTest extends AnyFunSuite with BeforeAndAfterEach {
     cr = new CharArrayReader(cw.toCharArray)
     val c = new Array[Char](100)
     cr.read(c, 0, 10)
-    assert("HelloWorld" == new String(c, 0, 10))
+    assert("HelloWorld" === new String(c, 0, 10))
   }
 
   test("toString") {
     cw.write("HelloWorld", 5, 5)
     cr = new CharArrayReader(cw.toCharArray)
-    assert("World" == cw.toString)
+    assert("World" === cw.toString)
   }
 
   test("write$CII") {
@@ -74,7 +74,7 @@ class CharArrayWriterTest extends AnyFunSuite with BeforeAndAfterEach {
     cr = new CharArrayReader(cw.toCharArray)
     val c = new Array[Char](100)
     cr.read(c, 0, 5)
-    assert("World" == new String(c, 0, 5))
+    assert("World" === new String(c, 0, 5))
   }
 
   test("write$CII_2") {
@@ -86,7 +86,7 @@ class CharArrayWriterTest extends AnyFunSuite with BeforeAndAfterEach {
   test("writeI") {
     cw.write('T')
     cr = new CharArrayReader(cw.toCharArray)
-    assert('T' == cr.read)
+    assert('T' === cr.read)
   }
 
   test("writeLjava_lang_StringII") {
@@ -94,7 +94,7 @@ class CharArrayWriterTest extends AnyFunSuite with BeforeAndAfterEach {
     cr = new CharArrayReader(cw.toCharArray)
     val c = new Array[Char](100)
     cr.read(c, 0, 5)
-    assert("World" == new String(c, 0, 5))
+    assert("World" === new String(c, 0, 5))
   }
 
   test("writeLjava_lang_StringII_2") {
@@ -107,7 +107,7 @@ class CharArrayWriterTest extends AnyFunSuite with BeforeAndAfterEach {
     cw.write("HelloWorld", 0, 10)
     val sw = new StringWriter
     cw.writeTo(sw)
-    assert("HelloWorld" == sw.toString)
+    assert("HelloWorld" === sw.toString)
   }
 
   test("appendChar") {
@@ -115,7 +115,7 @@ class CharArrayWriterTest extends AnyFunSuite with BeforeAndAfterEach {
     cw = new CharArrayWriter(10)
     cw.append(testChar)
     cw.flush()
-    assert(String.valueOf(testChar) == cw.toString)
+    assert(String.valueOf(testChar) === cw.toString)
   }
 
   test("appendCharSequence") {
@@ -123,7 +123,7 @@ class CharArrayWriterTest extends AnyFunSuite with BeforeAndAfterEach {
     cw = new CharArrayWriter(10)
     cw.append(testString)
     cw.flush()
-    assert(testString == cw.toString)
+    assert(testString === cw.toString)
   }
 
   test("appendCharSequenceIntInt") {
@@ -131,6 +131,6 @@ class CharArrayWriterTest extends AnyFunSuite with BeforeAndAfterEach {
     cw = new CharArrayWriter(10)
     cw.append(testString, 1, 3)
     cw.flush()
-    assert(testString.substring(1, 3) == cw.toString)
+    assert(testString.substring(1, 3) === cw.toString)
   }
 }

@@ -125,7 +125,7 @@ class FilesTest extends AnyFunSuite {
     val created = Files.createDirectories(tmpDir.resolve("sub"))
     assert(Files.exists(created))
     assert(Files.isDirectory(created))
-    assert(created.getFileName.toString == "sub")
+    assert(created.getFileName.toString === "sub")
 
     val nestedPath = tmpDir.resolve("1").resolve("2").resolve("3")
     assert(Files.notExists(nestedPath))
@@ -143,7 +143,7 @@ class FilesTest extends AnyFunSuite {
     val created = Files.createDirectory(tmpDir.resolve("sub"))
     assert(Files.exists(created))
     assert(Files.isDirectory(created))
-    assert(created.getFileName.toString == "sub")
+    assert(created.getFileName.toString === "sub")
 
     val nestedPath = tmpDir.resolve("1").resolve("2").resolve("3")
     assert(Files.notExists(nestedPath))

@@ -21,12 +21,12 @@ class ByteArrayOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with
 
   test("ConstructorI") {
     bos = new ByteArrayOutputStream(100)
-    assert(0 == bos.size)
+    assert(0 === bos.size)
   }
 
   test("Constructor") {
     bos = new ByteArrayOutputStream
-    assert(0 == bos.size)
+    assert(0 === bos.size)
   }
 
   test("close") {
@@ -44,15 +44,15 @@ class ByteArrayOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with
     bos = new ByteArrayOutputStream
     bos.write(fileString.getBytes, 0, 100)
     bos.reset()
-    assert(0 == bos.size)
+    assert(0 === bos.size)
   }
 
   test("size") {
     bos = new ByteArrayOutputStream
     bos.write(fileString.getBytes, 0, 100)
-    assert(100 == bos.size)
+    assert(100 === bos.size)
     bos.reset()
-    assert(0 == bos.size)
+    assert(0 === bos.size)
   }
 
   test("toByteArray") {
@@ -67,34 +67,34 @@ class ByteArrayOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with
 
     bos = new ByteArrayOutputStream
     bos.write(fileString.getBytes("UTF-8"), 0, fileString.length)
-    assert(bos.toString("8859_1") == fileString)
+    assert(bos.toString("8859_1") === fileString)
   }
 
   test("toStringLjava_lang_String: 8859_2") {
     assume(!isScalaJS, " ISO8859-2 is not implemented in Scala-js")
     bos = new ByteArrayOutputStream
     bos.write(fileString.getBytes("UTF-8"), 0, fileString.length)
-    assert(bos.toString("8859_2") == fileString)
+    assert(bos.toString("8859_2") === fileString)
   }
 
   test("toString") {
     bos = new ByteArrayOutputStream
     bos.write(fileString.getBytes, 0, fileString.length)
-    assert(bos.toString == fileString)
+    assert(bos.toString === fileString)
   }
 
   test("writeI") {
     bos = new ByteArrayOutputStream
     bos.write('t')
     val result = bos.toByteArray
-    assert("t" == new String(result, 0, result.length, "UTF-8"))
+    assert("t" === new String(result, 0, result.length, "UTF-8"))
   }
 
   test("write$BII") {
     bos = new ByteArrayOutputStream
     bos.write(fileString.getBytes, 0, 100)
     val result = bos.toByteArray
-    assert(new String(result, 0, result.length) == fileString.substring(0, 100))
+    assert(new String(result, 0, result.length) === fileString.substring(0, 100))
   }
 
   test("write$BII_2: Regression for HARMONY-387") {
@@ -113,6 +113,6 @@ class ByteArrayOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with
     val bos2 = new ByteArrayOutputStream
     bos.write(fileString.getBytes, 0, 100)
     bos.writeTo(bos2)
-    assert(bos2.toString == fileString.substring(0, 100))
+    assert(bos2.toString === fileString.substring(0, 100))
   }
 }

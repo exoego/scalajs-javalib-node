@@ -38,9 +38,9 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
   private def assertLines(in: String, lines: String*): Unit = {
     val bufferedReader = new BufferedReader(new StringReader(in))
     for (line <- lines) {
-      assert(line == bufferedReader.readLine)
+      assert(line === bufferedReader.readLine)
     }
-    assert(bufferedReader.readLine == null)
+    assert(bufferedReader.readLine === null)
   }
 
   test("ConstructorLjava_io_Reader") {
@@ -67,7 +67,7 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     br.reset()
     val buf = new Array[Char](testString.length)
     br.read(buf, 0, 500)
-    assert(testString.substring(500, 1000) == new String(buf, 0, 500))
+    assert(testString.substring(500, 1000) === new String(buf, 0, 500))
 
     br = new BufferedReader(new StringReader(testString), 800)
     br.skip(500)
@@ -87,35 +87,35 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     in.mark(14)
     in.read(new Array[Char](14), 0, 14)
     in.reset()
-    assert((in.read == 6.toChar) && (in.read == 7.toChar))
+    assert((in.read === 6.toChar) && (in.read === 7.toChar))
 
     in = new BufferedReader(new StringReader(new String(chars)), 12)
     in.skip(6)
     in.mark(8)
     in.skip(7)
     in.reset()
-    assert((in.read == 6.toChar) && (in.read == 7.toChar))
+    assert((in.read === 6.toChar) && (in.read === 7.toChar))
 
     br = new BufferedReader(new StringReader("01234"), 2)
     br.mark(3)
     var carray = new Array[Char](3)
     var result = br.read(carray)
-    assert(3 == result)
-    assert('0' == carray(0))
-    assert('1' == carray(1))
-    assert('2' == carray(2))
-    assert('3' == br.read)
+    assert(3 === result)
+    assert('0' === carray(0))
+    assert('1' === carray(1))
+    assert('2' === carray(2))
+    assert('3' === br.read)
     br = new BufferedReader(new StringReader("01234"), 2)
     br.mark(3)
     carray = new Array[Char](4)
     result = br.read(carray)
-    assert(4 == result)
-    assert('0' == carray(0))
-    assert('1' == carray(1))
-    assert('2' == carray(2))
-    assert('3' == carray(3))
-    assert('4' == br.read)
-    assert(-1 == br.read)
+    assert(4 === result)
+    assert('0' === carray(0))
+    assert('1' === carray(1))
+    assert('2' === carray(2))
+    assert('3' === carray(3))
+    assert('4' === br.read)
+    assert(-1 === br.read)
   }
 
   // OpenJDK 11 does not pass this
@@ -134,27 +134,27 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
   test("read") {
     br = new BufferedReader(new StringReader(testString))
     val r = br.read
-    assert(testString.charAt(0) == r)
+    assert(testString.charAt(0) === r)
     br = new BufferedReader(new StringReader(new String(Array[Char]('\u8765'))))
-    assert(br.read == '\u8765')
+    assert(br.read === '\u8765')
 
     val chars = new Array[Char](256)
     for (i <- 0 until 256) {
       chars(i) = i.toChar
     }
     val in = new BufferedReader(new StringReader(new String(chars)), 12)
-    assert(0 == in.read) // Fill the buffer
+    assert(0 === in.read) // Fill the buffer
     val buf = new Array[Char](14)
     in.read(buf, 0, 14) // Read greater than the buffer
     // On JS, conversion to String causes char corruption on test report, so comparing via sameElements instead of String
-    // assert(new String(buf) == new String(chars, 1, 14), "Wrong block read data")
+    // assert(new String(buf)  ===new String(chars, 1, 14), "Wrong block read data")
     assert(buf.sameElements(chars.slice(1, 15)), "Wrong block read data")
-    assert(15 == in.read) // Check next byte
+    assert(15 === in.read) // Check next byte
   }
 
   // FIXME: Issue in CharArrayReader ?
   test("regression test for HARMONY-841") {
-    assert(new BufferedReader(new CharArrayReader(new Array[Char](5), 1, 0), 2).read == -1)
+    assert(new BufferedReader(new CharArrayReader(new Array[Char](5), 1, 0), 2).read === -1)
   }
 
   test("read$CII") {
@@ -176,15 +176,15 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
 
     // Test to ensure that a drained stream returns 0 at EOF
     toRet = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(new Array[Byte](2))))
-    assert(2 == toRet.read(ca, 0, 2), "Emptying the reader should return two bytes")
-    assert(-1 == toRet.read(ca, 0, 2), "EOF on a reader should be -1")
-    assert(0 == toRet.read(ca, 0, 0), "Reading zero bytes at EOF should work")
+    assert(2 === toRet.read(ca, 0, 2), "Emptying the reader should return two bytes")
+    assert(-1 === toRet.read(ca, 0, 2), "EOF on a reader should be -1")
+    assert(0 === toRet.read(ca, 0, 0), "Reading zero bytes at EOF should work")
 
     // Test for method int java.io.BufferedReader.read(char [], int, int)
     val buf = new Array[Char](testString.length)
     br = new BufferedReader(new StringReader(testString))
     br.read(buf, 50, 500)
-    assert(new String(buf, 50, 500) == testString.substring(0, 500))
+    assert(new String(buf, 50, 500) === testString.substring(0, 500))
 
     val bufin = new BufferedReader(new Reader() {
       private[io] val size     = 2
@@ -214,7 +214,7 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
 
     bufin.read
     val result = bufin.read(new Array[Char](2), 0, 2)
-    assert(result == 1)
+    assert(result === 1)
 
 // TODO: PipedReader
 //    //regression for HARMONY-831
@@ -288,7 +288,7 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
   test("readLine") {
     br = new BufferedReader(new StringReader(testString))
     val r = br.readLine
-    assert("Test_All_Tests" == r)
+    assert("Test_All_Tests" === r)
   }
 
   test("ready") {
@@ -304,7 +304,7 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     br.reset()
     val buf = new Array[Char](testString.length)
     br.read(buf, 0, 500)
-    assert(testString.substring(500, 1000) == new String(buf, 0, 500))
+    assert(testString.substring(500, 1000) === new String(buf, 0, 500))
 
     br = new BufferedReader(new StringReader(testString))
     br.skip(500)
@@ -318,22 +318,22 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     br = new BufferedReader(new StringReader("1234567890"), 9)
     br.mark(9)
     for (i <- 0 until 11) {
-      assert(expected(i) == br.read)
+      assert(expected(i) === br.read)
     }
     assertThrows[IOException] {
       br.reset()
     }
     for (i <- 0 until 11) {
-      assert(-1 == br.read)
+      assert(-1 === br.read)
     }
     br = new BufferedReader(new StringReader("1234567890"))
     br.mark(10)
     for (i <- 0 until 10) {
-      assert(expected(i) == br.read)
+      assert(expected(i) === br.read)
     }
     br.reset()
     for (i <- 0 until 11) {
-      assert(expected(i) == br.read)
+      assert(expected(i) === br.read)
     }
   }
 
@@ -342,6 +342,6 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     br.skip(500)
     val buf = new Array[Char](testString.length)
     br.read(buf, 0, 500)
-    assert(testString.substring(500, 1000) == new String(buf, 0, 500))
+    assert(testString.substring(500, 1000) === new String(buf, 0, 500))
   }
 }

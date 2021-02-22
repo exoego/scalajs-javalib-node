@@ -41,12 +41,12 @@ class FileDescriptorTest extends AnyFunSuite with BeforeAndAfterEach {
     fd.sync()
 
     val length = "Test String".length
-    assert(length == fis.available, "Bytes were not written after sync")
+    assert(length === fis.available, "Bytes were not written after sync")
 
     // Regression test for Harmony-1494
     fd = fis.getFD
     fd.sync()
-    assert(length == fis.available, "Bytes were not written after sync")
+    assert(length === fis.available, "Bytes were not written after sync")
     val raf = new RandomAccessFile(f, "r")
     fd = raf.getFD
     fd.sync()

@@ -41,7 +41,7 @@ class FileReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     val buf = new Array[Char](100)
     val r   = br.read(buf)
     br.close()
-    assert(" After test string" == new String(buf, 0, r))
+    assert(" After test string" === new String(buf, 0, r))
   }
 
   test("ConstructorLjava_io_FileDescriptor") {
@@ -55,7 +55,7 @@ class FileReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     val r   = br.read(buf)
     br.close()
     fis.close()
-    assert(" After test string" == new String(buf, 0, r))
+    assert(" After test string" === new String(buf, 0, r))
   }
 
   test("ConstructorLjava_lang_String") {
@@ -66,6 +66,6 @@ class FileReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     val buf = new Array[Char](100)
     val r   = br.read(buf)
     br.close()
-    assert(" After test string" == new String(buf, 0, r))
+    assert(" After test string" === new String(buf, 0, r))
   }
 }

@@ -16,9 +16,9 @@ class URISyntaxExceptionTest extends AnyFunSuite {
       new URISyntaxException("str", "problem", -2)
     }
     val e = new URISyntaxException("str", "problem", 2)
-    assert("problem" == e.getReason)
-    assert("str" == e.getInput)
-    assert(2 == e.getIndex)
+    assert("problem" === e.getReason)
+    assert("str" === e.getInput)
+    assert(2 === e.getIndex)
   }
 
   test("ConstructorLjava_lang_StringLjava_lang_String") {
@@ -29,9 +29,9 @@ class URISyntaxExceptionTest extends AnyFunSuite {
       new URISyntaxException("str", null)
     }
     val e = new URISyntaxException("str", "problem")
-    assert("problem" == e.getReason)
-    assert("str" == e.getInput)
-    assert(-1 == e.getIndex)
+    assert("problem" === e.getReason)
+    assert("str" === e.getInput)
+    assert(-1 === e.getIndex)
   }
 
   test("getIndex") {
@@ -48,8 +48,8 @@ class URISyntaxExceptionTest extends AnyFunSuite {
 
   test("getMessage") {
     var e = new URISyntaxException("str", "problem", 3)
-    assert("problem at index 3: str" == e.getMessage)
+    assert("problem at index 3: str" === e.getMessage)
     e = new URISyntaxException("str", "problem")
-    assert("problem: str" == e.getMessage)
+    assert("problem: str" === e.getMessage)
   }
 }

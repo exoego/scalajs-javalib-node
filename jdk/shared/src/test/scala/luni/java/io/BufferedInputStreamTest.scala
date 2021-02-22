@@ -84,14 +84,14 @@ class BufferedInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with T
 
   test("regression test for harmony-2407") {
     new MockBufferedInputStream(null)
-    assert(MockBufferedInputStream.buf != null)
+    assert(MockBufferedInputStream.buf !== null)
     MockBufferedInputStream.buf = null
     new MockBufferedInputStream(null, 100)
-    assert(MockBufferedInputStream.buf != null)
+    assert(MockBufferedInputStream.buf !== null)
   }
 
   test("available") {
-    assert(is.available == fileString.length)
+    assert(is.available === fileString.length)
     // Test that a closed stream throws an IOE for available()
     val bis = new BufferedInputStream(
       new ByteArrayInputStream(Array[Byte]('h', 'e', 'l', 'l', 'o', ' ', 't', 'i', 'm'))
@@ -133,7 +133,7 @@ class BufferedInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with T
     is.reset()
     is.read(buf2, 0, buf2.length)
     is.reset()
-    assert(new String(buf1, 0, buf1.length) == new String(buf2, 0, buf2.length))
+    assert(new String(buf1, 0, buf1.length) === new String(buf2, 0, buf2.length))
 
     val bytes = new Array[Byte](256)
     for (i <- 0 until 256) {
@@ -144,14 +144,14 @@ class BufferedInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with T
     in.mark(14)
     in.read(new Array[Byte](14), 0, 14)
     in.reset()
-    assert(in.read == 6 && in.read == 7)
+    assert(in.read === 6 && in.read === 7)
 
     in = new BufferedInputStream(new ByteArrayInputStream(bytes), 12)
     in.skip(6)
     in.mark(8)
     in.skip(7)
     in.reset()
-    assert(in.read == 6 && in.read == 7)
+    assert(in.read === 6 && in.read === 7)
   }
 
   test("markI and read bytes") {
@@ -159,23 +159,23 @@ class BufferedInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with T
     buf.mark(3)
     var bytes  = new Array[Byte](3)
     var result = buf.read(bytes)
-    assert(3 == result)
-    assert(0 == bytes(0))
-    assert(1 == bytes(1))
-    assert(2 == bytes(2))
-    assert(3 == buf.read)
+    assert(3 === result)
+    assert(0 === bytes(0))
+    assert(1 === bytes(1))
+    assert(2 === bytes(2))
+    assert(3 === buf.read)
 
     buf = new BufferedInputStream(new ByteArrayInputStream(Array[Byte](0, 1, 2, 3, 4)), 2)
     buf.mark(3)
     bytes = new Array[Byte](4)
     result = buf.read(bytes)
-    assert(4 == result)
-    assert(0 == bytes(0))
-    assert(1 == bytes(1))
-    assert(2 == bytes(2))
-    assert(3 == bytes(3))
-    assert(4 == buf.read)
-    assert(-1 == buf.read)
+    assert(4 === result)
+    assert(0 === bytes(0))
+    assert(1 === bytes(1))
+    assert(2 === bytes(2))
+    assert(3 === bytes(3))
+    assert(4 === buf.read)
+    assert(-1 === buf.read)
   }
 
   test("markI: Massive readLimit") {
@@ -198,11 +198,11 @@ class BufferedInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with T
       bytes(i) = i.toByte
     }
     val in = new BufferedInputStream(new ByteArrayInputStream(bytes), 12)
-    assert(0 == in.read) // Fill the buffer
+    assert(0 === in.read) // Fill the buffer
 
     val buf = new Array[Byte](14)
     in.read(buf, 0, 14) // Read greater than the buffer
-    assert(new String(buf, 0, 14) == new String(bytes, 1, 14))
+    assert(new String(buf, 0, 14) === new String(bytes, 1, 14))
     assert(15 === in.read) // Check next byte
   }
 
@@ -232,7 +232,7 @@ class BufferedInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with T
     is.skip(3000)
     is.mark(1000)
     is.read(buf1, 0, buf1.length)
-    assert(new String(buf1, 0, buf1.length) == fileString.substring(3000, 3100))
+    assert(new String(buf1, 0, buf1.length) === fileString.substring(3000, 3100))
 
     val bufin = new BufferedInputStream(new InputStream() {
       val size     = 2
@@ -259,7 +259,7 @@ class BufferedInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with T
     })
     bufin.read()
     val result = bufin.read(new Array[Byte](2), 0, 2)
-    assert(result == 1)
+    assert(result === 1)
   }
 
   test("reset") {
@@ -270,7 +270,7 @@ class BufferedInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with T
     is.reset()
     is.read(buf2, 0, 10)
     is.reset()
-    assert(new String(buf1, 0, buf1.length) == new String(buf2, 0, buf2.length))
+    assert(new String(buf1, 0, buf1.length) === new String(buf2, 0, buf2.length))
 
     val bIn = new BufferedInputStream(new ByteArrayInputStream("1234567890".getBytes))
     bIn.mark(10)
@@ -278,7 +278,7 @@ class BufferedInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with T
       bIn.read()
     }
     bIn.reset()
-    assert(bIn.read().toChar == '1')
+    assert(bIn.read().toChar === '1')
   }
 
   test("reset_Exception") {
@@ -324,7 +324,7 @@ class BufferedInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with T
     is.skip(1000)
     is.read(buf1, 0, buf1.length)
     is.reset()
-    assert(new String(buf1, 0, buf1.length) == fileString.substring(1000, 1010))
+    assert(new String(buf1, 0, buf1.length) === fileString.substring(1000, 1010))
   }
 
   test("skipJ: regression for HARMONY-667") {
@@ -336,7 +336,7 @@ class BufferedInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with T
 
   test("skip_NullInputStream") {
     val buf = new BufferedInputStream(null, 5)
-    assert(0 == buf.skip(0))
+    assert(0 === buf.skip(0))
   }
 }
 

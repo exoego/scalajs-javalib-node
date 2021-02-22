@@ -10,7 +10,7 @@ class UnsupportedEncodingExceptionTest extends AnyFunSuite {
     val ex = intercept[UnsupportedEncodingException] {
       new OutputStreamWriter(new ByteArrayOutputStream(), "BogusEncoding")
     }
-    assert(ex.getMessage == "BogusEncoding")
+    assert(ex.getMessage === "BogusEncoding")
   }
 
   test("ConstructorLjava_lang_String") {
@@ -18,7 +18,7 @@ class UnsupportedEncodingExceptionTest extends AnyFunSuite {
     val ex = intercept[UnsupportedEncodingException] {
       throw new UnsupportedEncodingException(message)
     }
-    assert(ex.getMessage == message)
+    assert(ex.getMessage === message)
   }
 
 }

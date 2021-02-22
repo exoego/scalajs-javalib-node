@@ -22,7 +22,7 @@ class CharArrayReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     cr = new CharArrayReader(hw, 5, 5)
     assert(cr.ready)
     val c = cr.read
-    assert(c == 'W')
+    assert(c === 'W')
   }
 
   test("close") {
@@ -41,7 +41,7 @@ class CharArrayReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     cr.mark(100)
     cr.read()
     cr.reset()
-    assert('W' == cr.read)
+    assert('W' === cr.read)
   }
 
   test("markSupported") {
@@ -51,16 +51,16 @@ class CharArrayReaderTest extends AnyFunSuite with BeforeAndAfterEach {
 
   test("read") {
     cr = new CharArrayReader(hw)
-    assert('H' == cr.read)
+    assert('H' === cr.read)
     cr = new CharArrayReader(Array[Char]('\u8765'))
-    assert(cr.read == '\u8765')
+    assert(cr.read === '\u8765')
   }
 
   test("read$CII") {
     val c = new Array[Char](11)
     cr = new CharArrayReader(hw)
     cr.read(c, 1, 10)
-    assert(new String(c, 1, 10) == new String(hw, 0, 10))
+    assert(new String(c, 1, 10) === new String(hw, 0, 10))
   }
 
   test("ready") {
@@ -85,7 +85,7 @@ class CharArrayReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     cr.mark(100)
     cr.read()
     cr.reset()
-    assert('W' == cr.read)
+    assert('W' === cr.read)
 
     // Regression for HARMONY-4357
     val str  = "offsetHello world!"
@@ -96,14 +96,14 @@ class CharArrayReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     val reader       = new CharArrayReader(data, offsetLength, length)
     reader.reset()
     for (i <- 0 until length) {
-      assert(data(offsetLength + i) == reader.read.asInstanceOf[Char])
+      assert(data(offsetLength + i) === reader.read.asInstanceOf[Char])
     }
   }
 
   test("skipJ") {
     cr = new CharArrayReader(hw)
     val skipped = cr.skip(5L)
-    assert(5L == skipped)
-    assert('W' == cr.read)
+    assert(5L === skipped)
+    assert('W' === cr.read)
   }
 }

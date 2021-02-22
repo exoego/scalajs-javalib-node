@@ -30,10 +30,10 @@ class ReaderTest extends AnyFunSuite {
     val mockReader = new MockReader(srcBuffer)
     val charBuffer = CharBuffer.allocate(0)
     val result     = mockReader.read(charBuffer)
-    assert(0 == result)
+    assert(0 === result)
     val destBuffer = new Array[Char](srcBuffer.length)
     mockReader.read(destBuffer)
-    assert(s == String.valueOf(destBuffer))
+    assert(s === String.valueOf(destBuffer))
   }
 
   test("Reader_CharBufferChar") {
@@ -45,7 +45,7 @@ class ReaderTest extends AnyFunSuite {
     charBuffer.append('A')
     val CHARBUFFER_REMAINING = charBuffer.remaining
     val result               = mockReader.read(charBuffer)
-    assert(CHARBUFFER_REMAINING == result)
+    assert(CHARBUFFER_REMAINING === result)
 
     charBuffer.rewind
     // subsequence is missing in Scala-js
@@ -57,7 +57,7 @@ class ReaderTest extends AnyFunSuite {
 
     val destBuffer = new Array[Char](srcBuffer.length - CHARBUFFER_REMAINING)
     mockReader.read(destBuffer)
-    assert(s.substring(CHARBUFFER_REMAINING) == String.valueOf(destBuffer))
+    assert(s.substring(CHARBUFFER_REMAINING) === String.valueOf(destBuffer))
   }
 
   test("mark") {
@@ -69,18 +69,18 @@ class ReaderTest extends AnyFunSuite {
 
   test("read") {
     val reader = new MockReader
-    assert(-1 == reader.read())
+    assert(-1 === reader.read())
 
     val string     = "MY TEST STRING"
     val srcBuffer  = string.toCharArray
     val mockReader = new MockReader(srcBuffer)
     // normal read
     for (c <- srcBuffer) {
-      assert(c == mockReader.read().toChar)
+      assert(c === mockReader.read().toChar)
     }
     // return -1 when read Out of Index
-    assert(-1 == mockReader.read())
-    assert(-1 == reader.read())
+    assert(-1 === mockReader.read())
+    assert(-1 === reader.read())
   }
 
   test("ready") {
@@ -100,10 +100,10 @@ class ReaderTest extends AnyFunSuite {
     val srcBuffer  = string.toCharArray
     val length     = srcBuffer.length
     val mockReader = new MockReader(srcBuffer)
-    assert('M' == mockReader.read())
+    assert('M' === mockReader.read())
     // normal skip
     mockReader.skip(length / 2)
-    assert('S' == mockReader.read().toChar)
+    assert('S' === mockReader.read().toChar)
     // try to skip a bigger number of characters than the total
     // Should do nothing
     mockReader.skip(length)

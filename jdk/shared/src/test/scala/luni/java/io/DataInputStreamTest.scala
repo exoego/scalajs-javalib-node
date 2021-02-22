@@ -60,7 +60,7 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     openDataInputStream()
     val rbytes = new Array[Byte](fileString.length())
     dis.read(rbytes)
-    assert(new String(rbytes, 0, fileString.length()) == fileString)
+    assert(new String(rbytes, 0, fileString.length()) === fileString)
   }
 
   test("read$BII") {
@@ -69,7 +69,7 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     openDataInputStream()
     val rbytes = new Array[Byte](fileString.length())
     dis.read(rbytes, 0, rbytes.length)
-    assert(new String(rbytes, 0, fileString.length()) == fileString)
+    assert(new String(rbytes, 0, fileString.length()) === fileString)
   }
 
   test("readBoolean") {
@@ -83,28 +83,28 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     os.writeByte(127.toByte)
     os.close()
     openDataInputStream()
-    assert(dis.readByte() == 127.toByte)
+    assert(dis.readByte() === 127.toByte)
   }
 
   test("readChar") {
     os.writeChar('t')
     os.close()
     openDataInputStream()
-    assert('t' == dis.readChar())
+    assert('t' === dis.readChar())
   }
 
   test("readDouble") {
     os.writeDouble(2345.76834720202)
     os.close()
     openDataInputStream()
-    assert(2345.76834720202 == dis.readDouble())
+    assert(2345.76834720202 === dis.readDouble())
   }
 
   test("readFloat") {
     os.writeFloat(29.08764f)
     os.close()
     openDataInputStream()
-    assert(dis.readFloat() == 29.08764f)
+    assert(dis.readFloat() === 29.08764f)
   }
 
   test("readFully$B") {
@@ -113,7 +113,7 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     openDataInputStream()
     val rbytes = new Array[Byte](fileString.length())
     dis.readFully(rbytes)
-    assert(new String(rbytes, 0, fileString.length()) == fileString)
+    assert(new String(rbytes, 0, fileString.length()) === fileString)
   }
 
   test("readFully$BII") {
@@ -122,7 +122,7 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     openDataInputStream()
     val rbytes = new Array[Byte](fileString.length())
     dis.readFully(rbytes, 0, fileString.length())
-    assert(new String(rbytes, 0, fileString.length()) == fileString)
+    assert(new String(rbytes, 0, fileString.length()) === fileString)
   }
 
   ignore("readFully$BII_Exception") {
@@ -222,50 +222,50 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     os.writeInt(768347202)
     os.close()
     openDataInputStream()
-    assert(768347202 == dis.readInt)
+    assert(768347202 === dis.readInt)
   }
 
   test("readLong") {
     os.writeLong(9875645283333L)
     os.close()
     openDataInputStream()
-    assert(9875645283333L == dis.readLong)
+    assert(9875645283333L === dis.readLong)
   }
 
   test("readShort") {
     os.writeShort(9875)
     os.close()
     openDataInputStream()
-    assert(dis.readShort == 9875.toShort)
+    assert(dis.readShort === 9875.toShort)
   }
 
   test("readUnsignedByte") {
     os.writeByte(-127.toByte)
     os.close()
     openDataInputStream()
-    assert(129 == dis.readUnsignedByte)
+    assert(129 === dis.readUnsignedByte)
   }
 
   test("readUnsignedShort") {
     os.writeShort(9875)
     os.close()
     openDataInputStream()
-    assert(9875 == dis.readUnsignedShort)
+    assert(9875 === dis.readUnsignedShort)
   }
 
   test("readUTF") {
     os.writeUTF(unihw)
     os.close()
     openDataInputStream()
-    assert(dis.available == unihw.length + 2)
-    assert(dis.readUTF == unihw)
+    assert(dis.available === unihw.length + 2)
+    assert(dis.readUTF === unihw)
   }
 
   test("readUTFLjava_io_DataInput") {
     os.writeUTF(unihw)
     os.close()
     openDataInputStream()
-    assert(dis.available == unihw.length + 2)
+    assert(dis.available === unihw.length + 2)
 //    assert(DataInputStream.readUTF(dis) === unihw)
   }
 
@@ -283,7 +283,7 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     val rbytes = new Array[Byte](fileString.length)
     dis.read(rbytes, 0, 50)
     dis.close()
-    assert(new String(rbytes, 0, 50) == fileString.substring(100, 150))
+    assert(new String(rbytes, 0, 50) === fileString.substring(100, 150))
 
     var skipped = 0
     openDataInputStream()
@@ -291,7 +291,7 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     catch {
       case _: EOFException =>
     }
-    assert(skipped == fileString.length)
+    assert(skipped === fileString.length)
   }
 }
 

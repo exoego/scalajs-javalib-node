@@ -107,7 +107,7 @@ class FileInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with TestS
     val isr = new InputStreamReader(new FileInputStream(fileName))
     val c   = isr.read()
     isr.close()
-    assert(c == fileString.charAt(0))
+    assert(c === fileString.charAt(0))
   }
 
   ignore("read$B") {
@@ -116,7 +116,7 @@ class FileInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with TestS
     is.skip(3000)
     is.read(buf1)
     is.close()
-    assert(new String(buf1, 0, buf1.length) == fileString.substring(3000, 3100))
+    assert(new String(buf1, 0, buf1.length) === fileString.substring(3000, 3100))
   }
 
   ignore("read$BII") {
@@ -125,7 +125,7 @@ class FileInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with TestS
     is.skip(3000)
     is.read(buf1, 0, buf1.length)
     is.close()
-    assert(new String(buf1, 0, buf1.length) == fileString.substring(3000, 3100))
+    assert(new String(buf1, 0, buf1.length) === fileString.substring(3000, 3100))
   }
 
   test("read$BII: Regression test for HARMONY-285") {
@@ -226,7 +226,7 @@ class FileInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with TestS
   test("available") {
     try {
       is = new FileInputStream(fileName)
-      assert(is.available == fileString.length)
+      assert(is.available === fileString.length)
     } finally {
       try is.close()
       catch {
@@ -241,7 +241,7 @@ class FileInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with TestS
     is.skip(1000)
     is.read(buf1, 0, buf1.length)
     is.close()
-    assert(new String(buf1, 0, buf1.length) == fileString.substring(1000, 1010))
+    assert(new String(buf1, 0, buf1.length) === fileString.substring(1000, 1010))
   }
 
   test("skipNegativeArgumentJ") {
@@ -254,7 +254,7 @@ class FileInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with TestS
 
   ignore("getChannel") {
     var fis = new FileInputStream(fileName)
-    assert(0 == fis.getChannel.position)
+    assert(0 === fis.getChannel.position)
     var r     = 0
     var count = 1
     while ({
@@ -272,19 +272,19 @@ class FileInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with TestS
     }
 
     fis = new FileInputStream(fileName)
-    assert(0 == fis.getChannel.position)
+    assert(0 === fis.getChannel.position)
     var bs = new Array[Byte](10)
     r = fis.read(bs)
-    assert(10 == fis.getChannel.position)
+    assert(10 === fis.getChannel.position)
     fis.close()
 
     fis = new FileInputStream(fileName)
-    assert(0 == fis.getChannel.position)
+    assert(0 === fis.getChannel.position)
     bs = new Array[Byte](10)
     fis.skip(100)
-    assert(100 == fis.getChannel.position)
+    assert(100 === fis.getChannel.position)
     r = fis.read(bs)
-    assert(110 == fis.getChannel.position)
+    assert(110 === fis.getChannel.position)
     fis.close()
   }
 

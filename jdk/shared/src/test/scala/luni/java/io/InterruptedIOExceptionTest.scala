@@ -10,14 +10,14 @@ class InterruptedIOExceptionTest extends AnyFunSuite {
     val ex = intercept[InterruptedIOException] {
       throw new InterruptedIOException()
     }
-    assert(ex.getMessage == null)
+    assert(ex.getMessage === null)
   }
 
   test("ConstructorLjava_lang_String") {
     val ex = intercept[InterruptedIOException] {
       throw new InterruptedIOException("Some error message")
     }
-    assert(ex.getMessage == "Some error message")
+    assert(ex.getMessage === "Some error message")
   }
 
 }

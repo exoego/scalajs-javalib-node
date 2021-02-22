@@ -79,7 +79,7 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with Test
     val buf = new Array[Byte](fileString.length + 2)
     fis = new FileInputStream(f.getPath())
     fis.read(buf, 0, buf.length)
-    assert(new String(buf, 0, buf.length) == ("HI" + fileString))
+    assert(new String(buf, 0, buf.length) === ("HI" + fileString))
   }
 
   test("ConstructorLjava_lang_String_I") {
@@ -121,7 +121,7 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with Test
     fis = new FileInputStream(f.getPath())
     val rbytes = new Array[Byte](4000)
     fis.read(rbytes, 0, fileString.length)
-    assert(new String(rbytes, 0, fileString.length) == fileString)
+    assert(new String(rbytes, 0, fileString.length) === fileString)
   }
 
   test("write$BII") {
@@ -131,7 +131,7 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with Test
     fis = new FileInputStream(f.getPath())
     val rbytes = new Array[Byte](4000)
     fis.read(rbytes, 0, fileString.length)
-    assert(new String(rbytes, 0, fileString.length) == fileString)
+    assert(new String(rbytes, 0, fileString.length) === fileString)
   }
 
   test("write$BII: Regression test for HARMONY-285") {
@@ -147,7 +147,7 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with Test
     fos = new FileOutputStream(f.getPath())
     fos.write('t')
     fis = new FileInputStream(f.getPath())
-    assert('t' == fis.read)
+    assert('t' === fis.read)
   }
 
   test("write$BII2: Regression for HARMONY-437") {
@@ -187,7 +187,7 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with Test
     fos.flush()
     fos.close()
     val f = new FileOutputStream(tmpfile, true)
-    assert(10 == f.getChannel.position)
+    assert(10 === f.getChannel.position)
   }
 
   test("getChannel_Append") {
@@ -201,7 +201,7 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with Test
     fos.write(bytes);
     assert(fos.getChannel().position() === 20)
     fos.write(bytes);
-    assert(fos.getChannel().position() == 30)
+    assert(fos.getChannel().position() === 30)
     fos.close()
 
     assertThrows[ClosedChannelException] {
