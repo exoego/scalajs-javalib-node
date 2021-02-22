@@ -10,9 +10,9 @@ import java.io.{
 }
 
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.freespec.AnyFreeSpec
 
-class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
+class DataInputStreamTest extends AnyFreeSpec with BeforeAndAfterEach {
   private var os: DataOutputStream = _
 
   private var dis: DataInputStream = _
@@ -44,7 +44,7 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     dis = new DataInputStream(new ByteArrayInputStream(bos.toByteArray))
   }
 
-  test("ConstructorLjava_io_InputStream") {
+  "ConstructorLjava_io_InputStream" in {
     try {
       os.writeChar('t')
       os.close()
@@ -54,7 +54,7 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     }
   }
 
-  test("read$B") {
+  "read$B" in {
     os.write(fileString.getBytes())
     os.close()
     openDataInputStream()
@@ -63,7 +63,7 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     assert(new String(rbytes, 0, fileString.length()) === fileString)
   }
 
-  test("read$BII") {
+  "read$BII" in {
     os.write(fileString.getBytes())
     os.close()
     openDataInputStream()
@@ -72,42 +72,42 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     assert(new String(rbytes, 0, fileString.length()) === fileString)
   }
 
-  test("readBoolean") {
+  "readBoolean" in {
     os.writeBoolean(true)
     os.close()
     openDataInputStream()
     assert(dis.readBoolean())
   }
 
-  test("readByte") {
+  "readByte" in {
     os.writeByte(127.toByte)
     os.close()
     openDataInputStream()
     assert(dis.readByte() === 127.toByte)
   }
 
-  test("readChar") {
+  "readChar" in {
     os.writeChar('t')
     os.close()
     openDataInputStream()
     assert('t' === dis.readChar())
   }
 
-  test("readDouble") {
+  "readDouble" in {
     os.writeDouble(2345.76834720202)
     os.close()
     openDataInputStream()
     assert(2345.76834720202 === dis.readDouble())
   }
 
-  test("readFloat") {
+  "readFloat" in {
     os.writeFloat(29.08764f)
     os.close()
     openDataInputStream()
     assert(dis.readFloat() === 29.08764f)
   }
 
-  test("readFully$B") {
+  "readFully$B" in {
     os.write(fileString.getBytes())
     os.close()
     openDataInputStream()
@@ -116,7 +116,7 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     assert(new String(rbytes, 0, fileString.length()) === fileString)
   }
 
-  test("readFully$BII") {
+  "readFully$BII" in {
     os.write(fileString.getBytes())
     os.close()
     openDataInputStream()
@@ -125,7 +125,7 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     assert(new String(rbytes, 0, fileString.length()) === fileString)
   }
 
-  ignore("readFully$BII_Exception") {
+  "readFully$BII_Exception" ignore {
     val is        = new DataInputStream(new ByteArrayInputStream(new Array[Byte](fileString.length)))
     val byteArray = new Array[Byte](fileString.length)
     assertThrows[IndexOutOfBoundsException] {
@@ -154,7 +154,7 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     }
   }
 
-  ignore("readFully$BII_NullArray") {
+  "readFully$BII_NullArray" ignore {
     val is            = new DataInputStream(new ByteArrayInputStream(new Array[Byte](fileString.length)))
     val nullByteArray = null
     assertThrows[IndexOutOfBoundsException] {
@@ -185,7 +185,7 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     }
   }
 
-  ignore("readFully$BII_NullStream_NullArray") {
+  "readFully$BII_NullStream_NullArray" ignore {
     val is            = new DataInputStream(null)
     val nullByteArray = null
 
@@ -218,42 +218,42 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     }
   }
 
-  test("readInt") {
+  "readInt" in {
     os.writeInt(768347202)
     os.close()
     openDataInputStream()
     assert(768347202 === dis.readInt)
   }
 
-  test("readLong") {
+  "readLong" in {
     os.writeLong(9875645283333L)
     os.close()
     openDataInputStream()
     assert(9875645283333L === dis.readLong)
   }
 
-  test("readShort") {
+  "readShort" in {
     os.writeShort(9875)
     os.close()
     openDataInputStream()
     assert(dis.readShort === 9875.toShort)
   }
 
-  test("readUnsignedByte") {
+  "readUnsignedByte" in {
     os.writeByte(-127.toByte)
     os.close()
     openDataInputStream()
     assert(129 === dis.readUnsignedByte)
   }
 
-  test("readUnsignedShort") {
+  "readUnsignedShort" in {
     os.writeShort(9875)
     os.close()
     openDataInputStream()
     assert(9875 === dis.readUnsignedShort)
   }
 
-  test("readUTF") {
+  "readUTF" in {
     os.writeUTF(unihw)
     os.close()
     openDataInputStream()
@@ -261,7 +261,7 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     assert(dis.readUTF === unihw)
   }
 
-  test("readUTFLjava_io_DataInput") {
+  "readUTFLjava_io_DataInput" in {
     os.writeUTF(unihw)
     os.close()
     openDataInputStream()
@@ -270,11 +270,11 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
   }
 
   // TODO: DataInputStream.readUTF is not implemented in Scala-js
-//  ignore("readUTFLjava_io_DataInput: Regression test for HARMONY-5336") {
+//  "readUTFLjava_io_DataInput: Regression test for HARMONY-5336" ignore {
 //    new TestDataInputStream().readUTF
 //  }
 
-  test("skipBytesI") {
+  "skipBytesI" in {
     val fileBytes = fileString.getBytes
     os.write(fileBytes)
     os.close()

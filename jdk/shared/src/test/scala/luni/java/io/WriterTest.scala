@@ -2,11 +2,11 @@ package luni.java.io
 
 import java.io.{IOException, Writer}
 
-import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.freespec.AnyFreeSpec
 
-class WriterTest extends AnyFunSuite {
+class WriterTest extends AnyFreeSpec {
 
-  test("appendChar") {
+  "appendChar" in {
     val testChar = ' '
     val writer   = new MockWriter(20)
     writer.append(testChar)
@@ -14,7 +14,7 @@ class WriterTest extends AnyFunSuite {
     writer.close()
   }
 
-  test("appendCharSequence") {
+  "appendCharSequence" in {
     val testString = "My Test String"
     val writer     = new MockWriter(20)
     writer.append(testString)
@@ -22,7 +22,7 @@ class WriterTest extends AnyFunSuite {
     writer.close()
   }
 
-  test("appendCharSequenceIntInt") {
+  "appendCharSequenceIntInt" in {
     val testString = "My Test String"
     val writer     = new MockWriter(20)
     writer.append(testString, 1, 3)

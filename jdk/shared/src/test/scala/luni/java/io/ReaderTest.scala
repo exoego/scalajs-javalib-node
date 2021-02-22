@@ -3,12 +3,12 @@ package luni.java.io
 import java.io.{IOException, Reader}
 import java.nio.CharBuffer
 
-import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.freespec.AnyFreeSpec
 
-class ReaderTest extends AnyFunSuite {
+class ReaderTest extends AnyFreeSpec {
   private val isScalaJS = System.getProperty("java.vm.name") == "Scala.js"
 
-  test("Reader_CharBuffer_null") {
+  "Reader_CharBuffer_null" in {
     val s          = "MY TEST STRING"
     val mockReader = new MockReader(s.toCharArray)
 
@@ -22,7 +22,7 @@ class ReaderTest extends AnyFunSuite {
       assert(ex.isInstanceOf[NullPointerException])
   }
 
-  test("Reader_CharBuffer_ZeroChar") {
+  "Reader_CharBuffer_ZeroChar" in {
     //the charBuffer has the capacity of 0, then there the number of char read
     // to the CharBuffer is 0. Furthermore, the MockReader is intact in its content.
     val s          = "MY TEST STRING"
@@ -36,7 +36,7 @@ class ReaderTest extends AnyFunSuite {
     assert(s === String.valueOf(destBuffer))
   }
 
-  test("Reader_CharBufferChar") {
+  "Reader_CharBufferChar" in {
     val s               = "MY TEST STRING"
     val srcBuffer       = s.toCharArray
     val CHARBUFFER_SIZE = 10
@@ -60,14 +60,14 @@ class ReaderTest extends AnyFunSuite {
     assert(s.substring(CHARBUFFER_REMAINING) === String.valueOf(destBuffer))
   }
 
-  test("mark") {
+  "mark" in {
     val mockReader = new MockReader()
     assertThrows[IOException] {
       mockReader.mark(0)
     }
   }
 
-  test("read") {
+  "read" in {
     val reader = new MockReader
     assert(-1 === reader.read())
 
@@ -83,19 +83,19 @@ class ReaderTest extends AnyFunSuite {
     assert(-1 === reader.read())
   }
 
-  test("ready") {
+  "ready" in {
     val mockReader = new MockReader()
     assert(!mockReader.ready)
   }
 
-  test("reset") {
+  "reset" in {
     val mockReader = new MockReader
     assertThrows[IOException] {
       mockReader.reset()
     }
   }
 
-  test("skip") {
+  "skip" in {
     val string     = "MY TEST STRING"
     val srcBuffer  = string.toCharArray
     val length     = srcBuffer.length

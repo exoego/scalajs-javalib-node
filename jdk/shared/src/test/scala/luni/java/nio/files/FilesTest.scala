@@ -1,6 +1,6 @@
 package luni.java.nio.files
 
-import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.freespec.AnyFreeSpec
 
 import java.io._
 import java.nio.charset.Charset
@@ -9,7 +9,7 @@ import java.nio.file.attribute._
 import scala.jdk.CollectionConverters._
 import scala.collection.mutable.ListBuffer
 
-class FilesTest extends AnyFunSuite {
+class FilesTest extends AnyFreeSpec {
 
   private def using[T <: AutoCloseable](resource: T)(block: T => Unit): Unit = {
     try {
@@ -20,7 +20,7 @@ class FilesTest extends AnyFunSuite {
   }
   private val utf16leCharset: Charset = Charset.forName("UTF-16LE")
 
-  test("copy(InputStream, Path, CopyOption*)") {
+  "copy(InputStream, Path, CopyOption*)" in {
     val sourceFile = Files.createTempFile("foo", ".txt")
     val tmpDir     = Files.createTempDirectory("foo")
     using(new FileInputStream(sourceFile.toFile)) { in =>
@@ -49,7 +49,7 @@ class FilesTest extends AnyFunSuite {
     }
   }
 
-  test("copy(Path, OutputStream)") {
+  "copy(Path, OutputStream)" in {
     val tmpFile = Files.createTempFile("foo", ".txt")
     using(new FileOutputStream(tmpFile.toFile)) { out =>
       assert(Files.copy(regularText, out) === 3)
@@ -72,7 +72,7 @@ class FilesTest extends AnyFunSuite {
     }
   }
 
-  test("copy(Path, Path, CopyOption*)") {
+  "copy(Path, Path, CopyOption*)" in {
     // If source is directory, create an empty dir
     val root        = Files.createTempDirectory("root")
     val nonEmptyDir = Files.createTempDirectory(root, "nonEmptyDir")
@@ -117,7 +117,7 @@ class FilesTest extends AnyFunSuite {
     }
   }
 
-  test("createDirectories(Path, FileAttribute[_]*)") {
+  "createDirectories(Path, FileAttribute[_]*)" in {
     val tmpDir = Files.createTempDirectory("createDirectories")
     // No throw
     Files.createDirectories(tmpDir)
@@ -134,7 +134,7 @@ class FilesTest extends AnyFunSuite {
     assert(Files.isDirectory(createdDeep))
   }
 
-  test("createDirectory(Path, FileAttribute[_]*)") {
+  "createDirectory(Path, FileAttribute[_]*)" in {
     val tmpDir = Files.createTempDirectory("createDirectory")
     assertThrows[FileAlreadyExistsException] {
       Files.createDirectory(tmpDir)
@@ -152,7 +152,7 @@ class FilesTest extends AnyFunSuite {
     }
   }
 
-  test("createFile(Path, FileAttribute[_]*)") {
+  "createFile(Path, FileAttribute[_]*)" in {
     val dir  = Files.createTempDirectory("createFile")
     val file = dir.resolve("foo.txt")
     assert(Files.notExists(file))
@@ -168,7 +168,7 @@ class FilesTest extends AnyFunSuite {
     }
   }
 
-  test("createLink(Path, Path)") {
+  "createLink(Path, Path)" in {
     val baseDir = Files.createTempDirectory("tmp")
 
     val link1 = baseDir.resolve("link1")
@@ -189,7 +189,7 @@ class FilesTest extends AnyFunSuite {
     assert(Files.notExists(link2))
   }
 
-  test("createSymbolicLink(Path, Path, FileAttribute[_])") {
+  "createSymbolicLink(Path, Path, FileAttribute[_])" in {
     val sourceDir = Files.createTempDirectory("source")
     val targetDir = Files.createTempDirectory("source").resolve("tmp-symlink")
     val created   = Files.createSymbolicLink(targetDir, sourceDir)
@@ -202,7 +202,7 @@ class FilesTest extends AnyFunSuite {
     }
   }
 
-  test("createTempDirectory(Path, String, FileAttribute[_])") {
+  "createTempDirectory(Path, String, FileAttribute[_])" in {
     val base    = Files.createTempDirectory("more")
     val tempDir = Files.createTempDirectory(base, "foobar")
     assert("/more[^/]+/foobar[^/]+$".r.findFirstIn(tempDir.toString).isDefined)
@@ -212,7 +212,7 @@ class FilesTest extends AnyFunSuite {
     // TODO: attrs
   }
 
-  test("createTempDirectory(String, FileAttribute[_])") {
+  "createTempDirectory(String, FileAttribute[_])" in {
     val tempDir = Files.createTempDirectory("foobar")
     assert(tempDir.toString.contains("/foobar"))
     assert(Files.exists(tempDir))
@@ -221,7 +221,7 @@ class FilesTest extends AnyFunSuite {
     // TODO: attrs
   }
 
-  test("createTempFile(Path, String, String, FileAttribute[_])") {
+  "createTempFile(Path, String, String, FileAttribute[_])" in {
     val base    = Files.createTempDirectory("more")
     val tmpFile = Files.createTempFile(base, "foobar", ".txt")
     assert("/more[^/]+/foobar[^/]+\\.txt$".r.findFirstIn(tmpFile.toString).isDefined)
@@ -231,7 +231,7 @@ class FilesTest extends AnyFunSuite {
     // TODO: attrs
   }
 
-  test("createTempFile(String, String, FileAttribute[_])") {
+  "createTempFile(String, String, FileAttribute[_])" in {
     val tmpFile = Files.createTempFile("foobar", ".md")
     assert("/foobar[^/]+\\.md$".r.findFirstIn(tmpFile.toString).isDefined)
     assert(Files.exists(tmpFile))
@@ -240,7 +240,7 @@ class FilesTest extends AnyFunSuite {
     // TODO: attrs
   }
 
-  test("delete(Path)") {
+  "delete(Path)" in {
     val tmpFile = Files.createTempFile("deleteme", ".txt")
     assert(Files.exists(tmpFile))
     Files.delete(tmpFile)
@@ -273,7 +273,7 @@ class FilesTest extends AnyFunSuite {
     // todo: opened by other process
   }
 
-  test("deleteIfExists(Path)") {
+  "deleteIfExists(Path)" in {
     val tmpDir = Files.createTempDirectory("d-i-e")
 
     // non-exist
@@ -308,7 +308,7 @@ class FilesTest extends AnyFunSuite {
     assert(Files.notExists(symbolicFile))
   }
 
-  test("exists(Path, LinkOption*)") {
+  "exists(Path, LinkOption*)" in {
     assert(!Files.exists(noSuchFile))
     assert(!Files.exists(noSuchFileInDir))
 
@@ -325,27 +325,27 @@ class FilesTest extends AnyFunSuite {
     assert(Files.exists(deletedSymlinkFile, LinkOption.NOFOLLOW_LINKS))
   }
 
-  ignore("find(Path, Int, BiPredicate[Path, BasicFileAttributes], FileVisitOption*)") {
+  "find(Path, Int, BiPredicate[Path, BasicFileAttributes], FileVisitOption*)" ignore {
     // Pending due to missing java.util.stream.Stream
   }
 
-  ignore("getAttribute(Path, String, LinkOption*)") {
+  "getAttribute(Path, String, LinkOption*)" ignore {
     // Node.js have no corresponding API
   }
 
-  ignore("getFileAttributeView[V <: FileAttributeView](Path, Class[V], LinkOption*)") {
+  "getFileAttributeView[V <: FileAttributeView](Path, Class[V], LinkOption*)" ignore {
     // Node.js have no corresponding API
   }
 
-  ignore("getFileStore(Path)") {
+  "getFileStore(Path)" ignore {
     // Node.js have no corresponding API
   }
 
-  ignore("getOwner(Path, LinkOption*)") {
+  "getOwner(Path, LinkOption*)" ignore {
     // Node.js have no API to get user name associated with a uid
   }
 
-  test("getPosixFilePermissions(Path, LinkOption*)") {
+  "getPosixFilePermissions(Path, LinkOption*)" in {
     import PosixFilePermission._
     assert(Files.getPosixFilePermissions(rrr).asScala === Set(GROUP_READ, OWNER_READ, OTHERS_READ))
     assert(
@@ -400,7 +400,7 @@ class FilesTest extends AnyFunSuite {
   private val noSuchFile      = Paths.get("no-such-file")
   private val noSuchSubDir    = Paths.get("no-such-dir/no-such-sub")
 
-  test("isDirectory(Path)") {
+  "isDirectory(Path)" in {
     assert(Files.isDirectory(directory))
     assert(Files.isDirectory(subDirectory))
     assert(Files.isDirectory(directorySource))
@@ -411,7 +411,7 @@ class FilesTest extends AnyFunSuite {
     assert(!Files.isDirectory(noSuchSubDir))
   }
 
-  test("isDirectory(Path, LinkOption*)") {
+  "isDirectory(Path, LinkOption*)" in {
     val option = LinkOption.NOFOLLOW_LINKS
     assert(Files.isDirectory(directory, option))
     assert(Files.isDirectory(directorySource, option))
@@ -420,7 +420,7 @@ class FilesTest extends AnyFunSuite {
     assert(!Files.isDirectory(regularText, option))
   }
 
-  test("isExecutable(Path)") {
+  "isExecutable(Path)" in {
     assert(!Files.isExecutable(Paths.get("build.sbt")))
     assert(!Files.isExecutable(noSuchFile))
     assert(Files.isExecutable(rwxrwxrwx))
@@ -431,13 +431,13 @@ class FilesTest extends AnyFunSuite {
     assert(Files.isExecutable(Paths.get("jdk/shared")))
   }
 
-  test("isHidden(Path)") {
+  "isHidden(Path)" in {
     assert(!Files.isHidden(rwxrwxrwx))
     assert(Files.isHidden(hiddenDirectory))
     assert(!Files.isHidden(fileInHidden))
   }
 
-  test("isReadable(Path)") {
+  "isReadable(Path)" in {
     assert(Files.isReadable(regularText))
     assert(!Files.isReadable(noSuchFile))
 
@@ -445,7 +445,7 @@ class FilesTest extends AnyFunSuite {
     assert(!Files.isReadable(noSuchFileInDir))
   }
 
-  test("isRegularFile(Path, LinkOption*)") {
+  "isRegularFile(Path, LinkOption*)" in {
     assert(!Files.isRegularFile(directorySource))
     assert(Files.isRegularFile(fileInSource))
     assert(!Files.isRegularFile(directorySymlink, LinkOption.NOFOLLOW_LINKS))
@@ -464,7 +464,7 @@ class FilesTest extends AnyFunSuite {
     assert(!Files.isRegularFile(noSuchFile))
   }
 
-  test("isSameFile(Path, Path)") {
+  "isSameFile(Path, Path)" in {
     assert(Files.isSameFile(regularText, regularText))
     assert(Files.isSameFile(symlinkText, symlinkText))
     assert(!Files.isSameFile(regularText, symlinkText))
@@ -487,7 +487,7 @@ class FilesTest extends AnyFunSuite {
     }
   }
 
-  test("isSymbolicLink(Path)") {
+  "isSymbolicLink(Path)" in {
     assert(!Files.isSymbolicLink(directorySource))
     assert(!Files.isSymbolicLink(fileInSource))
     assert(Files.isSymbolicLink(directorySymlink))
@@ -496,7 +496,7 @@ class FilesTest extends AnyFunSuite {
     assert(!Files.isSymbolicLink(noSuchFile))
   }
 
-  test("isWritable(Path)") {
+  "isWritable(Path)" in {
     assert(Files.isWritable(directory))
     assert(Files.isWritable(fileInSource))
     assert(Files.isWritable(fileInHidden))
@@ -505,13 +505,13 @@ class FilesTest extends AnyFunSuite {
     assert(!Files.isWritable(rrr))
   }
 
-  ignore("lines(Path)") {}
+  "lines(Path)" ignore {}
 
-  ignore("lines(Path, Charset)") {}
+  "lines(Path, Charset)" ignore {}
 
-  ignore("list(Path)") {}
+  "list(Path)" ignore {}
 
-  test("move(Path, Path, CopyOption*)") {
+  "move(Path, Path, CopyOption*)" in {
     Seq(fileInSource, directory).foreach { path =>
       Files.move(path, path)
       Files.move(path, path, StandardCopyOption.ATOMIC_MOVE)
@@ -543,29 +543,29 @@ class FilesTest extends AnyFunSuite {
     }
   }
 
-  ignore("newBufferedReader(Path)") {}
+  "newBufferedReader(Path)" ignore {}
 
-  ignore("newBufferedReader(Path, Charset)") {}
+  "newBufferedReader(Path, Charset)" ignore {}
 
-  ignore("newBufferedWriter(Path, Charset, OpenOption*)") {}
+  "newBufferedWriter(Path, Charset, OpenOption*)" ignore {}
 
-  ignore("newBufferedWriter(Path, OpenOption*)") {}
+  "newBufferedWriter(Path, OpenOption*)" ignore {}
 
-  ignore("newByteChannel(Path, OpenOption*)") {}
+  "newByteChannel(Path, OpenOption*)" ignore {}
 
-  ignore("newByteChannel(Path, JavaSet[_ <: OpenOption], FileAttribute[_]*)") {}
+  "newByteChannel(Path, JavaSet[_ <: OpenOption], FileAttribute[_]*)" ignore {}
 
-  ignore("newDirectoryStream(Path)") {}
+  "newDirectoryStream(Path)" ignore {}
 
-  ignore("newDirectoryStream(Path, DirectoryStream.Filter[_ >: Path])") {}
+  "newDirectoryStream(Path, DirectoryStream.Filter[_ >: Path])" ignore {}
 
-  ignore("newDirectoryStream(Path, String)") {}
+  "newDirectoryStream(Path, String)" ignore {}
 
-  ignore("newInputStream(Path, OpenOption*)") {}
+  "newInputStream(Path, OpenOption*)" ignore {}
 
-  ignore("newOutputStream(Path, OpenOption*)") {}
+  "newOutputStream(Path, OpenOption*)" ignore {}
 
-  test("notExists(Path, LinkOption*)") {
+  "notExists(Path, LinkOption*)" in {
     assert(Files.notExists(noSuchFile))
     assert(Files.notExists(noSuchFileInDir))
 
@@ -582,7 +582,7 @@ class FilesTest extends AnyFunSuite {
     assert(!Files.notExists(deletedSymlinkFile, LinkOption.NOFOLLOW_LINKS))
   }
 
-  test("probeContentType(Path)") {
+  "probeContentType(Path)" in {
     // Return null on any files by default ?
     assert(Files.probeContentType(noSuchSubDir) === null)
     assert(Files.probeContentType(noSuchFile) === null)
@@ -591,7 +591,7 @@ class FilesTest extends AnyFunSuite {
     assert(Files.probeContentType(fileInSource) === null)
   }
 
-  test("readAllBytes(Path)") {
+  "readAllBytes(Path)" in {
     assert(
       Files.readAllBytes(fileInSource) === Array[Byte](
         102, 111, 111, 10, 98, 97, 114, 10, -26, -105, -91, -26, -100, -84, -24, -86, -98, 10
@@ -610,7 +610,7 @@ class FilesTest extends AnyFunSuite {
     }
   }
 
-  test("readAllLines(Path)") {
+  "readAllLines(Path)" in {
     assert(Files.readAllLines(fileInSource).asScala === Seq("foo", "bar", "日本語"))
     assert(Files.readAllLines(fileInSymlink).asScala === Seq("foo", "bar", "日本語"))
     assertThrows[IOException] {
@@ -621,7 +621,7 @@ class FilesTest extends AnyFunSuite {
     }
   }
 
-  test("readAllLines(Path, Charset)") {
+  "readAllLines(Path, Charset)" in {
     val utf16le = utf16leCharset
     assert(Files.readAllLines(utf16leTxt, utf16le).asScala === Seq("\uFEFFUTF-16LE", "日本語"))
     assert(Files.readAllLines(fileInSymlink, utf16le).asScala !== Seq("foo", "bar", "buz"))
@@ -633,7 +633,7 @@ class FilesTest extends AnyFunSuite {
     }
   }
 
-  test("readAttributes[A <: BasicFileAttributes](Path, Class[A], LinkOption*)") {
+  "readAttributes[A <: BasicFileAttributes](Path, Class[A], LinkOption*)" in {
     // directory and symlink without NOFOLLOW_LINK
     Seq(directorySource, directorySymlink).foreach { dir =>
       val dirAttr: BasicFileAttributes = Files.readAttributes(dir, classOf[BasicFileAttributes])
@@ -695,7 +695,7 @@ class FilesTest extends AnyFunSuite {
     }
   }
 
-  test("readAttributes(Path, String, LinkOption*)") {
+  "readAttributes(Path, String, LinkOption*)" in {
     // unavailabel attrs
     assertThrows[IllegalArgumentException] {
       Files.readAttributes(directory, "").asScala
@@ -763,21 +763,21 @@ class FilesTest extends AnyFunSuite {
     }
   }
 
-  ignore("readSymbolicLink(Path)") {}
+  "readSymbolicLink(Path)" ignore {}
 
-  ignore("setAttribute(Path, String, AnyRef, LinkOption*)") {
+  "setAttribute(Path, String, AnyRef, LinkOption*)" ignore {
     // Node.js have no API to get user name associated with a uid
   }
 
-  ignore("setLastModifiedTime(Path, FileTime)") {}
+  "setLastModifiedTime(Path, FileTime)" ignore {}
 
-  ignore("setOwner(Path, UserPrincipal)") {
+  "setOwner(Path, UserPrincipal)" ignore {
     // Node.js have no API to get user name associated with a uid
   }
 
-  ignore("setPosixFilePermissions(Path, JavaSet[PosixFilePermission])") {}
+  "setPosixFilePermissions(Path, JavaSet[PosixFilePermission])" ignore {}
 
-  test("size(Path)") {
+  "size(Path)" in {
     // directory
     assert(Files.size(directorySource) === 96)
 
@@ -788,10 +788,10 @@ class FilesTest extends AnyFunSuite {
     assert(Files.size(directorySymlink) === 96)
   }
 
-  ignore("walk(Path, FileVisitOption*)") {}
-  ignore("walk(Path, Int, FileVisitOption*)") {}
+  "walk(Path, FileVisitOption*)" ignore {}
+  "walk(Path, Int, FileVisitOption*)" ignore {}
 
-  test("walkFileTree(Path, FileVisitor[_ >: Path])") {
+  "walkFileTree(Path, FileVisitor[_ >: Path])" in {
     val fileCollector = new FileCollector()
     assert(Files.walkFileTree(fileInSource, fileCollector) === fileInSource)
     assert(fileCollector.collectFiles() === Seq(fileInSource))
@@ -824,9 +824,9 @@ class FilesTest extends AnyFunSuite {
     // todo: dir SKIP_SUBTREE
     // todo: dir SKIP_SIBLINGS
   }
-  ignore("walkFileTree(Path, JavaSet[FileVisitOption], maxDepth:Int, FileVisitor[_ >: Path])") {}
+  "walkFileTree(Path, JavaSet[FileVisitOption], maxDepth:Int, FileVisitor[_ >: Path])" ignore {}
 
-  test("write(Path, Array[Byte], OpenOption*)") {
+  "write(Path, Array[Byte], OpenOption*)" in {
     val tmpFile = Files.createTempFile("foo", ".txt")
     assert(Files.size(tmpFile) === 0)
     val written = Files.write(tmpFile, Array[Byte](97, 98, 99))
@@ -845,7 +845,7 @@ class FilesTest extends AnyFunSuite {
       Files.write(directory, Array[Byte](97, 98, 99))
     }
   }
-  test("write(Path, JavaIterable[_ <: CharSequence], Charset, OpenOption*)") {
+  "write(Path, JavaIterable[_ <: CharSequence], Charset, OpenOption*)" in {
     val tmpFile = Files.createTempFile("foo", ".txt")
     assert(Files.size(tmpFile) === 0)
 
@@ -855,7 +855,7 @@ class FilesTest extends AnyFunSuite {
     assert(Files.readAllLines(written, utf16le).asScala.toSeq === Seq("abc"))
     assert(Files.size(tmpFile) === 8)
   }
-  test("write(Path, JavaIterable[_ <: CharSequence], OpenOption*)") {
+  "write(Path, JavaIterable[_ <: CharSequence], OpenOption*)" in {
     val tmpFile = Files.createTempFile("foo", ".txt")
     assert(Files.size(tmpFile) === 0)
     val written = Files.write(tmpFile, Seq("abc").asJava)

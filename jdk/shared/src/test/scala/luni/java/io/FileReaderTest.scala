@@ -1,11 +1,11 @@
 package luni.java.io
 
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.freespec.AnyFreeSpec
 
 import java.io._
 
-class FileReaderTest extends AnyFunSuite with BeforeAndAfterEach {
+class FileReaderTest extends AnyFreeSpec with BeforeAndAfterEach {
 
   private var br: FileReader       = _
   private var bw: BufferedWriter   = _
@@ -33,7 +33,7 @@ class FileReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     f.delete()
   }
 
-  test("ConstructorLjava_io_File") {
+  "ConstructorLjava_io_File" in {
     bw = new BufferedWriter(new FileWriter(f.getPath()))
     bw.write(" After test string", 0, 18)
     bw.close()
@@ -44,7 +44,7 @@ class FileReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     assert(" After test string" === new String(buf, 0, r))
   }
 
-  test("ConstructorLjava_io_FileDescriptor") {
+  "ConstructorLjava_io_FileDescriptor" in {
     bw = new BufferedWriter(new FileWriter(f.getPath()))
     bw.write(" After test string", 0, 18)
     bw.close()
@@ -58,7 +58,7 @@ class FileReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     assert(" After test string" === new String(buf, 0, r))
   }
 
-  test("ConstructorLjava_lang_String") {
+  "ConstructorLjava_lang_String" in {
     bw = new BufferedWriter(new FileWriter(f.getPath()))
     bw.write(" After test string", 0, 18)
     bw.close()

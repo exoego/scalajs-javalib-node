@@ -27,7 +27,7 @@ lazy val commonSettings = Seq(
   ),
   libraryDependencies ++= Seq(
     "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.1",
-    "org.scalatest" %%% "scalatest" % "3.1.4" % "test"
+    "org.scalatest" %%% "scalatest-freespec" % "3.2.2" % "test"
   )
 )
 lazy val commonJsSettings = Seq(

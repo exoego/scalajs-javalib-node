@@ -3,9 +3,9 @@ package luni.java.io
 import java.io.StringWriter
 
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.freespec.AnyFreeSpec
 
-class StringWriterTest extends AnyFunSuite with BeforeAndAfterEach {
+class StringWriterTest extends AnyFreeSpec with BeforeAndAfterEach {
   private[io] var sw: StringWriter = _
 
   override def beforeEach(): Unit = {
@@ -16,89 +16,89 @@ class StringWriterTest extends AnyFunSuite with BeforeAndAfterEach {
     if (sw != null) sw.close()
   }
 
-  test("Constructor") {
+  "Constructor" in {
     assert(true)
   }
 
-  test("close") {
+  "close" in {
     // always success, not throwing IOException
     sw.close()
     sw.close()
   }
 
-  test("flush") {
+  "flush" in {
     sw.flush()
     sw.write('c')
     assert("c" === sw.toString)
   }
 
-  test("getBuffer") {
+  "getBuffer" in {
     sw.write("This is a test string")
     val sb = sw.getBuffer
     assert("This is a test string" === sb.toString)
   }
 
-  test("toString") {
+  "toString" in {
     sw.write("This is a test string")
     assert("This is a test string" === sw.toString)
   }
 
-  test("write$CII") {
+  "write$CII" in {
     val c = new Array[Char](1000)
     "This is a test string".getChars(0, 21, c, 0)
     sw.write(c, 0, 21)
     assert("This is a test string" === sw.toString)
   }
 
-  test("write$CII_2") {
+  "write$CII_2" in {
     assertThrows[IndexOutOfBoundsException] {
       sw.write(new Array[Char](0), 0, -1)
       fail("IndexOutOfBoundsException expected")
     }
   }
 
-  test("write$CII_3") {
+  "write$CII_3" in {
     assertThrows[IndexOutOfBoundsException] {
       sw.write(new Array[Char](0), -1, 0)
     }
   }
 
-  test("write$CII_4") {
+  "write$CII_4" in {
     assertThrows[IndexOutOfBoundsException] {
       sw.write(new Array[Char](0), -1, -1)
     }
   }
 
-  test("writeI") {
+  "writeI" in {
     sw.write('c')
     assert("c" === sw.toString)
   }
 
-  test("writeLjava_lang_String") {
+  "writeLjava_lang_String" in {
     sw.write("This is a test string")
     assert("This is a test string" === sw.toString)
   }
 
-  test("writeLjava_lang_StringII") {
+  "writeLjava_lang_StringII" in {
     sw.write("This is a test string", 2, 2)
     assert("is" === sw.toString)
   }
 
-  test("appendChar") {
+  "appendChar" in {
     val testChar = ' '
     sw = new StringWriter(20)
     sw.append(testChar)
     assert(String.valueOf(testChar) === sw.toString)
   }
 
-  test("appendCharSequence") {
+  "appendCharSequence" in {
     val testString = "My Test String"
     sw = new StringWriter(20)
     sw.append(testString)
     assert(String.valueOf(testString) === sw.toString)
   }
 
-  test("appendCharSequenceIntInt") {
+  "appendCharSequenceIntInt" in {
     val testString = "My Test String"
     sw = new StringWriter(20)
     sw.append(testString, 1, 3)

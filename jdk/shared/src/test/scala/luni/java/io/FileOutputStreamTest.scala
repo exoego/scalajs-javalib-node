@@ -9,12 +9,12 @@ import java.io.{
   IOException
 }
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.freespec.AnyFreeSpec
 import support.TestSupport
 
 import java.nio.channels.ClosedChannelException
 
-class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with TestSupport {
+class FileOutputStreamTest extends AnyFreeSpec with BeforeAndAfterEach with TestSupport {
   private[io] var fileName: String = _
 
   private[io] var fos: FileOutputStream = _
@@ -43,12 +43,12 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with Test
     if (fos != null) fos.close()
   }
 
-  test("ConstructorLjava_io_File") {
+  "ConstructorLjava_io_File" in {
     f = new File(System.getProperty("user.home"), "fos.tst")
     fos = new FileOutputStream(f)
   }
 
-  test("ConstructorLjava_io_FileDescriptor") {
+  "ConstructorLjava_io_FileDescriptor" in {
     f = new File(System.getProperty("user.home"), "fos.tst")
     fileName = f.getAbsolutePath
     fos = new FileOutputStream(fileName)
@@ -60,7 +60,7 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with Test
     fis.close()
   }
 
-  test("ConstructorLjava_lang_String") {
+  "ConstructorLjava_lang_String" in {
     f = new File(System.getProperty("user.home"), "fos.tst")
     fileName = f.getAbsolutePath
     fos = new FileOutputStream(fileName)
@@ -68,7 +68,7 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with Test
     new FileOutputStream("nul")
   }
 
-  test("ConstructorLjava_lang_StringZ") {
+  "ConstructorLjava_lang_StringZ" in {
     f = new File(System.getProperty("user.home"), "fos.tst")
     fos = new FileOutputStream(f.getPath(), false)
     fos.write("HI".getBytes, 0, 2)
@@ -82,21 +82,21 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with Test
     assert(new String(buf, 0, buf.length) === ("HI" + fileString))
   }
 
-  test("ConstructorLjava_lang_String_I") {
+  "ConstructorLjava_lang_String_I" in {
     assertThrows[FileNotFoundException] {
       fos = new FileOutputStream("")
     }
     if (fos != null) fos.close()
   }
 
-  test("ConstructorLjava_lang_String_I_2") {
+  "ConstructorLjava_lang_String_I_2" in {
     assertThrows[FileNotFoundException] {
       fos = new FileOutputStream(new File(""))
     }
     if (fos != null) fos.close()
   }
 
-  test("close") {
+  "close" in {
     f = new File(System.getProperty("user.home", "./"), "output.tst")
     fos = new FileOutputStream(f.getPath())
     fos.close()
@@ -105,7 +105,7 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with Test
     }
   }
 
-  test("getFD") {
+  "getFD" in {
     f = new File(System.getProperty("user.home", "./"), "testfd")
     fileName = f.getAbsolutePath()
     fos = new FileOutputStream(f)
@@ -114,7 +114,7 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with Test
     assert(!fos.getFD.valid)
   }
 
-  test("write$B") {
+  "write$B" in {
     f = new File(System.getProperty("user.home"), "output.tst")
     fos = new FileOutputStream(f.getPath())
     fos.write(fileString.getBytes)
@@ -124,7 +124,7 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with Test
     assert(new String(rbytes, 0, fileString.length) === fileString)
   }
 
-  test("write$BII") {
+  "write$BII" in {
     f = new File(System.getProperty("user.home"), "output.tst")
     fos = new FileOutputStream(f.getPath())
     fos.write(fileString.getBytes, 0, fileString.length)
@@ -134,7 +134,7 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with Test
     assert(new String(rbytes, 0, fileString.length) === fileString)
   }
 
-  test("write$BII: Regression test for HARMONY-285") {
+  "write$BII: Regression test for HARMONY-285" in {
     f = new File("FileOutputStream.tmp")
     fos = new FileOutputStream(f)
     assertThrows[NullPointerException] {
@@ -142,7 +142,7 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with Test
     }
   }
 
-  test("writeI") {
+  "writeI" in {
     f = new File(System.getProperty("user.home"), "output.tst")
     fos = new FileOutputStream(f.getPath())
     fos.write('t')
@@ -150,7 +150,7 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with Test
     assert('t' === fis.read)
   }
 
-  test("write$BII2: Regression for HARMONY-437") {
+  "write$BII2: Regression for HARMONY-437" in {
     f = new File(System.getProperty("user.home"), "output.tst")
     fos = new FileOutputStream(f.getPath())
     assertThrows[NullPointerException] {
@@ -173,12 +173,12 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with Test
     }
   }
 
-  test("write$BII3: Regression for HARMONY-834") {
+  "write$BII3: Regression for HARMONY-834" in {
     // no exception expected
     new FileOutputStream(new FileDescriptor).write(new Array[Byte](1), 0, 0)
   }
 
-  test("getChannel* Regression for HARMONY-508") {
+  "getChannel* Regression for HARMONY-508" in {
     assume(!isScalaJS, "not implemented yey")
     val tmpfile = File.createTempFile("FileOutputStream", "tmp")
     tmpfile.deleteOnExit()
@@ -190,7 +190,7 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with Test
     assert(10 === f.getChannel.position)
   }
 
-  test("getChannel_Append") {
+  "getChannel_Append" in {
     assume(!isScalaJS, "not implemented yey")
     val tmpfile = File.createTempFile("FileOutputStream", "tmp");
     tmpfile.deleteOnExit();
@@ -209,7 +209,7 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with Test
     }
   }
 
-  test("getChannel_UnAppend") {
+  "getChannel_UnAppend" in {
     assume(!isScalaJS, "not implemented yey")
 
     val tmpfile = File.createTempFile("FileOutputStream", "tmp");
@@ -229,7 +229,7 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with Test
     }
   }
 
-  test("getChannel_Unappend_Unappend") {
+  "getChannel_Unappend_Unappend" in {
     assume(!isScalaJS, "not implemented yey")
     val tmpfile = File.createTempFile("FileOutputStream", "tmp");
     tmpfile.deleteOnExit();
@@ -244,7 +244,7 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with Test
     fos2.close();
   }
 
-  test("getChannel_Unappend_Append") {
+  "getChannel_Unappend_Append" in {
     assume(!isScalaJS, "not implemented yey")
     val tmpfile = File.createTempFile("FileOutputStream", "tmp");
     tmpfile.deleteOnExit();
@@ -259,7 +259,7 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with Test
     fos2.close();
   }
 
-  test("getChannel_Append_Unappend") {
+  "getChannel_Append_Unappend" in {
     assume(!isScalaJS, "not implemented yey")
     val tmpfile = File.createTempFile("FileOutputStream", "tmp");
     tmpfile.deleteOnExit();
@@ -274,7 +274,7 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach with Test
     fos2.close();
   }
 
-  test("getChanne_Append_Append") {
+  "getChanne_Append_Append" in {
     assume(!isScalaJS, "not implemented yey")
     val tmpfile = File.createTempFile("FileOutputStream", "tmp");
     tmpfile.deleteOnExit();

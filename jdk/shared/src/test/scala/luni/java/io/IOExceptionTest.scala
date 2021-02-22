@@ -1,19 +1,19 @@
 package luni.java.io
 
-import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.freespec.AnyFreeSpec
 
 import java.io.IOException
 
-class IOExceptionTest extends AnyFunSuite {
+class IOExceptionTest extends AnyFreeSpec {
 
-  test("Constructor") {
+  "Constructor" in {
     val ex = intercept[IOException] {
       throw new IOException()
     }
     assert(ex.getMessage === null)
   }
 
-  test("ConstructorLjava_lang_String") {
+  "ConstructorLjava_lang_String" in {
     val ex = intercept[IOException] {
       throw new IOException("Some error message")
     }

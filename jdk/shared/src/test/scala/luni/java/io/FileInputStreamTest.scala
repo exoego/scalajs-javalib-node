@@ -1,13 +1,13 @@
 package luni.java.io
 
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.freespec.AnyFreeSpec
 import support.TestSupport
 
 import java.io._
 import java.nio.channels.ClosedChannelException
 
-class FileInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with TestSupport {
+class FileInputStreamTest extends AnyFreeSpec with BeforeAndAfterEach with TestSupport {
   var fileName: String = _
 
   private var is: FileInputStream = _
@@ -35,25 +35,25 @@ class FileInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with TestS
     is = null
   }
 
-  test("ConstructorLjava_io_File") {
+  "ConstructorLjava_io_File" in {
     val f = new File(fileName)
     is = new FileInputStream(f)
     is.close()
   }
 
-  test("ConstructorLjava_io_FileDescriptor") {
+  "ConstructorLjava_io_FileDescriptor" in {
     val fos = new FileOutputStream(fileName)
     val fis = new FileInputStream(fos.getFD)
     fos.close()
     fis.close()
   }
 
-  test("ConstructorLjava_lang_String") {
+  "ConstructorLjava_lang_String" in {
     is = new FileInputStream(fileName)
     is.close()
   }
 
-  test("ConstructorLjava_lang_String_I") {
+  "ConstructorLjava_lang_String_I" in {
     assertThrows[FileNotFoundException] {
       is = new FileInputStream("")
     }
@@ -65,7 +65,7 @@ class FileInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with TestS
     if (is != null) is.close()
   }
 
-  test("close") {
+  "close" in {
     is = new FileInputStream(fileName)
     is.close()
     assertThrows[IOException] {
@@ -87,7 +87,7 @@ class FileInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with TestS
   }
 
 //  //   TODO: FileDescriptor.in
-//    test("close: stdin") {
+//    "close: stdin" in {
 //      var stdin = new FileInputStream(FileDescriptor.in)
 //      stdin.close()
 //      stdin = new FileInputStream(FileDescriptor.in)
@@ -96,21 +96,21 @@ class FileInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with TestS
 //      }
 //    }
 
-  test("getFD") {
+  "getFD" in {
     val fis = new FileInputStream(fileName)
     assert(fis.getFD.valid)
     fis.close()
     assert(!fis.getFD.valid)
   }
 
-  test("read") {
+  "read" in {
     val isr = new InputStreamReader(new FileInputStream(fileName))
     val c   = isr.read()
     isr.close()
     assert(c === fileString.charAt(0))
   }
 
-  ignore("read$B") {
+  "read$B" ignore {
     val buf1 = new Array[Byte](100)
     is = new FileInputStream(fileName)
     is.skip(3000)
@@ -119,7 +119,7 @@ class FileInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with TestS
     assert(new String(buf1, 0, buf1.length) === fileString.substring(3000, 3100))
   }
 
-  ignore("read$BII") {
+  "read$BII" ignore {
     val buf1 = new Array[Byte](100)
     is = new FileInputStream(fileName)
     is.skip(3000)
@@ -128,7 +128,7 @@ class FileInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with TestS
     assert(new String(buf1, 0, buf1.length) === fileString.substring(3000, 3100))
   }
 
-  test("read$BII: Regression test for HARMONY-285") {
+  "read$BII: Regression test for HARMONY-285" in {
     val file = new File("FileInputStream.tmp")
     file.createNewFile()
     file.deleteOnExit()
@@ -140,7 +140,7 @@ class FileInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with TestS
     file.delete()
   }
 
-  ignore("read_$BII_IOException") {
+  "read_$BII_IOException" ignore {
     val buf = new Array[Byte](1000)
     assertThrows[IOException] {
       is = new FileInputStream(fileName)
@@ -155,7 +155,7 @@ class FileInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with TestS
     is.close()
   }
 
-  test("read_$BII_NullPointerException") {
+  "read_$BII_NullPointerException" in {
     val buf = null
     assertThrows[NullPointerException] {
       is = new FileInputStream(fileName)
@@ -164,7 +164,7 @@ class FileInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with TestS
     is.close()
   }
 
-  ignore("read_$BII_IndexOutOfBoundsException") {
+  "read_$BII_IndexOutOfBoundsException" ignore {
     val buf = new Array[Byte](1000)
     assertThrows[IndexOutOfBoundsException] {
       is = new FileInputStream(fileName)
@@ -203,7 +203,7 @@ class FileInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with TestS
     is.close()
   }
 
-  ignore("regressionNNN: Regression for HARMONY-434") {
+  "regressionNNN: Regression for HARMONY-434" ignore {
     val fis = new FileInputStream(fileName)
     assertThrows[IndexOutOfBoundsException] {
       fis.read(new Array[Byte](1), -1, 1)
@@ -223,7 +223,7 @@ class FileInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with TestS
     fis.close()
   }
 
-  test("available") {
+  "available" in {
     try {
       is = new FileInputStream(fileName)
       assert(is.available === fileString.length)
@@ -235,7 +235,7 @@ class FileInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with TestS
     }
   }
 
-  ignore("skipJ") {
+  "skipJ" ignore {
     val buf1 = new Array[Byte](10)
     is = new FileInputStream(fileName)
     is.skip(1000)
@@ -244,7 +244,7 @@ class FileInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with TestS
     assert(new String(buf1, 0, buf1.length) === fileString.substring(1000, 1010))
   }
 
-  test("skipNegativeArgumentJ") {
+  "skipNegativeArgumentJ" in {
     val fis = new FileInputStream(fileName)
     assertThrows[IOException] {
       fis.skip(-5)
@@ -252,7 +252,7 @@ class FileInputStreamTest extends AnyFunSuite with BeforeAndAfterEach with TestS
     fis.close()
   }
 
-  ignore("getChannel") {
+  "getChannel" ignore {
     var fis = new FileInputStream(fileName)
     assert(0 === fis.getChannel.position)
     var r     = 0

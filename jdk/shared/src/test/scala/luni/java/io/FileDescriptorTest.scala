@@ -9,9 +9,9 @@ import java.io.{
   RandomAccessFile
 }
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.freespec.AnyFreeSpec
 
-class FileDescriptorTest extends AnyFunSuite with BeforeAndAfterEach {
+class FileDescriptorTest extends AnyFreeSpec with BeforeAndAfterEach {
   private val platformId = "JDK" + System.getProperty("java.vm.version").replace('.', '-')
 
   private[io] var fos: FileOutputStream    = _
@@ -26,12 +26,12 @@ class FileDescriptorTest extends AnyFunSuite with BeforeAndAfterEach {
     }
   }
 
-  test("Constructor") {
+  "Constructor" in {
     val fd = new FileDescriptor()
     assert(fd.isInstanceOf[FileDescriptor])
   }
 
-  test("sync") {
+  "sync" in {
     f = new File(System.getProperty("user.dir"), "fd" + platformId + ".tst")
     f.delete
     fos = new FileOutputStream(f.getPath)
@@ -53,7 +53,7 @@ class FileDescriptorTest extends AnyFunSuite with BeforeAndAfterEach {
     raf.close()
   }
 
-  test("valid") {
+  "valid" in {
     f = new File(System.getProperty("user.dir"), "fd.tst")
     f.delete
     fos = new FileOutputStream(f.getPath)

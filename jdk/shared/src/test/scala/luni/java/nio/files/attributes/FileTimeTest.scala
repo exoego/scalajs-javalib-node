@@ -1,20 +1,20 @@
 package luni.java.nio.files.attributes
 
-import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.freespec.AnyFreeSpec
 
 import java.nio.file.attribute.FileTime
 import java.util.concurrent.TimeUnit._
 
-class FileTimeTest extends AnyFunSuite {
-  ignore("from(Instant)") {
+class FileTimeTest extends AnyFreeSpec {
+  "from(Instant)" ignore {
     // need scala-java-time
   }
 
-  ignore("toInstant") {
+  "toInstant" ignore {
     // need scala-java-time
   }
 
-  test("from(Long,TimeUnit)") {
+  "from(Long,TimeUnit)" in {
     assert(FileTime.from(1, NANOSECONDS).to(NANOSECONDS) === 1L)
     assert(FileTime.from(1, NANOSECONDS).to(MICROSECONDS) === 0L)
 
@@ -58,12 +58,12 @@ class FileTimeTest extends AnyFunSuite {
     assert(FileTime.from(365, DAYS).to(DAYS) === 365L)
   }
 
-  test("fromMillis(Long)") {
+  "fromMillis(Long)" in {
     assert(FileTime.fromMillis(1).toMillis === 1)
     assert(FileTime.fromMillis(0).toMillis === 0)
   }
 
-  test("compareTo") {
+  "compareTo" in {
     val zero1 = FileTime.fromMillis(0)
     val zero2 = FileTime.fromMillis(0)
     val one   = FileTime.fromMillis(1)
@@ -82,7 +82,7 @@ class FileTimeTest extends AnyFunSuite {
     assert(two.compareTo(one) > 0)
   }
 
-  test("equals") {
+  "equals" in {
     val zero1 = FileTime.fromMillis(0)
     val zero2 = FileTime.fromMillis(0)
     val one   = FileTime.fromMillis(1)
@@ -103,7 +103,7 @@ class FileTimeTest extends AnyFunSuite {
     assert(zero1 === zero2 && zero2 === zero3 && zero3 === zero1)
   }
 
-  test("hashCode") {
+  "hashCode" in {
     val zero1 = FileTime.fromMillis(0)
     val zero2 = FileTime.fromMillis(0)
     val one   = FileTime.fromMillis(1)
@@ -122,13 +122,13 @@ class FileTimeTest extends AnyFunSuite {
     assert(zero1 === zero2 && zero2 === zero3 && zero3 === zero1)
   }
 
-  test("toString") {
+  "toString" in {
     assert(FileTime.fromMillis(0).toString === "1970-01-01T00:00:00Z")
     assert(FileTime.fromMillis(1).toString === "1970-01-01T00:00:00.001Z")
     assert(FileTime.fromMillis(1234567890123L).toString === "2009-02-13T23:31:30.123Z")
   }
 
-  test("to(TimeUnit)") {
+  "to(TimeUnit)" in {
     assert(FileTime.fromMillis(1234567890L).to(NANOSECONDS) === 1234567890000000L)
     assert(FileTime.fromMillis(1234567890L).to(MICROSECONDS) === 1234567890000L)
     assert(FileTime.fromMillis(1234567890L).to(MILLISECONDS) === 1234567890L)
@@ -138,7 +138,7 @@ class FileTimeTest extends AnyFunSuite {
     assert(FileTime.fromMillis(1234567890L).to(DAYS) === 14)
   }
 
-  test("toMillis") {
+  "toMillis" in {
     assert(FileTime.fromMillis(1000).toMillis === 1000L)
     assert(FileTime.fromMillis(1000000).toMillis === 1000000L)
   }
