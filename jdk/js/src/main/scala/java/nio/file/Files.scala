@@ -375,9 +375,11 @@ object Files {
         if (!options.contains(StandardCopyOption.REPLACE_EXISTING)) {
           throw new FileAlreadyExistsException(target.toString)
         }
+        fs.Fs.renameSync(source.toString, target.toString)
+
       } else {}
     }
-    source
+    target
   }
 
   def newBufferedReader(path: Path): BufferedReader = ???

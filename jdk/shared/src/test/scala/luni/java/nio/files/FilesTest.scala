@@ -511,35 +511,79 @@ class FilesTest extends AnyFreeSpec {
 
   "list(Path)" ignore {}
 
-  "move(Path, Path, CopyOption*)" in {
-    Seq(fileInSource, directory).foreach { path =>
-      Files.move(path, path)
-      Files.move(path, path, StandardCopyOption.ATOMIC_MOVE)
-      Files.move(path, path, StandardCopyOption.REPLACE_EXISTING)
+  "move(Path, Path, CopyOption*)" - {
+    "same existing path do nothing" in {
+      Seq(fileInSource, directory).foreach { path =>
+        assert(Files.move(path, path) === path)
+        assert(Files.move(path, path, StandardCopyOption.ATOMIC_MOVE) === path)
+        assert(Files.move(path, path, StandardCopyOption.REPLACE_EXISTING) === path)
 
-      assertThrows[UnsupportedOperationException] {
-        Files.move(path, path, StandardCopyOption.COPY_ATTRIBUTES)
-      }
-    }
-    Seq(noSuchFile, noSuchFileInDir).foreach { path =>
-      assertThrows[IOException] {
-        Files.move(path, path)
-      }
-      assertThrows[IOException] {
-        Files.move(path, path, StandardCopyOption.ATOMIC_MOVE)
-      }
-      assertThrows[IOException] {
-        Files.move(path, path, StandardCopyOption.REPLACE_EXISTING)
-      }
-      assertThrows[UnsupportedOperationException] {
-        Files.move(path, path, StandardCopyOption.COPY_ATTRIBUTES)
+        assertThrows[UnsupportedOperationException] {
+          Files.move(path, path, StandardCopyOption.COPY_ATTRIBUTES)
+        }
       }
     }
 
-    val src    = Files.createTempFile("source", ".txt")
-    val target = Files.createTempFile("target", ".txt")
-    assertThrows[FileAlreadyExistsException] {
-      Files.move(src, target)
+    "same no existing path throws IO" in {
+      Seq(noSuchFile, noSuchFileInDir).foreach { path =>
+        assertThrows[IOException] {
+          Files.move(path, path)
+        }
+        assertThrows[IOException] {
+          Files.move(path, path, StandardCopyOption.ATOMIC_MOVE)
+        }
+        assertThrows[IOException] {
+          Files.move(path, path, StandardCopyOption.REPLACE_EXISTING)
+        }
+        assertThrows[UnsupportedOperationException] {
+          Files.move(path, path, StandardCopyOption.COPY_ATTRIBUTES)
+        }
+      }
+    }
+
+    "When target exists" - {
+      "file" - {
+        "throws if NO REPLACE_EXISTING" in {
+          val src    = Files.createTempFile("source", ".txt")
+          val target = Files.createTempFile("target", ".txt")
+          assertThrows[FileAlreadyExistsException] {
+            Files.move(src, target)
+          }
+        }
+
+        "replaces existing file if REPLACE_EXISTING" in {
+          val src = Files.createTempFile("source", ".txt")
+          Files.write(src, Array[Byte](1, 2, 3))
+          val target = Files.createTempFile("target", ".txt")
+          assert(Files.size(src) === 3)
+          assert(Files.size(target) === 0)
+          assert(Files.move(src, target, StandardCopyOption.REPLACE_EXISTING) === target)
+          assert(Files.notExists(src))
+          assert(Files.size(target) === 3)
+        }
+      }
+
+      "directory" - {
+        "throws if NO REPLACE_EXISTING" ignore {
+          val src    = Files.createTempDirectory("source")
+          val target = Files.createTempDirectory("target")
+          assertThrows[FileAlreadyExistsException] {
+            Files.move(src, target)
+          }
+        }
+
+        "replaces existing if REPLACE_EXISTING" ignore {
+          val src  = Files.createTempDirectory("source")
+          val file = Files.createTempFile(src, "foo", ".txt")
+
+          val target = Files.createTempDirectory("target")
+          assert(Files.exists(src))
+          assert(Files.notExists(target.resolve(file.getFileName)))
+          assert(Files.move(src, target, StandardCopyOption.REPLACE_EXISTING) === target)
+          assert(Files.notExists(src))
+          assert(Files.exists(target.resolve(file.getFileName)))
+        }
+      }
     }
   }
 
