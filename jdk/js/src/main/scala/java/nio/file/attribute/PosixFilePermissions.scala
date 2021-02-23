@@ -1,24 +1,34 @@
 package java.nio.file.attribute
 
 import scala.scalajs.js
-
-final class PosixFilePermission private (name: String, ordinal: Int)
-    extends java.lang.Enum[PosixFilePermission](name, ordinal) {}
-
-object PosixFilePermission {
-  val OWNER_READ     = new PosixFilePermission("OWNER_READ", 1)
-  val OWNER_WRITE    = new PosixFilePermission("OWNER_WRITE", 2)
-  val OWNER_EXECUTE  = new PosixFilePermission("OWNER_EXECUTE", 3)
-  val GROUP_READ     = new PosixFilePermission("GROUP_READ", 4)
-  val GROUP_WRITE    = new PosixFilePermission("GROUP_WRITE", 5)
-  val GROUP_EXECUTE  = new PosixFilePermission("GROUP_EXECUTE", 6)
-  val OTHERS_READ    = new PosixFilePermission("OTHERS_READ", 7)
-  val OTHERS_WRITE   = new PosixFilePermission("OTHERS_WRITE", 8)
-  val OTHERS_EXECUTE = new PosixFilePermission("OTHERS_EXECUTE", 9)
-}
+import java.util.{Set => JavaSet, HashSet => JavaHashSet}
 
 object PosixFilePermissions {
-  def toString(set: java.util.Set[PosixFilePermission]): String = {
+  def fromString(perms: String): JavaSet[PosixFilePermission] = {
+    if (perms.length != 9) {
+      throw new IllegalArgumentException()
+    }
+    val set = new JavaHashSet[PosixFilePermission]()
+    @inline def parse(index: Int, expected: Char, permission: PosixFilePermission): Unit = {
+      perms.charAt(index) match {
+        case `expected` => set.add(permission)
+        case '-'        =>
+        case _          => throw new IllegalArgumentException()
+      }
+    }
+    parse(0, 'r', PosixFilePermission.OWNER_READ)
+    parse(1, 'w', PosixFilePermission.OWNER_WRITE)
+    parse(2, 'x', PosixFilePermission.OWNER_EXECUTE)
+    parse(3, 'r', PosixFilePermission.GROUP_READ)
+    parse(4, 'w', PosixFilePermission.GROUP_WRITE)
+    parse(5, 'x', PosixFilePermission.GROUP_EXECUTE)
+    parse(6, 'r', PosixFilePermission.OTHERS_READ)
+    parse(7, 'w', PosixFilePermission.OTHERS_WRITE)
+    parse(8, 'x', PosixFilePermission.OTHERS_EXECUTE)
+    set
+  }
+
+  def toString(set: JavaSet[PosixFilePermission]): String = {
     js.Array(
         if (set.contains(PosixFilePermission.OWNER_READ)) "r" else "-",
         if (set.contains(PosixFilePermission.OWNER_WRITE)) "w" else "-",
@@ -32,4 +42,14 @@ object PosixFilePermissions {
       )
       .join("")
   }
+
+  def asFileAttribute(
+      perms: JavaSet[PosixFilePermission]
+  ): FileAttribute[JavaSet[PosixFilePermission]] = new PosixFilePermissionFileAttribute(perms)
+}
+
+private[attribute] final class PosixFilePermissionFileAttribute(
+    val value: JavaSet[PosixFilePermission]
+) extends FileAttribute[JavaSet[PosixFilePermission]] {
+  override def name(): String = "posix:permissions"
 }
