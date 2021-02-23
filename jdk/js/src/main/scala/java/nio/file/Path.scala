@@ -111,7 +111,7 @@ private[java] object PathHelper {
       throw new UnsupportedOperationException
     }
     override def resolve(path: Path): Path = {
-      throw new UnsupportedOperationException
+      new PathImpl(new File(this.toString, path.getFileName.toString))
     }
     override def relativize(path: Path): Path = {
       throw new UnsupportedOperationException

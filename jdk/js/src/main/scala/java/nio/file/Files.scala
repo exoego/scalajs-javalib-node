@@ -367,17 +367,29 @@ object Files {
     } else if (notExists(source)) {
       throw new NoSuchFileException(source.toString)
     } else if (source != target) {
-      // file, file
-      // dir,dir
-      // file,dir
-
-      if (exists(target)) {
+      if (isDirectory(target)) {
         if (!options.contains(StandardCopyOption.REPLACE_EXISTING)) {
           throw new FileAlreadyExistsException(target.toString)
         }
-        fs.Fs.renameSync(source.toString, target.toString)
+        try {
+          if (isRegularFile(source)) {
+            fs.Fs.rmdirSync(target.toString)
+          }
+        } catch {
+          case _: Throwable => throw new DirectoryNotEmptyException(target.toString)
+        }
+      } else if (isRegularFile(target)) {
+        if (!options.contains(StandardCopyOption.REPLACE_EXISTING)) {
+          throw new FileAlreadyExistsException(target.toString)
+        }
+        Files.delete(target)
+      }
 
-      } else {}
+      try {
+        fs.Fs.renameSync(source.toString, target.toString)
+      } catch {
+        case _: Throwable => throw new DirectoryNotEmptyException(target.toString)
+      }
     }
     target
   }

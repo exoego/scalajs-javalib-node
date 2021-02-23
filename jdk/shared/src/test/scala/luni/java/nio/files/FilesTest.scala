@@ -541,8 +541,40 @@ class FilesTest extends AnyFreeSpec {
       }
     }
 
+    "When target does not exist" - {
+      "source is a file" - {
+        "moved, time preserved" in {
+          val tmpDir   = Files.createTempDirectory("1234")
+          val src      = Files.createFile(tmpDir.resolve("src.txt"))
+          val srcAttrs = Files.readAttributes(src, classOf[BasicFileAttributes])
+
+          val target = tmpDir.resolve("target.txt")
+          assert(Files.move(src, target) === target)
+          val targetAttrs = Files.readAttributes(target, classOf[BasicFileAttributes])
+          assert(srcAttrs.creationTime() === targetAttrs.creationTime())
+          assert(srcAttrs.lastAccessTime() === targetAttrs.lastAccessTime())
+          assert(srcAttrs.lastModifiedTime() === targetAttrs.lastModifiedTime())
+        }
+      }
+
+      "source is a directory" - {
+        "moved, time preserved" in {
+          val tmpDir   = Files.createTempDirectory("1234")
+          val src      = Files.createDirectory(tmpDir.resolve("srcDir"))
+          val srcAttrs = Files.readAttributes(src, classOf[BasicFileAttributes])
+          val target   = tmpDir.resolve("target")
+
+          assert(Files.move(src, target) === target)
+          val targetAttrs = Files.readAttributes(target, classOf[BasicFileAttributes])
+          assert(srcAttrs.creationTime() === targetAttrs.creationTime())
+          assert(srcAttrs.lastAccessTime() === targetAttrs.lastAccessTime())
+          assert(srcAttrs.lastModifiedTime() === targetAttrs.lastModifiedTime())
+        }
+      }
+    }
+
     "When target exists" - {
-      "file" - {
+      "and source is a file" - {
         "throws if NO REPLACE_EXISTING" in {
           val src    = Files.createTempFile("source", ".txt")
           val target = Files.createTempFile("target", ".txt")
@@ -561,10 +593,29 @@ class FilesTest extends AnyFreeSpec {
           assert(Files.notExists(src))
           assert(Files.size(target) === 3)
         }
+
+        "target is an empty directory" in {
+          val src    = Files.createTempFile("source", ".txt")
+          val target = Files.createTempDirectory("target")
+          assert(Files.exists(src))
+          assert(Files.move(src, target, StandardCopyOption.REPLACE_EXISTING) === target)
+          assert(Files.notExists(src))
+          assert(Files.isRegularFile(target))
+        }
+
+        "target is a non-empty dir" in {
+          val src    = Files.createTempFile("source", ".txt")
+          val target = Files.createTempDirectory("target")
+          Files.createFile(target.resolve("file.txt"))
+
+          assertThrows[DirectoryNotEmptyException] {
+            Files.move(src, target, StandardCopyOption.REPLACE_EXISTING)
+          }
+        }
       }
 
-      "directory" - {
-        "throws if NO REPLACE_EXISTING" ignore {
+      "and source is directory" - {
+        "throws if NO REPLACE_EXISTING" in {
           val src    = Files.createTempDirectory("source")
           val target = Files.createTempDirectory("target")
           assertThrows[FileAlreadyExistsException] {
@@ -572,7 +623,7 @@ class FilesTest extends AnyFreeSpec {
           }
         }
 
-        "replaces existing if REPLACE_EXISTING" ignore {
+        "replaces existing if REPLACE_EXISTING" in {
           val src  = Files.createTempDirectory("source")
           val file = Files.createTempFile(src, "foo", ".txt")
 
@@ -582,6 +633,25 @@ class FilesTest extends AnyFreeSpec {
           assert(Files.move(src, target, StandardCopyOption.REPLACE_EXISTING) === target)
           assert(Files.notExists(src))
           assert(Files.exists(target.resolve(file.getFileName)))
+        }
+
+        "target is a non-empty dir" in {
+          val src    = Files.createTempDirectory("source")
+          val target = Files.createTempDirectory("sotargeturce")
+          Files.createFile(target.resolve("file.txt"))
+
+          assertThrows[DirectoryNotEmptyException] {
+            Files.move(src, target, StandardCopyOption.REPLACE_EXISTING)
+          }
+        }
+
+        "target is an existing file" in {
+          val src    = Files.createTempDirectory("source")
+          val target = Files.createTempFile("target", ".txt")
+          assert(Files.exists(src))
+          assert(Files.move(src, target, StandardCopyOption.REPLACE_EXISTING) === target)
+          assert(Files.notExists(src))
+          assert(Files.isDirectory(target))
         }
       }
     }
