@@ -225,7 +225,10 @@ object Files {
       maxDepth: Int,
       matcher: BiPredicate[Path, BasicFileAttributes],
       options: FileVisitOption*
-  ): JavaStream[Path] = ???
+  ): JavaStream[Path] =
+    throw new UnsupportedOperationException(
+      "find. Since Scala-js does not support java.util.stream"
+    )
 
   @varargs def getAttribute(path: Path, attribute: String, options: LinkOption*): AnyRef = ???
 
@@ -235,9 +238,10 @@ object Files {
       options: LinkOption*
   ): V = ???
 
-  def getFileStore(path: Path): FileStore = ???
+  def getFileStore(path: Path): FileStore = throw new UnsupportedOperationException("getFileStore")
 
-  @varargs def getOwner(path: Path, options: LinkOption*): UserPrincipal = ???
+  @varargs def getOwner(path: Path, options: LinkOption*): UserPrincipal =
+    throw new UnsupportedOperationException("getOwner")
 
   private def transformStats[T](path: Path, options: Seq[LinkOption])(
       fallback: => T
@@ -355,11 +359,20 @@ object Files {
     }
   }
 
-  def lines(path: Path): JavaStream[String] = ???
+  def lines(path: Path): JavaStream[String] =
+    throw new UnsupportedOperationException(
+      "lines. Since Scala-js does not support java.util.stream"
+    )
 
-  def lines(path: Path, cs: Charset): JavaStream[String] = ???
+  def lines(path: Path, cs: Charset): JavaStream[String] =
+    throw new UnsupportedOperationException(
+      "lines. Since Scala-js does not support java.util.stream"
+    )
 
-  def list(dir: Path): JavaStream[String] = ???
+  def list(dir: Path): JavaStream[String] =
+    throw new UnsupportedOperationException(
+      "lines. Since Scala-js does not support java.util.stream"
+    )
 
   @varargs def move(source: Path, target: Path, options: CopyOption*): Path = {
     if (options.contains(StandardCopyOption.COPY_ATTRIBUTES)) {
@@ -413,7 +426,8 @@ object Files {
 
   @varargs def notExists(path: Path, options: LinkOption*): Boolean = !exists(path, options: _*)
 
-  def probeContentType(path: Path): String = null
+  def probeContentType(path: Path): String =
+    throw new UnsupportedOperationException("probeContentType")
 
   def readAllBytes(path: Path): Array[Byte] = {
     try {
@@ -514,14 +528,22 @@ object Files {
 
   def setLastModifiedTime(path: Path, time: FileTime): Path = ???
 
-  def setOwner(path: Path, owner: UserPrincipal): Path = ???
+  def setOwner(path: Path, owner: UserPrincipal): Path =
+    throw new UnsupportedOperationException("setOwner")
 
-  def setPosixFilePermissions(path: Path, perms: JavaSet[PosixFilePermission]): Path = ???
+  def setPosixFilePermissions(path: Path, perms: JavaSet[PosixFilePermission]): Path =
+    throw new UnsupportedOperationException("setPosixFilePermissions")
 
   def size(path: Path): Long = fs.Fs.statSync(path.toString).size.toLong
 
-  @varargs def walk(start: Path, options: FileVisitOption*): JavaStream[Path]                = ???
-  @varargs def walk(start: Path, maxDepth: Int, options: FileVisitOption*): JavaStream[Path] = ???
+  @varargs def walk(start: Path, options: FileVisitOption*): JavaStream[Path] =
+    throw new UnsupportedOperationException(
+      "walk. Since Scala-js does not support java.util.stream"
+    )
+  @varargs def walk(start: Path, maxDepth: Int, options: FileVisitOption*): JavaStream[Path] =
+    throw new UnsupportedOperationException(
+      "walk. Since Scala-js does not support java.util.stream"
+    )
 
   def walkFileTree(start: Path, visitor: FileVisitor[_ >: Path]): Path = {
     walkFileTree(start, util.Collections.emptySet(), Int.MaxValue, visitor)
