@@ -1,6 +1,7 @@
 package luni.java.nio.files
 
 import org.scalatest.freespec.AnyFreeSpec
+import support.TestSupport
 
 import java.io._
 import java.nio.charset.Charset
@@ -9,7 +10,7 @@ import java.nio.file.attribute._
 import scala.jdk.CollectionConverters._
 import scala.collection.mutable.ListBuffer
 
-class FilesTest extends AnyFreeSpec {
+class FilesTest extends AnyFreeSpec with TestSupport {
 
   private def using[T <: AutoCloseable](resource: T)(block: T => Unit): Unit = {
     try {
@@ -706,12 +707,12 @@ class FilesTest extends AnyFreeSpec {
   }
 
   "probeContentType(Path)" in {
-    // Return null on any files by default ?
+    assume(isJDK11AndLater, "JDK8 returns null on mac. Node.js does not have corresponding API .")
     assert(Files.probeContentType(noSuchSubDir) === null)
     assert(Files.probeContentType(noSuchFile) === null)
     assert(Files.probeContentType(directory) === null)
-    assert(Files.probeContentType(fileInHidden) === null)
-    assert(Files.probeContentType(fileInSource) === null)
+    assert(Files.probeContentType(fileInHidden) === "text/plain")
+    assert(Files.probeContentType(fileInSource) === "text/plain")
   }
 
   "readAllBytes(Path)" in {
@@ -788,8 +789,15 @@ class FilesTest extends AnyFreeSpec {
     assert(symAttr.creationTime().toMillis > 0L)
     assert(symAttr.lastAccessTime().toMillis > 0L)
     assert(symAttr.lastModifiedTime().toMillis > 0L)
-    assert(symAttr.lastAccessTime().compareTo(symAttr.creationTime()) === 0)
-    assert(symAttr.lastModifiedTime().compareTo(symAttr.creationTime()) === 0)
+
+    if (isJDK11AndLater) {
+      assert(symAttr.lastAccessTime().compareTo(symAttr.creationTime()) > 0L)
+      assert(symAttr.lastModifiedTime().compareTo(symAttr.creationTime()) > 0L)
+    } else {
+      // TODO: Node.js impl should support nano-seconds comparison, using BigIntStats
+      assert(symAttr.lastAccessTime().compareTo(symAttr.creationTime()) === 0L)
+      assert(symAttr.lastModifiedTime().compareTo(symAttr.creationTime()) === 0L)
+    }
 
     // files
     Seq(fileInSource, fileInHidden, fileInSymlink).foreach { file =>
