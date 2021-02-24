@@ -8,9 +8,7 @@ import java.lang.{Iterable => JavaIterable}
 import java.util.{List => JavaList, Map => JavaMap, Set => JavaSet}
 import java.util.function.BiPredicate
 import java.util.stream.{Stream => JavaStream}
-import io.scalajs.nodejs.fs
-import io.scalajs.nodejs.path
-import io.scalajs.nodejs.os
+import io.scalajs.nodejs.{FileMode, fs, os, path}
 
 import java.util
 import scala.annotation.varargs
@@ -426,8 +424,7 @@ object Files {
 
   @varargs def notExists(path: Path, options: LinkOption*): Boolean = !exists(path, options: _*)
 
-  def probeContentType(path: Path): String =
-    throw new UnsupportedOperationException("probeContentType")
+  def probeContentType(path: Path): String = null
 
   def readAllBytes(path: Path): Array[Byte] = {
     try {
@@ -531,8 +528,24 @@ object Files {
   def setOwner(path: Path, owner: UserPrincipal): Path =
     throw new UnsupportedOperationException("setOwner")
 
-  def setPosixFilePermissions(path: Path, perms: JavaSet[PosixFilePermission]): Path =
-    throw new UnsupportedOperationException("setPosixFilePermissions")
+  def setPosixFilePermissions(path: Path, perms: JavaSet[PosixFilePermission]): Path = {
+    if (notExists(path)) {
+      throw new NoSuchFileException(path.toString)
+    }
+    val fileMode = perms.asScala.map {
+      case PosixFilePermission.OWNER_READ     => fs.Fs.constants.S_IRUSR
+      case PosixFilePermission.OWNER_WRITE    => fs.Fs.constants.S_IWUSR
+      case PosixFilePermission.OWNER_EXECUTE  => fs.Fs.constants.S_IXUSR
+      case PosixFilePermission.GROUP_READ     => fs.Fs.constants.S_IRGRP
+      case PosixFilePermission.GROUP_WRITE    => fs.Fs.constants.S_IWGRP
+      case PosixFilePermission.GROUP_EXECUTE  => fs.Fs.constants.S_IXGRP
+      case PosixFilePermission.OTHERS_READ    => fs.Fs.constants.S_IROTH
+      case PosixFilePermission.OTHERS_WRITE   => fs.Fs.constants.S_IWOTH
+      case PosixFilePermission.OTHERS_EXECUTE => fs.Fs.constants.S_IXOTH
+    }.sum
+    fs.Fs.chmodSync(path.toString, fileMode)
+    path
+  }
 
   def size(path: Path): Long = fs.Fs.statSync(path.toString).size.toLong
 
