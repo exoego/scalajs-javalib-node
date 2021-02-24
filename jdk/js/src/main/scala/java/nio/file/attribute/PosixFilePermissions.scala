@@ -51,5 +51,5 @@ object PosixFilePermissions {
 private[attribute] final class PosixFilePermissionFileAttribute(
     val value: JavaSet[PosixFilePermission]
 ) extends FileAttribute[JavaSet[PosixFilePermission]] {
-  override def name(): String = "posix:permissions"
+  override def name: String = "posix:permissions"
 }
