@@ -906,7 +906,23 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     // Node.js have no API to get user name associated with a uid
   }
 
-  "setPosixFilePermissions(Path, JavaSet[PosixFilePermission])" ignore {}
+  "setPosixFilePermissions(Path, JavaSet[PosixFilePermission])" in {
+    val file1 = Files.createTempFile("foo", ".txt")
+    assert(
+      Files.setPosixFilePermissions(file1, PosixFilePermissions.fromString("rwxrwxrwx")) === file1
+    )
+    assert(Files.getPosixFilePermissions(file1) === PosixFilePermissions.fromString("rwxrwxrwx"))
+
+    val file2 = Files.createFile(Files.createTempDirectory("dir").resolve("file"))
+    assert(
+      Files.setPosixFilePermissions(file2, PosixFilePermissions.fromString("rwxrwxrwx")) === file2
+    )
+    assert(Files.getPosixFilePermissions(file2) === PosixFilePermissions.fromString("rwxrwxrwx"))
+
+    assertThrows[IOException] {
+      Files.setPosixFilePermissions(noSuchFile, PosixFilePermissions.fromString("rwxrwxrwx"))
+    }
+  }
 
   "size(Path)" in {
     // directory
