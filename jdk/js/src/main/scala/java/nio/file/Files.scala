@@ -186,7 +186,13 @@ object Files {
     val suffix2  = if (suffix == null) ".tmp" else suffix
     val fileName = s"${prefix}${random}${suffix2}"
     val joined   = path.Path.join(dir, fileName)
-    fs.Fs.writeFileSync(joined, "")
+    fs.Fs.writeFileSync(
+      joined,
+      "",
+      fs.FileAppendOptions(
+        mode = fs.Fs.constants.S_IRUSR | fs.Fs.constants.S_IWUSR
+      )
+    )
     Paths.get(joined)
 
     // TODO: attrs

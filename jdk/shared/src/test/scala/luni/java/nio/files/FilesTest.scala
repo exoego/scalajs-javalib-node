@@ -123,6 +123,7 @@ class FilesTest extends AnyFreeSpec {
     Files.createDirectories(tmpDir)
 
     val created = Files.createDirectories(tmpDir.resolve("sub"))
+    assert(Files.getPosixFilePermissions(created) === PosixFilePermissions.fromString("rwxr-xr-x"))
     assert(Files.exists(created))
     assert(Files.isDirectory(created))
     assert(created.getFileName.toString === "sub")
@@ -141,6 +142,7 @@ class FilesTest extends AnyFreeSpec {
     }
 
     val created = Files.createDirectory(tmpDir.resolve("sub"))
+    assert(Files.getPosixFilePermissions(created) === PosixFilePermissions.fromString("rwxr-xr-x"))
     assert(Files.exists(created))
     assert(Files.isDirectory(created))
     assert(created.getFileName.toString === "sub")
@@ -157,6 +159,7 @@ class FilesTest extends AnyFreeSpec {
     val file = dir.resolve("foo.txt")
     assert(Files.notExists(file))
     assert(Files.createFile(file) === file)
+    assert(Files.getPosixFilePermissions(file) === PosixFilePermissions.fromString("rw-r--r--"))
     assert(Files.exists(file))
     assertThrows[FileAlreadyExistsException] {
       Files.createFile(file)
@@ -173,6 +176,7 @@ class FilesTest extends AnyFreeSpec {
 
     val link1 = baseDir.resolve("link1")
     assert(Files.createLink(link1, regularText) === link1)
+    assert(Files.getPosixFilePermissions(link1) === PosixFilePermissions.fromString("rw-r--r--"))
     assert(Files.exists(link1))
     assert(Files.isRegularFile(link1))
     assert(Files.isSymbolicLink(link1) === false)
@@ -193,6 +197,7 @@ class FilesTest extends AnyFreeSpec {
     val sourceDir = Files.createTempDirectory("source")
     val targetDir = Files.createTempDirectory("source").resolve("tmp-symlink")
     val created   = Files.createSymbolicLink(targetDir, sourceDir)
+    assert(Files.getPosixFilePermissions(created) === PosixFilePermissions.fromString("rwx------"))
 
     assert(Files.isSymbolicLink(created))
     assert(Files.exists(created))
@@ -208,6 +213,7 @@ class FilesTest extends AnyFreeSpec {
     assert("/more[^/]+/foobar[^/]+$".r.findFirstIn(tempDir.toString).isDefined)
     assert(Files.exists(tempDir))
     assert(Files.isDirectory(tempDir))
+    assert(Files.getPosixFilePermissions(tempDir) === PosixFilePermissions.fromString("rwx------"))
 
     // TODO: attrs
   }
@@ -217,6 +223,7 @@ class FilesTest extends AnyFreeSpec {
     assert(tempDir.toString.contains("/foobar"))
     assert(Files.exists(tempDir))
     assert(Files.isDirectory(tempDir))
+    assert(Files.getPosixFilePermissions(tempDir) === PosixFilePermissions.fromString("rwx------"))
 
     // TODO: attrs
   }
@@ -227,6 +234,7 @@ class FilesTest extends AnyFreeSpec {
     assert("/more[^/]+/foobar[^/]+\\.txt$".r.findFirstIn(tmpFile.toString).isDefined)
     assert(Files.exists(tmpFile))
     assert(Files.isRegularFile(tmpFile))
+    assert(Files.getPosixFilePermissions(tmpFile) === PosixFilePermissions.fromString("rw-------"))
 
     // TODO: attrs
   }
@@ -236,6 +244,7 @@ class FilesTest extends AnyFreeSpec {
     assert("/foobar[^/]+\\.md$".r.findFirstIn(tmpFile.toString).isDefined)
     assert(Files.exists(tmpFile))
     assert(Files.isRegularFile(tmpFile))
+    assert(Files.getPosixFilePermissions(tmpFile) === PosixFilePermissions.fromString("rw-------"))
 
     // TODO: attrs
   }
