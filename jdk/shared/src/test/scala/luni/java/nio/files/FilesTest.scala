@@ -367,8 +367,36 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     // Pending due to missing java.util.stream.Stream
   }
 
-  "getAttribute(Path, String, LinkOption*)" ignore {
-    // Node.js have no corresponding API
+  "getAttribute(Path, String, LinkOption*)" - {
+    val file = Files.createTempFile("file", ".txt")
+    Files.setAttribute(file, "creationTime", FileTime.from(100, DAYS))
+    Files.setAttribute(file, "lastModifiedTime", FileTime.from(200, DAYS))
+    Files.setAttribute(file, "lastAccessTime", FileTime.from(300, DAYS))
+
+    "supported attribute" in {
+      Seq("", "basic:", "posix:").foreach { prefix =>
+        assert(Files.getAttribute(file, s"${prefix}creationTime") !== FileTime.from(100, DAYS))
+        assert(Files.getAttribute(file, s"${prefix}creationTime") !== FileTime.from(100, DAYS))
+        assert(Files.getAttribute(file, s"${prefix}lastModifiedTime") === FileTime.from(200, DAYS))
+        assert(Files.getAttribute(file, s"${prefix}lastAccessTime") === FileTime.from(300, DAYS))
+        assert(Files.getAttribute(file, s"${prefix}size") === 0)
+        assert(Files.getAttribute(file, s"${prefix}isRegularFile") === true)
+        assert(Files.getAttribute(file, s"${prefix}isDirectory") === false)
+        assert(Files.getAttribute(file, s"${prefix}isOther") === false)
+        assert(Files.getAttribute(file, s"${prefix}isSymbolicLink") === false)
+        assert(Files.getAttribute(file, s"${prefix}fileKey") !== null)
+      }
+    }
+
+    "invalid attribute" in {
+      assertThrows[UnsupportedOperationException] {
+        Files.getAttribute(file, "unknown:lastModifiedTime")
+      }
+      assertThrows[IllegalArgumentException] {
+        Files.getAttribute(file, "basic:typo")
+      }
+    }
+    // todo: linkoption
   }
 
   "getFileAttributeView[V <: FileAttributeView](Path, Class[V], LinkOption*)" in {
@@ -1010,7 +1038,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
         Files.setAttribute(file, "isOther", true)
       }
       assertThrows[IllegalArgumentException] {
-        Files.setAttribute(file, "isSymbolicLink", true)
+        Files.setAttribute(file, "isRegularFile", true)
       }
       assertThrows[IllegalArgumentException] {
         Files.setAttribute(file, "isSymbolicLink", true)
@@ -1034,7 +1062,6 @@ class FilesTest extends AnyFreeSpec with TestSupport {
         Files.setAttribute(file, "basic:lastAccessTime", "invalid value")
       }
     }
-
     // todo: linkoption
   }
 

@@ -236,11 +236,22 @@ object Files {
     )
 
   @varargs def getAttribute(path: Path, attribute: String, options: LinkOption*): AnyRef = {
-    // TODO: handle unknown attribute
-    // TODO: optimize
-    readAttributes(path, attribute, options: _*)
-      .get(attribute.substring(attribute.indexOf(':') + 1))
-      .asInstanceOf[AnyRef]
+    attributeFormatCheck(attribute)
+    // TODO: posix
+    val attrs         = readAttributes(path, classOf[BasicFileAttributes], options: _*)
+    val attributeName = attribute.substring(attribute.indexOf(':') + 1)
+    (attributeName match {
+      case "isDirectory"      => attrs.isDirectory
+      case "isOther"          => attrs.isOther
+      case "isRegularFile"    => attrs.isRegularFile
+      case "isSymbolicLink"   => attrs.isSymbolicLink
+      case "size"             => attrs.size
+      case "fileKey"          => attrs.fileKey
+      case "creationTime"     => attrs.creationTime
+      case "lastAccessTime"   => attrs.lastAccessTime
+      case "lastModifiedTime" => attrs.lastModifiedTime
+      case _                  => throw new IllegalArgumentException(s"`${attribute}` not recognized")
+    }).asInstanceOf[AnyRef]
   }
 
   @varargs def getFileAttributeView[V <: FileAttributeView](
