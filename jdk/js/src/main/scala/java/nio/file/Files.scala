@@ -14,6 +14,7 @@ import java.util
 import scala.annotation.varargs
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
+import scala.reflect.ClassTag
 import scala.scalajs.js
 import scala.util.Random
 
@@ -234,7 +235,13 @@ object Files {
       "find. Since Scala-js does not support java.util.stream"
     )
 
-  @varargs def getAttribute(path: Path, attribute: String, options: LinkOption*): AnyRef = ???
+  @varargs def getAttribute(path: Path, attribute: String, options: LinkOption*): AnyRef = {
+    // TODO: handle unknown attribute
+    // TODO: optimize
+    readAttributes(path, attribute, options: _*)
+      .get(attribute.substring(attribute.indexOf(':') + 1))
+      .asInstanceOf[AnyRef]
+  }
 
   @varargs def getFileAttributeView[V <: FileAttributeView](
       path: Path,
@@ -269,13 +276,17 @@ object Files {
     }
   }
 
+  private def transformStatsOrThrow[T](path: Path, options: Seq[LinkOption])(
+      transformer: fs.Stats => T
+  ): T = {
+    transformStats(path, options)(throw new NoSuchFileException(path.toString))(transformer)
+  }
+
   @varargs def getPosixFilePermissions(
       path: Path,
       options: LinkOption*
   ): JavaSet[PosixFilePermission] = {
-    transformStats(path, options)(throw new NoSuchFileException(path.toString))(
-      PosixFilePermissionsHelper.fromJsStats
-    )
+    transformStatsOrThrow(path, options)(PosixFilePermissionsHelper.fromJsStats)
   }
 
   @varargs def isDirectory(path: Path, options: LinkOption*): Boolean = {
@@ -442,9 +453,9 @@ object Files {
       options: LinkOption*
   ): A = {
     if (`type` == classOf[BasicFileAttributes] || `type` == classOf[PosixFileAttributes]) {
-      val attrs = transformStats(path, options)(throw new NoSuchFileException(path.toString))(
-        stats => new NodeJsPosixFileAttributes(stats)
-      )
+      val attrs = transformStatsOrThrow(path, options) { stats =>
+        new NodeJsPosixFileAttributes(stats)
+      }
       attrs.asInstanceOf[A]
     } else {
       throw new UnsupportedOperationException(s"Unsupported class ${`type`}")
@@ -463,16 +474,23 @@ object Files {
     "lastModifiedTime"
   )
 
+  private def attributeFormatCheck(attributes: String): Unit = {
+    if (attributes.contains(":") && !attributes.startsWith("basic:") && !attributes.startsWith(
+          "posix:"
+        )) {
+      val unsupportedType = attributes.substring(0, attributes.indexOf(":"))
+      throw new UnsupportedOperationException(s"View '${unsupportedType}' not available")
+    }
+  }
+
   @varargs def readAttributes(
       path: Path,
       attributes: String,
       options: LinkOption*
   ): JavaMap[String, Any] = {
-    if (attributes.contains(":") && !attributes.startsWith("basic:")) {
-      val unsupportedType = attributes.substring(0, attributes.indexOf(":"))
-      throw new UnsupportedOperationException(s"View '${unsupportedType}' not available")
-    }
+    attributeFormatCheck(attributes)
 
+    // TODO: posix
     val attrs = readAttributes(path, classOf[BasicFileAttributes], options: _*)
     val keys = {
       val keySet  = attributes.substring(attributes.indexOf(':') + 1).split(",").toSet
@@ -512,24 +530,55 @@ object Files {
       value: AnyRef,
       options: LinkOption*
   ): Path = {
-    if (attribute == "posix:atime") {
-      value match {
-        case time: FileTime =>
-          transformStats(path, options)(throw new NoSuchFileException(path.toString)) { stats =>
+    attributeFormatCheck(attribute)
+
+    val attributeName = attribute.substring(attribute.indexOf(':') + 1)
+    def transformValue[V](setter: V => Unit)(implicit classtag: ClassTag[V]): Unit = value match {
+      case expected: V => setter(expected)
+      case _           => throw new ClassCastException(s"${value.getClass} cannot be cast to class $classtag")
+    }
+
+    attributeName match {
+      case "lastAccessTime" =>
+        transformValue { time: FileTime =>
+          transformStatsOrThrow(path, options) { stats =>
             fs.Fs.utimesSync(
               path.toString,
-              atime = (time.toMillis / 1000).toString,
+              atime = (time.toMillis() / 1000).toString,
               mtime = stats.mtime
             )
           }
-      }
+        }
+      case "lastModifiedTime" =>
+        transformValue { time: FileTime =>
+          transformStatsOrThrow(path, options) { stats =>
+            fs.Fs.utimesSync(
+              path.toString,
+              atime = stats.atime,
+              mtime = (time.toMillis() / 1000).toString
+            )
+          }
+        }
+      case "creationTime" =>
+      // do nothing
+      case _ => throw new IllegalArgumentException(s"`${attribute}` not recognized")
     }
     path
   }
 
+  @varargs def getLastModifiedTime(path: Path, options: LinkOption*): FileTime = {
+    transformStatsOrThrow(path, options) { stats =>
+      FileTime.fromMillis(stats.mtimeMs.toLong)
+    }
+  }
+
   def setLastModifiedTime(path: Path, time: FileTime): Path = {
-    transformStats(path, Seq.empty)(throw new NoSuchFileException(path.toString)) { stats =>
-      fs.Fs.utimesSync(path.toString, atime = stats.atime, mtime = (time.toMillis / 1000).toString)
+    transformStatsOrThrow(path, Seq.empty) { stats =>
+      fs.Fs.utimesSync(
+        path.toString,
+        atime = stats.atime,
+        mtime = (time.toMillis() / 1000).toString
+      )
     }
     path
   }

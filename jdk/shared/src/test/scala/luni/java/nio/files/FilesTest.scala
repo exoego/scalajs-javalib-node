@@ -970,8 +970,72 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     }
   }
 
-  "setAttribute(Path, String, AnyRef, LinkOption*)" ignore {
-    // Node.js have no API to get user name associated with a uid
+  "setAttribute(Path, String, AnyRef, LinkOption*)" - {
+    val file = Files.createTempFile("file", ".txt")
+
+    "supported attribute" in {
+      Files.setAttribute(file, "lastModifiedTime", FileTime.from(11, DAYS))
+      assert(Files.getLastModifiedTime(file) === FileTime.from(11, DAYS))
+      Files.setAttribute(file, "posix:lastModifiedTime", FileTime.from(22, DAYS))
+      assert(Files.getLastModifiedTime(file) === FileTime.from(22, DAYS))
+      Files.setAttribute(file, "basic:lastModifiedTime", FileTime.from(33, DAYS))
+      assert(Files.getLastModifiedTime(file) === FileTime.from(33, DAYS))
+
+      Files.setAttribute(file, "lastAccessTime", FileTime.from(11, DAYS))
+      assert(Files.getAttribute(file, "lastAccessTime") === FileTime.from(11, DAYS))
+      Files.setAttribute(file, "posix:lastAccessTime", FileTime.from(22, DAYS))
+      assert(Files.getAttribute(file, "posix:lastAccessTime") === FileTime.from(22, DAYS))
+      Files.setAttribute(file, "basic:lastAccessTime", FileTime.from(33, DAYS))
+      assert(Files.getAttribute(file, "basic:lastAccessTime") === FileTime.from(33, DAYS))
+    }
+
+    "creationTime is recognized, but no effect" in {
+      val file = Files.createTempFile("file", ".txt")
+
+      assert(Files.getAttribute(file, "creationTime") !== FileTime.from(11, DAYS))
+      Files.setAttribute(file, "posix:creationTime", FileTime.from(22, DAYS))
+      assert(Files.getAttribute(file, "posix:creationTime") !== FileTime.from(22, DAYS))
+      Files.setAttribute(file, "basic:creationTime", FileTime.from(33, DAYS))
+      assert(Files.getAttribute(file, "basic:creationTime") !== FileTime.from(33, DAYS))
+    }
+
+    "unsupported attributes" in {
+      assertThrows[IllegalArgumentException] {
+        Files.setAttribute(file, "size", true)
+      }
+      assertThrows[IllegalArgumentException] {
+        Files.setAttribute(file, "isDirectory", true)
+      }
+      assertThrows[IllegalArgumentException] {
+        Files.setAttribute(file, "isOther", true)
+      }
+      assertThrows[IllegalArgumentException] {
+        Files.setAttribute(file, "isSymbolicLink", true)
+      }
+      assertThrows[IllegalArgumentException] {
+        Files.setAttribute(file, "isSymbolicLink", true)
+      }
+      assertThrows[IllegalArgumentException] {
+        Files.setAttribute(file, "fileKey", "fobar")
+      }
+    }
+
+    "invalid attribute" in {
+      assertThrows[UnsupportedOperationException] {
+        Files.setAttribute(file, "unknown:lastModifiedTime", FileTime.from(999, DAYS))
+      }
+      assertThrows[IllegalArgumentException] {
+        Files.setAttribute(file, "basic:typo", FileTime.from(999, DAYS))
+      }
+    }
+
+    "invalid value" in {
+      assertThrows[ClassCastException] {
+        Files.setAttribute(file, "basic:lastAccessTime", "invalid value")
+      }
+    }
+
+    // todo: linkoption
   }
 
   "setLastModifiedTime(Path, FileTime)" ignore {}
@@ -1095,6 +1159,13 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     assertThrows[IOException] {
       Files.write(directory, Seq("abc").asJava)
     }
+  }
+
+  "getLastModifiedTime" in {
+    assertThrows[IOException] {
+      Files.getLastModifiedTime(noSuchFile)
+    }
+    assert(Files.getLastModifiedTime(fileInSource).toMillis > 0)
   }
 }
 

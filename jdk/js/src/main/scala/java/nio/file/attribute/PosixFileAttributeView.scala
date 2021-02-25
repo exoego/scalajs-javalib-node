@@ -29,7 +29,7 @@ private[file] class NodeJsPosixFileAttributeView(sourcePath: Path, options: Seq[
       Files.setLastModifiedTime(sourcePath, lastModifiedTime)
     }
     if (lastAccessTime != null) {
-      Files.setAttribute(sourcePath, "posix:atime", lastAccessTime)
+      Files.setAttribute(sourcePath, "lastAccessTime", lastAccessTime)
     }
     // createTime can not be set on JDK
   }
