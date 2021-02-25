@@ -86,7 +86,10 @@ private[java] object PathHelper {
       Paths.get(file.getName())
     }
     override def getParent: Path = {
-      file.getParentFile().toPath()
+      file.getParentFile() match {
+        case null   => null
+        case parent => parent.toPath
+      }
     }
     override def getNameCount: Int = {
       throw new UnsupportedOperationException

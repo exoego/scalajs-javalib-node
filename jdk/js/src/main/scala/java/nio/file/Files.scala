@@ -520,7 +520,13 @@ object Files {
     mapBuilder.asJava
   }
 
-  def readSymbolicLink(link: Path): Path = ???
+  def readSymbolicLink(link: Path): Path = {
+    if (!isSymbolicLink(link)) {
+      throw new NotLinkException(link.toString)
+    }
+    val linkPath = fs.Fs.readlinkSync(link.toString)
+    Paths.get(linkPath)
+  }
 
   @varargs def setAttribute(
       path: Path,

@@ -894,7 +894,28 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     }
   }
 
-  "readSymbolicLink(Path)" ignore {}
+  "readSymbolicLink(Path)" in {
+    val read = Files.readSymbolicLink(directorySymlink)
+    assert(read === directorySource.getFileName)
+    assert(read.getParent === null)
+
+    assertThrows[NotLinkException] {
+      Files.readSymbolicLink(directorySource)
+    }
+    assertThrows[NotLinkException] {
+      Files.readSymbolicLink(symlinkText)
+    }
+    assertThrows[NotLinkException] {
+      Files.readSymbolicLink(fileInSource)
+    }
+    assertThrows[NotLinkException] {
+      Files.readSymbolicLink(fileInSymlink)
+    }
+
+    assertThrows[IOException] {
+      Files.readSymbolicLink(noSuchSubDir)
+    }
+  }
 
   "setAttribute(Path, String, AnyRef, LinkOption*)" ignore {
     // Node.js have no API to get user name associated with a uid
