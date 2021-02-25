@@ -1,9 +1,5 @@
 package java.nio.file.attribute
 
 trait AttributeView {
-  def name: String
+  def name(): String
 }
-
-trait FileAttributeView extends AttributeView
-
-trait DosFileAttributeView extends FileAttributeView
