@@ -1065,7 +1065,22 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     // todo: linkoption
   }
 
-  "setLastModifiedTime(Path, FileTime)" ignore {}
+  "setLastModifiedTime(Path, FileTime)" in {
+    val file = Files.createTempFile("lastmodified", ".txt")
+
+    assert(Files.setLastModifiedTime(file, FileTime.from(100, DAYS)) === file)
+    assert(Files.getLastModifiedTime(file) === FileTime.from(100, DAYS))
+
+    assert(Files.setLastModifiedTime(file, FileTime.from(200, DAYS)) === file)
+    assert(Files.getLastModifiedTime(file) === FileTime.from(200, DAYS))
+
+    assertThrows[NullPointerException] {
+      Files.setLastModifiedTime(file, null)
+    }
+    assertThrows[IOException] {
+      Files.setLastModifiedTime(noSuchFile, FileTime.from(200, DAYS))
+    }
+  }
 
   "setOwner(Path, UserPrincipal)" ignore {
     // Node.js have no API to get user name associated with a uid

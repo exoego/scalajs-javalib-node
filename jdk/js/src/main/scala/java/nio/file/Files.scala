@@ -584,6 +584,9 @@ object Files {
   }
 
   def setLastModifiedTime(path: Path, time: FileTime): Path = {
+    if (time == null) {
+      throw new NullPointerException()
+    }
     transformStatsOrThrow(path, Seq.empty) { stats =>
       fs.Fs.utimesSync(
         path.toString,
