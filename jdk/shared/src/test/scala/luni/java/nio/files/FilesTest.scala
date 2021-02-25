@@ -21,6 +21,33 @@ class FilesTest extends AnyFreeSpec with TestSupport {
   }
   private val utf16leCharset: Charset = Charset.forName("UTF-16LE")
 
+  private val directory        = Paths.get("project")
+  private val resourceRoot     = Paths.get("jdk/shared/src/test/resources")
+  private val directorySource  = Paths.get("jdk/shared/src/test/resources/source")
+  private val directorySymlink = Paths.get("jdk/shared/src/test/resources/symlink")
+  private val subDirectory     = Paths.get("project/target")
+
+  private val utf16leTxt = Paths.get("jdk/shared/src/test/resources/utf16be.txt")
+
+  private val fileInSource  = Paths.get("jdk/shared/src/test/resources/source/hello.txt")
+  private val fileInSymlink = Paths.get("jdk/shared/src/test/resources/symlink/hello.txt")
+  private val fileInDeletedSymlink =
+    Paths.get("jdk/shared/src/test/resources/deleted-symlink/hello.txt")
+  private val deletedSymlinkFile = Paths.get("jdk/shared/src/test/resources/deleted-symlink.txt")
+
+  private val regularText = Paths.get("jdk/shared/src/test/resources/regular.txt")
+  private val symlinkText = Paths.get("jdk/shared/src/test/resources/symbolic.txt")
+
+  private val rrr       = Paths.get("jdk/shared/src/test/resources/permissions/rrr.txt")
+  private val rwxrwxrwx = Paths.get("jdk/shared/src/test/resources/permissions/rwxrwxrwx.txt")
+
+  private val hiddenDirectory = Paths.get("jdk/shared/src/test/resources/.hidden")
+  private val fileInHidden    = Paths.get("jdk/shared/src/test/resources/.hidden/foo.txt")
+
+  private val noSuchFileInDir = Paths.get("project", "no-such-file")
+  private val noSuchFile      = Paths.get("no-such-file")
+  private val noSuchSubDir    = Paths.get("no-such-dir/no-such-sub")
+
   "copy(InputStream, Path, CopyOption*)" in {
     val sourceFile = Files.createTempFile("foo", ".txt")
     val tmpDir     = Files.createTempDirectory("foo")
@@ -382,33 +409,6 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     assert(mutable.asScala === Set(GROUP_WRITE))
     assert(mutable.asScala === Set(GROUP_WRITE))
   }
-
-  private val directory        = Paths.get("project")
-  private val resourceRoot     = Paths.get("jdk/shared/src/test/resources")
-  private val directorySource  = Paths.get("jdk/shared/src/test/resources/source")
-  private val directorySymlink = Paths.get("jdk/shared/src/test/resources/symlink")
-  private val subDirectory     = Paths.get("project/target")
-
-  private val utf16leTxt = Paths.get("jdk/shared/src/test/resources/utf16be.txt")
-
-  private val fileInSource  = Paths.get("jdk/shared/src/test/resources/source/hello.txt")
-  private val fileInSymlink = Paths.get("jdk/shared/src/test/resources/symlink/hello.txt")
-  private val fileInDeletedSymlink =
-    Paths.get("jdk/shared/src/test/resources/deleted-symlink/hello.txt")
-  private val deletedSymlinkFile = Paths.get("jdk/shared/src/test/resources/deleted-symlink.txt")
-
-  private val regularText = Paths.get("jdk/shared/src/test/resources/regular.txt")
-  private val symlinkText = Paths.get("jdk/shared/src/test/resources/symbolic.txt")
-
-  private val rrr       = Paths.get("jdk/shared/src/test/resources/permissions/rrr.txt")
-  private val rwxrwxrwx = Paths.get("jdk/shared/src/test/resources/permissions/rwxrwxrwx.txt")
-
-  private val hiddenDirectory = Paths.get("jdk/shared/src/test/resources/.hidden")
-  private val fileInHidden    = Paths.get("jdk/shared/src/test/resources/.hidden/foo.txt")
-
-  private val noSuchFileInDir = Paths.get("project", "no-such-file")
-  private val noSuchFile      = Paths.get("no-such-file")
-  private val noSuchSubDir    = Paths.get("no-such-dir/no-such-sub")
 
   "isDirectory(Path)" in {
     assert(Files.isDirectory(directory))
