@@ -8,7 +8,7 @@ import java.lang.{Iterable => JavaIterable}
 import java.util.{List => JavaList, Map => JavaMap, Set => JavaSet}
 import java.util.function.BiPredicate
 import java.util.stream.{Stream => JavaStream}
-import io.scalajs.nodejs.{FileMode, fs, os, path}
+import io.scalajs.nodejs.{fs, os, path}
 
 import java.util
 import scala.annotation.varargs
@@ -240,7 +240,13 @@ object Files {
       path: Path,
       `type`: Class[V],
       options: LinkOption*
-  ): V = ???
+  ): V = {
+    if (`type` != classOf[PosixFileAttributeView]) {
+      null.asInstanceOf[V]
+    } else {
+      new NodeJsPosixFileAttributeView(path, options).asInstanceOf[V]
+    }
+  }
 
   def getFileStore(path: Path): FileStore = throw new UnsupportedOperationException("getFileStore")
 
@@ -267,37 +273,9 @@ object Files {
       path: Path,
       options: LinkOption*
   ): JavaSet[PosixFilePermission] = {
-    transformStats(path, options)(throw new NoSuchFileException(path.toString)) { stat =>
-      val set = scala.collection.mutable.Set[PosixFilePermission]()
-      if ((stat.mode & fs.Fs.constants.S_IRUSR) != 0) {
-        set.add(PosixFilePermission.OWNER_READ)
-      }
-      if ((stat.mode & fs.Fs.constants.S_IWUSR) != 0) {
-        set.add(PosixFilePermission.OWNER_WRITE)
-      }
-      if ((stat.mode & fs.Fs.constants.S_IXUSR) != 0) {
-        set.add(PosixFilePermission.OWNER_EXECUTE)
-      }
-      if ((stat.mode & fs.Fs.constants.S_IRGRP) != 0) {
-        set.add(PosixFilePermission.GROUP_READ)
-      }
-      if ((stat.mode & fs.Fs.constants.S_IWGRP) != 0) {
-        set.add(PosixFilePermission.GROUP_WRITE)
-      }
-      if ((stat.mode & fs.Fs.constants.S_IXGRP) != 0) {
-        set.add(PosixFilePermission.GROUP_EXECUTE)
-      }
-      if ((stat.mode & fs.Fs.constants.S_IROTH) != 0) {
-        set.add(PosixFilePermission.OTHERS_READ)
-      }
-      if ((stat.mode & fs.Fs.constants.S_IWOTH) != 0) {
-        set.add(PosixFilePermission.OTHERS_WRITE)
-      }
-      if ((stat.mode & fs.Fs.constants.S_IXOTH) != 0) {
-        set.add(PosixFilePermission.OTHERS_EXECUTE)
-      }
-      set.asJava
-    }
+    transformStats(path, options)(throw new NoSuchFileException(path.toString))(
+      PosixFilePermissionsHelper.fromJsStats
+    )
   }
 
   @varargs def isDirectory(path: Path, options: LinkOption*): Boolean = {
@@ -463,9 +441,9 @@ object Files {
       `type`: Class[A],
       options: LinkOption*
   ): A = {
-    if (`type` == classOf[BasicFileAttributes]) {
+    if (`type` == classOf[BasicFileAttributes] || `type` == classOf[PosixFileAttributes]) {
       val attrs = transformStats(path, options)(throw new NoSuchFileException(path.toString))(
-        stats => new NodeJsFileAttributes(stats)
+        stats => new NodeJsPosixFileAttributes(stats)
       )
       attrs.asInstanceOf[A]
     } else {
@@ -533,9 +511,28 @@ object Files {
       attribute: String,
       value: AnyRef,
       options: LinkOption*
-  ): Path = ???
+  ): Path = {
+    if (attribute == "posix:atime") {
+      value match {
+        case time: FileTime =>
+          transformStats(path, options)(throw new NoSuchFileException(path.toString)) { stats =>
+            fs.Fs.utimesSync(
+              path.toString,
+              atime = (time.toMillis / 1000).toString,
+              mtime = stats.mtime
+            )
+          }
+      }
+    }
+    path
+  }
 
-  def setLastModifiedTime(path: Path, time: FileTime): Path = ???
+  def setLastModifiedTime(path: Path, time: FileTime): Path = {
+    transformStats(path, Seq.empty)(throw new NoSuchFileException(path.toString)) { stats =>
+      fs.Fs.utimesSync(path.toString, atime = stats.atime, mtime = (time.toMillis / 1000).toString)
+    }
+    path
+  }
 
   def setOwner(path: Path, owner: UserPrincipal): Path =
     throw new UnsupportedOperationException("setOwner")

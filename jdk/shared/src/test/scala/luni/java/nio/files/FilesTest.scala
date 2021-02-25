@@ -7,6 +7,7 @@ import java.io._
 import java.nio.charset.Charset
 import java.nio.file._
 import java.nio.file.attribute._
+import java.util.concurrent.TimeUnit._
 import scala.jdk.CollectionConverters._
 import scala.collection.mutable.ListBuffer
 
@@ -370,8 +371,60 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     // Node.js have no corresponding API
   }
 
-  "getFileAttributeView[V <: FileAttributeView](Path, Class[V], LinkOption*)" ignore {
-    // Node.js have no corresponding API
+  "getFileAttributeView[V <: FileAttributeView](Path, Class[V], LinkOption*)" in {
+    val tmpDir = Files.createTempFile("tmp", ".txt")
+
+    val view: PosixFileAttributeView =
+      Files.getFileAttributeView(tmpDir, classOf[PosixFileAttributeView])
+    assert(view.name() === "posix")
+
+    val oldAttr = view.readAttributes()
+    assert(oldAttr.permissions() === PosixFilePermissions.fromString("rw-------"))
+
+    // oldAttr never affected by setter
+    view.setPermissions(PosixFilePermissions.fromString("rwxr-xr-x"))
+    assert(oldAttr.permissions() === PosixFilePermissions.fromString("rw-------"))
+
+    val newAttr = view.readAttributes()
+    assert(newAttr.permissions() === PosixFilePermissions.fromString("rwxr-xr-x"))
+
+    val noSuchFileView = Files.getFileAttributeView(noSuchFile, classOf[PosixFileAttributeView])
+    assert(noSuchFileView.name() === "posix")
+    assertThrows[IOException] {
+      noSuchFileView.readAttributes()
+    }
+
+    // creation time can not be changed on JDK
+    view.setTimes(null, null, FileTime.from(1, DAYS))
+    assert(oldAttr.creationTime() !== FileTime.from(1, DAYS))
+    assert(view.readAttributes().lastModifiedTime() !== FileTime.from(3, DAYS))
+    assert(view.readAttributes().lastAccessTime() !== FileTime.from(2, DAYS))
+    assert(view.readAttributes().creationTime() !== FileTime.from(1, DAYS))
+
+    view.setTimes(null, FileTime.from(2, DAYS), null)
+    assert(oldAttr.lastAccessTime() !== FileTime.from(2, DAYS))
+    assert(view.readAttributes().lastModifiedTime() !== FileTime.from(3, DAYS))
+    assert(view.readAttributes().lastAccessTime() === FileTime.from(2, DAYS))
+    assert(view.readAttributes().creationTime() !== FileTime.from(1, DAYS))
+
+    view.setTimes(FileTime.from(3, DAYS), null, null)
+    assert(oldAttr.lastModifiedTime() !== FileTime.from(3, DAYS))
+    assert(view.readAttributes().lastModifiedTime() === FileTime.from(3, DAYS))
+    assert(view.readAttributes().lastAccessTime() === FileTime.from(2, DAYS))
+    assert(view.readAttributes().creationTime() !== FileTime.from(1, DAYS))
+
+    view.setTimes(FileTime.from(4, DAYS), FileTime.from(5, DAYS), FileTime.from(6, DAYS))
+    assert(oldAttr.lastModifiedTime() !== FileTime.from(4, DAYS))
+    assert(view.readAttributes().lastModifiedTime() === FileTime.from(4, DAYS))
+    assert(view.readAttributes().lastAccessTime() === FileTime.from(5, DAYS))
+    assert(view.readAttributes().creationTime() !== FileTime.from(6, DAYS))
+
+    // TODO: node.js can not support these
+    // view.getOwner()
+    // newAttr.group()
+    // newAttr.owner()
+
+    // todo: linkoption
   }
 
   "getFileStore(Path)" ignore {

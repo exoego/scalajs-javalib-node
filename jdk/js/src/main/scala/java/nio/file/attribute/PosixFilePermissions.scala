@@ -1,7 +1,10 @@
 package java.nio.file.attribute
 
+import io.scalajs.nodejs.fs
+
 import scala.scalajs.js
-import java.util.{Set => JavaSet, HashSet => JavaHashSet}
+import scala.jdk.CollectionConverters._
+import java.util.{HashSet => JavaHashSet, Set => JavaSet}
 
 object PosixFilePermissions {
   def fromString(perms: String): JavaSet[PosixFilePermission] = {
@@ -46,6 +49,41 @@ object PosixFilePermissions {
   def asFileAttribute(
       perms: JavaSet[PosixFilePermission]
   ): FileAttribute[JavaSet[PosixFilePermission]] = new PosixFilePermissionFileAttribute(perms)
+
+}
+
+private[nio] object PosixFilePermissionsHelper {
+  def fromJsStats(stat: fs.Stats): JavaSet[PosixFilePermission] = {
+    val set = scala.collection.mutable.Set[PosixFilePermission]()
+    if ((stat.mode & fs.Fs.constants.S_IRUSR) != 0) {
+      set.add(PosixFilePermission.OWNER_READ)
+    }
+    if ((stat.mode & fs.Fs.constants.S_IWUSR) != 0) {
+      set.add(PosixFilePermission.OWNER_WRITE)
+    }
+    if ((stat.mode & fs.Fs.constants.S_IXUSR) != 0) {
+      set.add(PosixFilePermission.OWNER_EXECUTE)
+    }
+    if ((stat.mode & fs.Fs.constants.S_IRGRP) != 0) {
+      set.add(PosixFilePermission.GROUP_READ)
+    }
+    if ((stat.mode & fs.Fs.constants.S_IWGRP) != 0) {
+      set.add(PosixFilePermission.GROUP_WRITE)
+    }
+    if ((stat.mode & fs.Fs.constants.S_IXGRP) != 0) {
+      set.add(PosixFilePermission.GROUP_EXECUTE)
+    }
+    if ((stat.mode & fs.Fs.constants.S_IROTH) != 0) {
+      set.add(PosixFilePermission.OTHERS_READ)
+    }
+    if ((stat.mode & fs.Fs.constants.S_IWOTH) != 0) {
+      set.add(PosixFilePermission.OTHERS_WRITE)
+    }
+    if ((stat.mode & fs.Fs.constants.S_IXOTH) != 0) {
+      set.add(PosixFilePermission.OTHERS_EXECUTE)
+    }
+    set.asJava
+  }
 }
 
 private[attribute] final class PosixFilePermissionFileAttribute(

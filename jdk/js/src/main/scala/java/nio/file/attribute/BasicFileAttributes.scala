@@ -31,7 +31,7 @@ trait PosixFileAttributes extends BasicFileAttributes {
   def permissions: util.Set[PosixFilePermission]
 }
 
-private[file] class NodeJsFileAttributes(stats: Stats) extends BasicFileAttributes {
+private[file] class NodeJsPosixFileAttributes(stats: Stats) extends PosixFileAttributes {
   @inline private def toLong(d: Double): Long = d.toLong
 
   override def lastModifiedTime: FileTime = FileTime.fromMillis(toLong(stats.mtimeMs))
@@ -51,4 +51,11 @@ private[file] class NodeJsFileAttributes(stats: Stats) extends BasicFileAttribut
   override def size: Long = toLong(stats.size)
 
   override def fileKey: String = s"(dev=${stats.dev},ino=${stats.ino})"
+
+  override def owner: UserPrincipal = ???
+
+  override def group: GroupPrincipal = ???
+
+  override def permissions: util.Set[PosixFilePermission] =
+    PosixFilePermissionsHelper.fromJsStats(this.stats)
 }
