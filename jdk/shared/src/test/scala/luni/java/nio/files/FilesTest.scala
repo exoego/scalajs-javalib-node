@@ -1139,31 +1139,25 @@ class FilesTest extends AnyFreeSpec with TestSupport {
   "walk(Path, FileVisitOption*)" ignore {}
   "walk(Path, Int, FileVisitOption*)" ignore {}
 
-  "walkFileTree(Path, FileVisitor[_ >: Path])" in {
-    val fileCollector = new FileCollector()
-    assert(Files.walkFileTree(fileInSource, fileCollector) === fileInSource)
-    assert(fileCollector.collectFiles() === Seq(fileInSource))
+  "walkFileTree(Path, FileVisitor[_ >: Path])" - {
+    "depth-first, but iteration order not guaranteed" in {
+      val root = Files.createTempDirectory("top")
+      val dirA = Files.createTempDirectory(root, "dirA")
+      val dirB = Files.createTempDirectory(dirA, "dirB")
+      val dirC = Files.createTempDirectory(dirB, "dirC")
+      val dirD = Files.createTempDirectory(dirC, "dirD")
+      val dir1 = Files.createTempDirectory(root, "dir1")
+      val dir2 = Files.createTempDirectory(dir1, "dir2")
+      val dir3 = Files.createTempDirectory(dir2, "dir3")
+      val dir4 = Files.createTempDirectory(dir3, "dir4")
 
-    val fileCollector2 = new FileCollector()
-    assert(Files.walkFileTree(rrr.getParent, fileCollector2) === rrr.getParent)
-    assert(fileCollector2.collectFiles() === Seq(rrr, rwxrwxrwx))
-
-    val fileCollector3 = new FileCollector()
-    assert(Files.walkFileTree(resourceRoot, fileCollector3) === resourceRoot)
-    // order not guaranteed
-    assert(
-      fileCollector3.collectFiles().map(_.toString).toSet === Set(
-        fileInHidden,
-        directorySymlink,
-        regularText,
-        fileInSource,
-        deletedSymlinkFile,
-        utf16leTxt,
-        symlinkText,
-        rrr,
-        rwxrwxrwx
-      ).map(_.toString)
-    )
+      val collector = new FileAndDirCollector()
+      assert(Files.walkFileTree(root, collector) === root)
+      val alphabetThenNumber = List(root, dirA, dirB, dirC, dirD, dir1, dir2, dir3, dir4)
+      val numberThenAlphabet = List(root, dir1, dir2, dir3, dir4, dirA, dirB, dirC, dirD)
+      val result             = collector.collectFiles()
+      assert(result === alphabetThenNumber || result === numberThenAlphabet)
+    }
 
     // todo: file TERMINATE
     // todo: file SKIP_SUBTREE
@@ -1232,7 +1226,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
   }
 }
 
-private class FileCollector extends SimpleFileVisitor[Path] {
+private class FileAndDirCollector extends SimpleFileVisitor[Path] {
   private val buffer: ListBuffer[Path] = ListBuffer.empty
 
   override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
@@ -1243,6 +1237,11 @@ private class FileCollector extends SimpleFileVisitor[Path] {
   override def visitFileFailed(file: Path, exc: IOException): FileVisitResult = {
     println(s"failed: ${file}")
     super.visitFileFailed(file, exc)
+  }
+
+  override def preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult = {
+    buffer.addOne(dir)
+    FileVisitResult.CONTINUE
   }
 
   def collectFiles(): Seq[Path] = buffer.toSeq
