@@ -89,5 +89,5 @@ private[nio] object PosixFilePermissionsHelper {
 private[attribute] final class PosixFilePermissionFileAttribute(
     val value: JavaSet[PosixFilePermission]
 ) extends FileAttribute[JavaSet[PosixFilePermission]] {
-  override def name: String = "posix:permissions"
+  override val name: String = "posix:permissions"
 }
