@@ -324,7 +324,13 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     Files.delete(symbolicLink)
     assert(Files.notExists(symbolicLink))
 
-    // todo: opened by other process
+    val file2 = Files.createTempFile("open", ".txt")
+    Files.write(file2, Seq("foo", "bar", "buz").asJava)
+    using(new FileInputStream(file2.toFile)) { in =>
+      in.read(new Array[Byte](10))
+      Files.delete(file2)
+      assert(Files.notExists(file2))
+    }
   }
 
   "deleteIfExists(Path)" in {
