@@ -266,8 +266,12 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     assert(Files.isRegularFile(tmpFile))
     assert(Files.getPosixFilePermissions(tmpFile) === PosixFilePermissions.fromString("rw-------"))
 
-    val tmpFile2 = Files.createTempFile(base, "foobar", ".md",
-      PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwxrwxrwx")))
+    val tmpFile2 = Files.createTempFile(
+      base,
+      "foobar",
+      ".md",
+      PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwxrwxrwx"))
+    )
     assert(Files.exists(tmpFile2))
     assert(Files.isRegularFile(tmpFile2))
     assert(Files.getPosixFilePermissions(tmpFile2) === PosixFilePermissions.fromString("rwxr-xr-x"))
@@ -280,8 +284,11 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     assert(Files.isRegularFile(tmpFile))
     assert(Files.getPosixFilePermissions(tmpFile) === PosixFilePermissions.fromString("rw-------"))
 
-    val tmpFile2 = Files.createTempFile("foobar", ".md",
-      PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwxrwxrwx")))
+    val tmpFile2 = Files.createTempFile(
+      "foobar",
+      ".md",
+      PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwxrwxrwx"))
+    )
     assert(Files.exists(tmpFile2))
     assert(Files.isRegularFile(tmpFile2))
     assert(Files.getPosixFilePermissions(tmpFile2) === PosixFilePermissions.fromString("rwxr-xr-x"))
@@ -1114,14 +1121,13 @@ class FilesTest extends AnyFreeSpec with TestSupport {
   }
 
   "size(Path)" in {
-    // directory
     assert(Files.size(directorySource) === 96)
-
-    // file
     assert(Files.size(fileInSource) === 18)
-
-    // symlink
     assert(Files.size(directorySymlink) === 96)
+
+    assertThrows[IOException] {
+      Files.size(noSuchFile)
+    }
   }
 
   "walk(Path, FileVisitOption*)" ignore {}

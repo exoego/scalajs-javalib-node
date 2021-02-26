@@ -200,7 +200,8 @@ object Files {
         if (permissions.contains(PosixFilePermission.GROUP_READ)) mode |= fs.Fs.constants.S_IRGRP
         if (permissions.contains(PosixFilePermission.GROUP_EXECUTE)) mode |= fs.Fs.constants.S_IXGRP
         if (permissions.contains(PosixFilePermission.OTHERS_READ)) mode |= fs.Fs.constants.S_IROTH
-        if (permissions.contains(PosixFilePermission.OTHERS_EXECUTE)) mode |= fs.Fs.constants.S_IXOTH
+        if (permissions.contains(PosixFilePermission.OTHERS_EXECUTE))
+          mode |= fs.Fs.constants.S_IXOTH
 
         // JDK does not support the below permissions
         // if (permissions.contains(PosixFilePermission.GROUP_WRITE)) mode |= fs.Fs.constants.S_IWGRP
@@ -640,7 +641,7 @@ object Files {
     path
   }
 
-  def size(path: Path): Long = fs.Fs.statSync(path.toString).size.toLong
+  def size(path: Path): Long = transformStatsOrThrow(path, Seq.empty)(_.size.toLong)
 
   @varargs def walk(start: Path, options: FileVisitOption*): JavaStream[Path] =
     throw new UnsupportedOperationException(
