@@ -1142,24 +1142,52 @@ class FilesTest extends AnyFreeSpec with TestSupport {
   "walkFileTree(Path, FileVisitor[_ >: Path])" - {
     "depth-first, but iteration order not guaranteed" in {
       val root = Files.createTempDirectory("top")
-      val dirA = Files.createTempDirectory(root, "dirA")
-      val dirB = Files.createTempDirectory(dirA, "dirB")
-      val dirC = Files.createTempDirectory(dirB, "dirC")
-      val dirD = Files.createTempDirectory(dirC, "dirD")
-      val dir1 = Files.createTempDirectory(root, "dir1")
-      val dir2 = Files.createTempDirectory(dir1, "dir2")
-      val dir3 = Files.createTempDirectory(dir2, "dir3")
-      val dir4 = Files.createTempDirectory(dir3, "dir4")
+      val dirA = Files.createDirectory(root.resolve("dirA"))
+      val dirB = Files.createDirectory(dirA.resolve("dirB"))
+      val dirC = Files.createDirectory(dirB.resolve("dirC"))
+      val dirD = Files.createDirectory(dirC.resolve("dirD"))
+      val dir1 = Files.createDirectory(root.resolve("dir1"))
+      val dir2 = Files.createDirectory(dir1.resolve("dir2"))
+      val dir3 = Files.createDirectory(dir2.resolve("dir3"))
+      val dir4 = Files.createDirectory(dir3.resolve("dir4"))
 
       val collector = new FileAndDirCollector()
       assert(Files.walkFileTree(root, collector) === root)
+      assert(collector.countPreVisitDirectory() === 9)
+      assert(collector.countVisitFile() === 0)
+      assert(collector.countVisitFileFailed() === 0)
+      assert(collector.countPostVisitDirectory() === 9)
+
       val alphabetThenNumber = List(root, dirA, dirB, dirC, dirD, dir1, dir2, dir3, dir4)
       val numberThenAlphabet = List(root, dir1, dir2, dir3, dir4, dirA, dirB, dirC, dirD)
       val result             = collector.collectFiles()
       assert(result === alphabetThenNumber || result === numberThenAlphabet)
     }
 
-    // todo: file TERMINATE
+    "terminate when preVisitDirectory return TERMINATE" in {
+      val root       = Files.createTempDirectory("top")
+      val dirA       = Files.createDirectory(root.resolve("dirA"))
+      val dirB       = Files.createDirectory(dirA.resolve("dirB"))
+      val dirC       = Files.createDirectory(dirB.resolve("dirC"))
+      val terminateD = Files.createFile(dirC.resolve("terminate"))
+      val dir1       = Files.createDirectory(root.resolve("dir1"))
+      val dir2       = Files.createDirectory(dir1.resolve("dir2"))
+      val dir3       = Files.createDirectory(dir2.resolve("dir3"))
+      val terminate4 = Files.createFile(dir3.resolve("terminate"))
+
+      val collector = new TerminateAtFileCollector()
+      assert(Files.walkFileTree(root, collector) === root)
+      assert(collector.countPreVisitDirectory() === 4)
+      assert(collector.countVisitFile() === 1)
+      assert(collector.countVisitFileFailed() === 0)
+      assert(collector.countPostVisitDirectory() === 0)
+
+      val alphabetThenNumber = List(root, dirA, dirB, dirC)
+      val numberThenAlphabet = List(root, dir1, dir2, dir3)
+      val result             = collector.collectFiles()
+      assert(result === alphabetThenNumber || result === numberThenAlphabet)
+    }
+
     // todo: file SKIP_SUBTREE
     // todo: file SKIP_SIBLINGS
     // todo: dir TERMINATE
@@ -1226,22 +1254,74 @@ class FilesTest extends AnyFreeSpec with TestSupport {
   }
 }
 
-private class FileAndDirCollector extends SimpleFileVisitor[Path] {
+trait InvocationCounter {
+  private var visitFile: Int           = 0
+  final def incrementVisitFile(): Unit = visitFile += 1
+  final def countVisitFile(): Int      = visitFile
+
+  private var visitFileFailed: Int           = 0
+  final def incrementVisitFileFailed(): Unit = visitFileFailed += 1
+  final def countVisitFileFailed(): Int      = visitFileFailed
+
+  private var preVisitDirectory: Int           = 0
+  final def incrementPreVisitDirectory(): Unit = preVisitDirectory += 1
+  final def countPreVisitDirectory(): Int      = preVisitDirectory
+
+  private var postVisitDirectory: Int           = 0
+  final def incrementPostVisitDirectory(): Unit = postVisitDirectory += 1
+  final def countPostVisitDirectory(): Int      = postVisitDirectory
+}
+
+class FileAndDirCollector extends SimpleFileVisitor[Path] with InvocationCounter {
   private val buffer: ListBuffer[Path] = ListBuffer.empty
 
+  override def preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult = {
+    incrementPreVisitDirectory()
+    buffer.addOne(dir)
+    FileVisitResult.CONTINUE
+  }
+
   override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
+    incrementVisitFile()
     buffer.addOne(file)
     FileVisitResult.CONTINUE
   }
 
   override def visitFileFailed(file: Path, exc: IOException): FileVisitResult = {
-    println(s"failed: ${file}")
+    incrementVisitFileFailed()
     super.visitFileFailed(file, exc)
   }
 
+  override def postVisitDirectory(dir: Path, exc: IOException): FileVisitResult = {
+    incrementPostVisitDirectory()
+    super.postVisitDirectory(dir, exc)
+  }
+
+  def collectFiles(): Seq[Path] = buffer.toSeq
+}
+
+private class TerminateAtFileCollector extends SimpleFileVisitor[Path] with InvocationCounter {
+  private val buffer: ListBuffer[Path] = ListBuffer.empty
+
   override def preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult = {
+    incrementPreVisitDirectory()
     buffer.addOne(dir)
     FileVisitResult.CONTINUE
+  }
+
+  override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
+    incrementVisitFile()
+    FileVisitResult.TERMINATE
+  }
+
+  override def visitFileFailed(file: Path, exc: IOException): FileVisitResult = {
+    incrementVisitFileFailed()
+    super.visitFileFailed(file, exc)
+  }
+
+  override def postVisitDirectory(dir: Path, exc: IOException): FileVisitResult = {
+    incrementPostVisitDirectory()
+    super.postVisitDirectory(dir, exc)
   }
 
   def collectFiles(): Seq[Path] = buffer.toSeq
