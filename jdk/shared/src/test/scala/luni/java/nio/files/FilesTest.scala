@@ -266,7 +266,11 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     assert(Files.isRegularFile(tmpFile))
     assert(Files.getPosixFilePermissions(tmpFile) === PosixFilePermissions.fromString("rw-------"))
 
-    // TODO: attrs
+    val tmpFile2 = Files.createTempFile(base, "foobar", ".md",
+      PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwxrwxrwx")))
+    assert(Files.exists(tmpFile2))
+    assert(Files.isRegularFile(tmpFile2))
+    assert(Files.getPosixFilePermissions(tmpFile2) === PosixFilePermissions.fromString("rwxr-xr-x"))
   }
 
   "createTempFile(String, String, FileAttribute[_])" in {
