@@ -7,6 +7,7 @@ import java.io._
 import java.nio.charset.Charset
 import java.nio.file._
 import java.nio.file.attribute._
+import java.util.{Set => JavaSet}
 import java.util.concurrent.TimeUnit._
 import scala.jdk.CollectionConverters._
 import scala.collection.mutable.ListBuffer
@@ -275,7 +276,11 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     assert(Files.isRegularFile(tmpFile))
     assert(Files.getPosixFilePermissions(tmpFile) === PosixFilePermissions.fromString("rw-------"))
 
-    // TODO: attrs
+    val tmpFile2 = Files.createTempFile("foobar", ".md",
+      PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwxrwxrwx")))
+    assert(Files.exists(tmpFile2))
+    assert(Files.isRegularFile(tmpFile2))
+    assert(Files.getPosixFilePermissions(tmpFile2) === PosixFilePermissions.fromString("rwxr-xr-x"))
   }
 
   "delete(Path)" in {

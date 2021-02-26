@@ -187,16 +187,37 @@ object Files {
     val suffix2  = if (suffix == null) ".tmp" else suffix
     val fileName = s"${prefix}${random}${suffix2}"
     val joined   = path.Path.join(dir, fileName)
+
+    val fileMode: Int = attrs.collectFirst {
+      case attr if attr.name() == "posix:permissions" =>
+        attr.value().asInstanceOf[JavaSet[PosixFilePermission]]
+    } match {
+      case Some(permissions) =>
+        var mode: Int = 0
+        if (permissions.contains(PosixFilePermission.OWNER_READ)) mode |= fs.Fs.constants.S_IRUSR
+        if (permissions.contains(PosixFilePermission.OWNER_WRITE)) mode |= fs.Fs.constants.S_IWUSR
+        if (permissions.contains(PosixFilePermission.OWNER_EXECUTE)) mode |= fs.Fs.constants.S_IXUSR
+        if (permissions.contains(PosixFilePermission.GROUP_READ)) mode |= fs.Fs.constants.S_IRGRP
+        if (permissions.contains(PosixFilePermission.GROUP_EXECUTE)) mode |= fs.Fs.constants.S_IXGRP
+        if (permissions.contains(PosixFilePermission.OTHERS_READ)) mode |= fs.Fs.constants.S_IROTH
+        if (permissions.contains(PosixFilePermission.OTHERS_EXECUTE)) mode |= fs.Fs.constants.S_IXOTH
+
+        // JDK does not support the below permissions
+        // if (permissions.contains(PosixFilePermission.GROUP_WRITE)) mode |= fs.Fs.constants.S_IWGRP
+        // if (permissions.contains(PosixFilePermission.OTHERS_WRITE)) mode |= fs.Fs.constants.S_IWOTH
+        mode
+      case None =>
+        fs.Fs.constants.S_IRUSR | fs.Fs.constants.S_IWUSR
+    }
+
     fs.Fs.writeFileSync(
       joined,
       "",
       fs.FileAppendOptions(
-        mode = fs.Fs.constants.S_IRUSR | fs.Fs.constants.S_IWUSR
+        mode = fileMode
       )
     )
     Paths.get(joined)
-
-    // TODO: attrs
   }
 
   def delete(path: Path): Unit = {
