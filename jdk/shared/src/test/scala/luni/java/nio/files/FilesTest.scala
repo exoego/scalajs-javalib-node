@@ -11,6 +11,7 @@ import java.util.{Set => JavaSet}
 import java.util.concurrent.TimeUnit._
 import scala.jdk.CollectionConverters._
 import scala.collection.mutable.ListBuffer
+import scala.language.reflectiveCalls
 
 class FilesTest extends AnyFreeSpec with TestSupport {
 
@@ -1144,57 +1145,421 @@ class FilesTest extends AnyFreeSpec with TestSupport {
       val root = Files.createTempDirectory("top")
       val dirA = Files.createDirectory(root.resolve("dirA"))
       val dirB = Files.createDirectory(dirA.resolve("dirB"))
-      val dirC = Files.createDirectory(dirB.resolve("dirC"))
-      val dirD = Files.createDirectory(dirC.resolve("dirD"))
       val dir1 = Files.createDirectory(root.resolve("dir1"))
       val dir2 = Files.createDirectory(dir1.resolve("dir2"))
-      val dir3 = Files.createDirectory(dir2.resolve("dir3"))
-      val dir4 = Files.createDirectory(dir3.resolve("dir4"))
 
-      val collector = new FileAndDirCollector()
+      val collector = new BaseCountingPathCollector()
       assert(Files.walkFileTree(root, collector) === root)
-      assert(collector.countPreVisitDirectory() === 9)
+      assert(collector.countPreVisitDirectory() === 5)
       assert(collector.countVisitFile() === 0)
       assert(collector.countVisitFileFailed() === 0)
-      assert(collector.countPostVisitDirectory() === 9)
+      assert(collector.countPostVisitDirectory() === 5)
 
-      val alphabetThenNumber = List(root, dirA, dirB, dirC, dirD, dir1, dir2, dir3, dir4)
-      val numberThenAlphabet = List(root, dir1, dir2, dir3, dir4, dirA, dirB, dirC, dirD)
-      val result             = collector.collectFiles()
-      assert(result === alphabetThenNumber || result === numberThenAlphabet)
+      val alphaThenNum = List(root, dirA, dirB, dirB, dirA, dir1, dir2, dir2, dir1, root)
+      val numThenAlpha = List(root, dir1, dir2, dir2, dir1, dirA, dirB, dirB, dirA, root)
+      assert(collector.visited === alphaThenNum || collector.visited === numThenAlpha)
     }
 
-    "terminate when preVisitDirectory return TERMINATE" in {
-      val root       = Files.createTempDirectory("top")
-      val dirA       = Files.createDirectory(root.resolve("dirA"))
-      val dirB       = Files.createDirectory(dirA.resolve("dirB"))
-      val dirC       = Files.createDirectory(dirB.resolve("dirC"))
-      val terminateD = Files.createFile(dirC.resolve("terminate"))
-      val dir1       = Files.createDirectory(root.resolve("dir1"))
-      val dir2       = Files.createDirectory(dir1.resolve("dir2"))
-      val dir3       = Files.createDirectory(dir2.resolve("dir3"))
-      val terminate4 = Files.createFile(dir3.resolve("terminate"))
+    "TERMINATE" - {
+      "terminate when preVisitDirectory return TERMINATE" in {
+        val root = Files.createTempDirectory("top")
+        val dirA = Files.createDirectory(root.resolve("dirA"))
+        val dirB = Files.createDirectory(dirA.resolve("terminate"))
 
-      val collector = new TerminateAtFileCollector()
-      assert(Files.walkFileTree(root, collector) === root)
-      assert(collector.countPreVisitDirectory() === 4)
-      assert(collector.countVisitFile() === 1)
-      assert(collector.countVisitFileFailed() === 0)
-      assert(collector.countPostVisitDirectory() === 0)
+        val collector = new BaseCountingPathCollector {
+          override def preVisitDirectoryImpl(
+              dir: Path,
+              attrs: BasicFileAttributes
+          ): FileVisitResult = {
+            if (dir == dirB) {
+              FileVisitResult.TERMINATE
+            } else {
+              FileVisitResult.CONTINUE
+            }
+          }
+        }
+        assert(Files.walkFileTree(root, collector) === root)
+        assert(collector.countPreVisitDirectory() === 3)
+        assert(collector.countVisitFile() === 0)
+        assert(collector.countVisitFileFailed() === 0)
+        assert(collector.countPostVisitDirectory() === 0)
+        assert(collector.visited === List(root, dirA, dirB))
+      }
 
-      val alphabetThenNumber = List(root, dirA, dirB, dirC)
-      val numberThenAlphabet = List(root, dir1, dir2, dir3)
-      val result             = collector.collectFiles()
-      assert(result === alphabetThenNumber || result === numberThenAlphabet)
+      "terminate when visitFile return TERMINATE" in {
+        val root  = Files.createTempDirectory("top")
+        val dirA  = Files.createDirectory(root.resolve("dirA"))
+        val dirB  = Files.createDirectory(dirA.resolve("dirB"))
+        val fileC = Files.createFile(dirB.resolve(".hidden"))
+        val fileD = Files.createFile(dirB.resolve("terminate"))
+
+        val collector = new BaseCountingPathCollector {
+          override protected def visitFileImpl(
+              file: Path,
+              attrs: BasicFileAttributes
+          ): FileVisitResult = {
+            if (file == fileD) {
+              FileVisitResult.TERMINATE
+            } else {
+              FileVisitResult.CONTINUE
+            }
+          }
+        }
+        assert(Files.walkFileTree(root, collector) === root)
+        assert(collector.countPreVisitDirectory() === 3)
+        assert(collector.countVisitFile() === 2)
+        assert(collector.countVisitFileFailed() === 0)
+        assert(collector.countPostVisitDirectory() === 0)
+        assert(collector.visited === List(root, dirA, dirB, fileC, fileD))
+      }
+
+      "terminate when visitFileFailed return TERMINATE" ignore {
+        // This method is invoked if the file's attributes could not be read,
+        // the file is a directory that could not be opened, and other reasons.
+      }
+
+      "terminate when postVisitDirectory return TERMINATE" in {
+        val root = Files.createTempDirectory("top")
+        val dirA = Files.createDirectory(root.resolve("dirA"))
+        val dirB = Files.createDirectory(dirA.resolve("terminate"))
+
+        val collector = new BaseCountingPathCollector {
+          override protected def postVisitDirectoryImpl(
+              dir: Path,
+              exc: IOException
+          ): FileVisitResult = {
+            if (dir == dirB) {
+              FileVisitResult.TERMINATE
+            } else {
+              FileVisitResult.CONTINUE
+            }
+          }
+        }
+        assert(Files.walkFileTree(root, collector) === root)
+        assert(collector.countPreVisitDirectory() === 3)
+        assert(collector.countVisitFile() === 0)
+        assert(collector.countVisitFileFailed() === 0)
+        assert(collector.countPostVisitDirectory() === 1)
+        assert(collector.visited === List(root, dirA, dirB, dirB))
+      }
     }
 
-    // todo: file SKIP_SUBTREE
-    // todo: file SKIP_SIBLINGS
-    // todo: dir TERMINATE
-    // todo: dir SKIP_SUBTREE
-    // todo: dir SKIP_SIBLINGS
+    "SKIP_SUBTREE" - {
+      "skip sub tree when preVisitDirectory return SKIP_SUBTREE" in {
+        val root  = Files.createTempDirectory("top")
+        val dirA  = Files.createDirectory(root.resolve(".dirA"))
+        val fileB = Files.createFile(dirA.resolve("fileB"))
+        val dir1  = Files.createDirectory(root.resolve("dir1"))
+        val file2 = Files.createFile(dir1.resolve("file2"))
+
+        val collector = new BaseCountingPathCollector {
+          override protected def preVisitDirectoryImpl(
+              dir: Path,
+              attrs: BasicFileAttributes
+          ): FileVisitResult = {
+            if (dir == dirA) {
+              FileVisitResult.SKIP_SUBTREE
+            } else {
+              FileVisitResult.CONTINUE
+            }
+          }
+        }
+        assert(Files.walkFileTree(root, collector) === root)
+        assert(collector.countPreVisitDirectory() === 3)
+        assert(collector.countVisitFile() === 1)
+        assert(collector.countVisitFileFailed() === 0)
+        assert(collector.countPostVisitDirectory() === 2)
+        assert(collector.visited === List(root, dirA, dir1, file2, dir1, root))
+      }
+
+      "SKIP_SUBTREE on postVisitDirectory is identical to CONTINUE" in {
+        val root  = Files.createTempDirectory("top")
+        val dirA  = Files.createDirectory(root.resolve(".dirA"))
+        val fileB = Files.createFile(dirA.resolve("fileB"))
+        val dir1  = Files.createDirectory(root.resolve("dir1"))
+        val file2 = Files.createFile(dir1.resolve("file2"))
+
+        Seq(
+          new BaseCountingPathCollector(),
+          new BaseCountingPathCollector {
+            override protected def postVisitDirectoryImpl(
+                dir: Path,
+                exc: IOException
+            ): FileVisitResult =
+              if (dir == dirA) {
+                FileVisitResult.SKIP_SUBTREE
+              } else {
+                FileVisitResult.CONTINUE
+              }
+          }
+        ).foreach { collector =>
+          assert(Files.walkFileTree(root, collector) === root)
+          assert(collector.countPreVisitDirectory() === 3)
+          assert(collector.countVisitFile() === 2)
+          assert(collector.countVisitFileFailed() === 0)
+          assert(collector.countPostVisitDirectory() === 3)
+          assert(collector.visited === List(root, dirA, fileB, dirA, dir1, file2, dir1, root))
+        }
+      }
+
+      "SKIP_SUBTREE on visitFile is identical to CONTINUE" in {
+        val root    = Files.createTempDirectory("top")
+        val dirA    = Files.createDirectory(root.resolve(".dirA"))
+        val fileB   = Files.createFile(dirA.resolve("fileB"))
+        val fileBBB = Files.createFile(dirA.resolve("fileBBB"))
+        val dir1    = Files.createDirectory(root.resolve("dir1"))
+        val file2   = Files.createFile(dir1.resolve("file2"))
+
+        Seq(
+          new BaseCountingPathCollector(),
+          new BaseCountingPathCollector {
+            override protected def visitFileImpl(
+                file: Path,
+                attrs: BasicFileAttributes
+            ): FileVisitResult =
+              if (file == fileB) {
+                FileVisitResult.SKIP_SUBTREE
+              } else {
+                FileVisitResult.CONTINUE
+              }
+          }
+        ).foreach { collector =>
+          assert(Files.walkFileTree(root, collector) === root)
+          assert(collector.countPreVisitDirectory() === 3)
+          assert(collector.countVisitFile() === 3)
+          assert(collector.countVisitFileFailed() === 0)
+          assert(collector.countPostVisitDirectory() === 3)
+          assert(
+            collector.visited === List(root, dirA, fileB, fileBBB, dirA, dir1, file2, dir1, root)
+          )
+        }
+      }
+    }
+
+    "SKIP_SIBLINGS" - {
+      "skip siblings when preVisitDirectory return SKIP_SUBTREE" in {
+        val root  = Files.createTempDirectory("top")
+        val dirA  = Files.createDirectory(root.resolve(".dirA"))
+        val fileB = Files.createFile(dirA.resolve("fileB"))
+        val dir1  = Files.createDirectory(root.resolve("dir1"))
+        val file2 = Files.createFile(dir1.resolve("file2"))
+
+        val collector = new BaseCountingPathCollector {
+          override protected def preVisitDirectoryImpl(
+              dir: Path,
+              attrs: BasicFileAttributes
+          ): FileVisitResult = {
+            if (dir == dirA) {
+              FileVisitResult.SKIP_SIBLINGS
+            } else {
+              FileVisitResult.CONTINUE
+            }
+          }
+        }
+        assert(Files.walkFileTree(root, collector) === root)
+        assert(collector.countPreVisitDirectory() === 2)
+        assert(collector.countVisitFile() === 0)
+        assert(collector.countVisitFileFailed() === 0)
+        assert(collector.countPostVisitDirectory() === 1)
+        assert(collector.visited === List(root, dirA, /* fileB, dirA, *dir1, file2, dir1, */ root))
+      }
+
+      "SKIP_SUBTREE on postVisitDirectory is identical to CONTINUE" in {
+        val root  = Files.createTempDirectory("top")
+        val dirA  = Files.createDirectory(root.resolve(".dirA"))
+        val fileB = Files.createFile(dirA.resolve("fileB"))
+        val dir1  = Files.createDirectory(root.resolve("dir1"))
+        val file2 = Files.createFile(dir1.resolve("file2"))
+
+        Seq(
+          new BaseCountingPathCollector(),
+          new BaseCountingPathCollector {
+            override protected def postVisitDirectoryImpl(
+                dir: Path,
+                exc: IOException
+            ): FileVisitResult =
+              if (dir == dirA) {
+                FileVisitResult.SKIP_SIBLINGS
+              } else {
+                FileVisitResult.CONTINUE
+              }
+          }
+        ).foreach { collector =>
+          assert(Files.walkFileTree(root, collector) === root)
+          assert(collector.countPreVisitDirectory() === 3)
+          assert(collector.countVisitFile() === 2)
+          assert(collector.countVisitFileFailed() === 0)
+          assert(collector.countPostVisitDirectory() === 3)
+          assert(collector.visited === List(root, dirA, fileB, dirA, dir1, file2, dir1, root))
+        }
+      }
+
+      "skip siblings when visitFile return SKIP_SIBLINGS" in {
+        val root    = Files.createTempDirectory("top")
+        val dirA    = Files.createDirectory(root.resolve(".dirA"))
+        val fileB   = Files.createFile(dirA.resolve("fileB"))
+        val fileBBB = Files.createFile(dirA.resolve("fileBBB"))
+
+        val collector = new BaseCountingPathCollector {
+          override protected def visitFileImpl(
+              file: Path,
+              attrs: BasicFileAttributes
+          ): FileVisitResult =
+            if (file == fileB) {
+              FileVisitResult.SKIP_SIBLINGS
+            } else {
+              FileVisitResult.CONTINUE
+            }
+        }
+        assert(Files.walkFileTree(root, collector) === root)
+        assert(collector.countPreVisitDirectory() === 2)
+        assert(collector.countVisitFile() === 1)
+        assert(collector.countVisitFileFailed() === 0)
+        assert(collector.countPostVisitDirectory() === 2)
+        assert(collector.visited === List(root, dirA, fileB, dirA, root))
+      }
+    }
   }
-  "walkFileTree(Path, JavaSet[FileVisitOption], maxDepth:Int, FileVisitor[_ >: Path])" ignore {}
+  "walkFileTree(Path, JavaSet[FileVisitOption], maxDepth:Int, FileVisitor[_ >: Path])" - {
+    "depth" - {
+      "file" in {
+        val root  = Files.createTempDirectory("top")
+        val file1 = Files.createFile(root.resolve("file"))
+
+        val collector0 = new BaseCountingPathCollector()
+        assert(Files.walkFileTree(root, Set.empty[FileVisitOption].asJava, 0, collector0) === root)
+        assert(collector0.countPreVisitDirectory() === 0)
+        assert(
+          collector0.countVisitFile() === 1,
+          "directory at final depth should be treated as file"
+        )
+        assert(collector0.countVisitFileFailed() === 0)
+        assert(collector0.countPostVisitDirectory() === 0)
+        assert(collector0.visited === List(root))
+
+        val collector1 = new BaseCountingPathCollector()
+        assert(Files.walkFileTree(root, Set.empty[FileVisitOption].asJava, 1, collector1) === root)
+        assert(collector1.countPreVisitDirectory() === 1)
+        assert(collector1.countVisitFile() === 1)
+        assert(collector1.countVisitFileFailed() === 0)
+        assert(collector1.countPostVisitDirectory() === 1)
+        assert(collector1.visited === List(root, file1, root))
+
+        val collector2 = new BaseCountingPathCollector()
+        assert(Files.walkFileTree(root, Set.empty[FileVisitOption].asJava, 2, collector2) === root)
+        assert(collector2.countPreVisitDirectory() === 1)
+        assert(collector2.countVisitFile() === 1)
+        assert(collector2.countVisitFileFailed() === 0)
+        assert(collector2.countPostVisitDirectory() === 1)
+        assert(collector2.visited === List(root, file1, root))
+      }
+
+      "directory at final depth is treated as file" in {
+        val root = Files.createTempDirectory("top")
+        val dir1 = Files.createDirectory(root.resolve("dir1"))
+        val dir2 = Files.createDirectory(dir1.resolve("dir2"))
+        val dir3 = Files.createDirectory(dir2.resolve("dir3"))
+
+        val collector0 = new BaseCountingPathCollector()
+        assert(Files.walkFileTree(root, Set.empty[FileVisitOption].asJava, 0, collector0) === root)
+        assert(collector0.countPreVisitDirectory() === 0)
+        assert(
+          collector0.countVisitFile() === 1,
+          "directory at final depth should be treated as file"
+        )
+        assert(collector0.countVisitFileFailed() === 0)
+        assert(collector0.countPostVisitDirectory() === 0)
+        assert(collector0.visited === List(root))
+
+        val collector1 = new BaseCountingPathCollector()
+        assert(Files.walkFileTree(root, Set.empty[FileVisitOption].asJava, 1, collector1) === root)
+        assert(collector1.countPreVisitDirectory() === 1)
+        assert(
+          collector1.countVisitFile() === 1,
+          "directory at final depth should be treated as file"
+        )
+        assert(collector1.countVisitFileFailed() === 0)
+        assert(collector1.countPostVisitDirectory() === 1)
+        assert(collector1.visited === List(root, dir1, root))
+
+        val collector2 = new BaseCountingPathCollector()
+        assert(Files.walkFileTree(root, Set.empty[FileVisitOption].asJava, 2, collector2) === root)
+        assert(collector2.countPreVisitDirectory() === 2)
+        assert(
+          collector2.countVisitFile() === 1,
+          "directory at final depth should be treated as file"
+        )
+        assert(collector2.countVisitFileFailed() === 0)
+        assert(collector2.countPostVisitDirectory() === 2)
+        assert(collector2.visited === List(root, dir1, dir2, dir1, root))
+
+        val collector3 = new BaseCountingPathCollector()
+        assert(Files.walkFileTree(root, Set.empty[FileVisitOption].asJava, 3, collector3) === root)
+        assert(collector3.countPreVisitDirectory() === 3)
+        assert(
+          collector3.countVisitFile() === 1,
+          "directory at final depth should be treated as file"
+        )
+        assert(collector3.countVisitFileFailed() === 0)
+        assert(collector3.countPostVisitDirectory() === 3)
+        assert(collector3.visited === List(root, dir1, dir2, dir3, dir2, dir1, root))
+
+        val collector4 = new BaseCountingPathCollector()
+        assert(Files.walkFileTree(root, Set.empty[FileVisitOption].asJava, 4, collector4) === root)
+        assert(collector4.countPreVisitDirectory() === 4)
+        assert(
+          collector4.countVisitFile() === 0,
+          "directory at final depth should be treated as file"
+        )
+        assert(collector4.countVisitFileFailed() === 0)
+        assert(collector4.countPostVisitDirectory() === 4)
+        assert(collector4.visited === List(root, dir1, dir2, dir3, dir3, dir2, dir1, root))
+      }
+    }
+
+    "LinkOptions" - {
+      "links not followed by default" in {
+        val noFollow = Set.empty[FileVisitOption].asJava
+
+        val col0 = new BaseCountingPathCollector()
+        assert(Files.walkFileTree(directorySymlink, noFollow, 0, col0) === directorySymlink)
+        assert(col0.countPreVisitDirectory() === 0)
+        assert(col0.countVisitFile() === 1)
+        assert(col0.countVisitFileFailed() === 0)
+        assert(col0.countPostVisitDirectory() === 0)
+        assert(col0.visited === List(directorySymlink))
+
+        val col1 = new BaseCountingPathCollector()
+        assert(Files.walkFileTree(directorySymlink, noFollow, 1, col1) === directorySymlink)
+        assert(col1.countPreVisitDirectory() === 0)
+        assert(col1.countVisitFile() === 1)
+        assert(col1.countVisitFileFailed() === 0)
+        assert(col1.countPostVisitDirectory() === 0)
+        assert(col1.visited === List(directorySymlink))
+      }
+
+      "follow links" in {
+        val follow = Set(FileVisitOption.FOLLOW_LINKS).asJava
+
+        val col0 = new BaseCountingPathCollector()
+        assert(Files.walkFileTree(directorySymlink, follow, 0, col0) === directorySymlink)
+        assert(col0.countPreVisitDirectory() === 0)
+        assert(col0.countVisitFile() === 1)
+        assert(col0.countVisitFileFailed() === 0)
+        assert(col0.countPostVisitDirectory() === 0)
+        assert(col0.visited === List(directorySymlink))
+
+        val col1 = new BaseCountingPathCollector()
+        assert(Files.walkFileTree(directorySymlink, follow, 1, col1) === directorySymlink)
+        assert(col1.countPreVisitDirectory() === 1)
+        assert(col1.countVisitFile() === 1)
+        assert(col1.countVisitFileFailed() === 0)
+        assert(col1.countPostVisitDirectory() === 1)
+        assert(col1.visited === List(directorySymlink, fileInSymlink, directorySymlink))
+        assert(col1.visited !== List(directorySymlink, fileInSource, directorySymlink))
+      }
+    }
+  }
 
   "write(Path, Array[Byte], OpenOption*)" in {
     val tmpFile = Files.createTempFile("foo", ".txt")
@@ -1254,75 +1619,66 @@ class FilesTest extends AnyFreeSpec with TestSupport {
   }
 }
 
-trait InvocationCounter {
-  private var visitFile: Int           = 0
-  final def incrementVisitFile(): Unit = visitFile += 1
-  final def countVisitFile(): Int      = visitFile
+class BaseCountingPathCollector extends FileVisitor[Path] {
+  val visited: ListBuffer[Path] = ListBuffer.empty
 
-  private var visitFileFailed: Int           = 0
-  final def incrementVisitFileFailed(): Unit = visitFileFailed += 1
-  final def countVisitFileFailed(): Int      = visitFileFailed
+  private var visitFile: Int      = 0
+  final def countVisitFile(): Int = visitFile
 
-  private var preVisitDirectory: Int           = 0
-  final def incrementPreVisitDirectory(): Unit = preVisitDirectory += 1
-  final def countPreVisitDirectory(): Int      = preVisitDirectory
+  private var visitFileFailed: Int      = 0
+  final def countVisitFileFailed(): Int = visitFileFailed
 
-  private var postVisitDirectory: Int           = 0
-  final def incrementPostVisitDirectory(): Unit = postVisitDirectory += 1
-  final def countPostVisitDirectory(): Int      = postVisitDirectory
-}
+  private var preVisitDirectory: Int      = 0
+  final def countPreVisitDirectory(): Int = preVisitDirectory
 
-class FileAndDirCollector extends SimpleFileVisitor[Path] with InvocationCounter {
-  private val buffer: ListBuffer[Path] = ListBuffer.empty
+  private var postVisitDirectory: Int      = 0
+  final def countPostVisitDirectory(): Int = postVisitDirectory
 
-  override def preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult = {
-    incrementPreVisitDirectory()
-    buffer.addOne(dir)
+  final override def preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult = {
+    try {
+      visited.addOne(dir)
+      preVisitDirectoryImpl(dir, attrs)
+    } finally {
+      preVisitDirectory += 1
+    }
+  }
+
+  protected def preVisitDirectoryImpl(dir: Path, attrs: BasicFileAttributes): FileVisitResult =
     FileVisitResult.CONTINUE
+
+  final override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
+    try {
+      visited.addOne(file)
+      visitFileImpl(file, attrs)
+    } finally {
+      visitFile += 1
+    }
   }
 
-  override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
-    incrementVisitFile()
-    buffer.addOne(file)
+  protected def visitFileImpl(file: Path, attrs: BasicFileAttributes): FileVisitResult =
     FileVisitResult.CONTINUE
+
+  final override def visitFileFailed(file: Path, exc: IOException): FileVisitResult = {
+    try {
+      visited.addOne(file)
+      FileVisitResult.CONTINUE
+    } finally {
+      visitFileFailed += 1
+    }
   }
 
-  override def visitFileFailed(file: Path, exc: IOException): FileVisitResult = {
-    incrementVisitFileFailed()
-    super.visitFileFailed(file, exc)
-  }
-
-  override def postVisitDirectory(dir: Path, exc: IOException): FileVisitResult = {
-    incrementPostVisitDirectory()
-    super.postVisitDirectory(dir, exc)
-  }
-
-  def collectFiles(): Seq[Path] = buffer.toSeq
-}
-
-private class TerminateAtFileCollector extends SimpleFileVisitor[Path] with InvocationCounter {
-  private val buffer: ListBuffer[Path] = ListBuffer.empty
-
-  override def preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult = {
-    incrementPreVisitDirectory()
-    buffer.addOne(dir)
+  protected def visitFileFailedImpl(file: Path, exc: IOException): FileVisitResult =
     FileVisitResult.CONTINUE
+
+  final override def postVisitDirectory(dir: Path, exc: IOException): FileVisitResult = {
+    try {
+      visited.addOne(dir)
+      postVisitDirectoryImpl(dir, exc)
+    } finally {
+      postVisitDirectory += 1
+    }
   }
 
-  override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
-    incrementVisitFile()
-    FileVisitResult.TERMINATE
-  }
-
-  override def visitFileFailed(file: Path, exc: IOException): FileVisitResult = {
-    incrementVisitFileFailed()
-    super.visitFileFailed(file, exc)
-  }
-
-  override def postVisitDirectory(dir: Path, exc: IOException): FileVisitResult = {
-    incrementPostVisitDirectory()
-    super.postVisitDirectory(dir, exc)
-  }
-
-  def collectFiles(): Seq[Path] = buffer.toSeq
+  protected def postVisitDirectoryImpl(dir: Path, exc: IOException): FileVisitResult =
+    FileVisitResult.CONTINUE
 }

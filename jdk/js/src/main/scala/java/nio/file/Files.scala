@@ -666,7 +666,9 @@ object Files {
       throw new IllegalArgumentException
     }
 
-    val linkOptions = if (options.contains(FileVisitOption.FOLLOW_LINKS)) {
+    val followLinks = options.contains(FileVisitOption.FOLLOW_LINKS)
+
+    val linkOptions = if (followLinks) {
       Seq.empty
     } else {
       Seq(LinkOption.NOFOLLOW_LINKS)
@@ -675,12 +677,23 @@ object Files {
     def readAttr(path: Path): BasicFileAttributes =
       Files.readAttributes(path, classOf[BasicFileAttributes], linkOptions: _*)
 
-    def visit(start: Path): FileVisitResult = {
-      if (isSymbolicLink(start) || isRegularFile(start)) {
+    def visit(start: Path, depth: Int): FileVisitResult = {
+      if (isRegularFile(start)) {
         visitFile(start)
+      } else if (isSymbolicLink(start)) {
+        if (depth > 0 && followLinks) {
+          visitDirectory(start, depth)
+        } else {
+          visitFile(start)
+        }
       } else if (isDirectory(start)) {
-        visitDirectory(start)
+        if (depth > 0) {
+          visitDirectory(start, depth)
+        } else {
+          visitFile(start)
+        }
       } else {
+        // TODO: non-regular file
         CONTINUE
       }
     }
@@ -690,8 +703,6 @@ object Files {
         visitor.visitFile(start, readAttr(start))
       } catch {
         case ioe: IOException =>
-          println(start)
-          println(ioe)
           visitor.visitFileFailed(start, ioe)
       }
       result match {
@@ -700,32 +711,31 @@ object Files {
       }
     }
 
-    def visitDirectory(start: Path): FileVisitResult = {
+    def visitDirectory(start: Path, depth: Int): FileVisitResult = {
       visitor.preVisitDirectory(start, readAttr(start)) match {
-        case TERMINATE =>
-          TERMINATE
-        case SKIP_SUBTREE =>
-          visitor.postVisitDirectory(start, null)
-          CONTINUE
-        case SKIP_SIBLINGS =>
-          SKIP_SIBLINGS
+        case TERMINATE     => TERMINATE
+        case SKIP_SUBTREE  => CONTINUE
+        case SKIP_SIBLINGS => SKIP_SIBLINGS
         case CONTINUE =>
           val startString = start.toString
           val startPath   = Paths.get(startString)
           var active      = true
           for (entryName <- fs.Fs.readdirSync(startString) if active) {
             val nioPath = startPath.resolve(entryName)
-            visit(nioPath) match {
+            visit(nioPath, depth - 1) match {
               case TERMINATE               => return TERMINATE
               case SKIP_SIBLINGS           => active = false
               case SKIP_SUBTREE | CONTINUE =>
             }
           }
-          visitor.postVisitDirectory(start, null)
+          visitor.postVisitDirectory(start, null) match {
+            case SKIP_SIBLINGS => CONTINUE
+            case otherwise     => otherwise
+          }
       }
     }
 
-    visit(start)
+    visit(start, maxDepth)
     start
   }
 
