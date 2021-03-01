@@ -43,7 +43,7 @@ class FileOutputStreamTest extends AnyFreeSpec with BeforeAndAfterEach with Test
     if (fos != null) fos.close()
   }
 
-  "ConstructorLjava_io_File" in {
+  "ConstructorLjava_io_File" ignore {
     f = new File(System.getProperty("user.home"), "fos.tst")
     fos = new FileOutputStream(f)
   }
@@ -66,6 +66,7 @@ class FileOutputStreamTest extends AnyFreeSpec with BeforeAndAfterEach with Test
     fos = new FileOutputStream(fileName)
     // Regression test for HARMONY-4012
     new FileOutputStream("nul")
+    new File("nul").delete()
   }
 
   "ConstructorLjava_lang_StringZ" in {
