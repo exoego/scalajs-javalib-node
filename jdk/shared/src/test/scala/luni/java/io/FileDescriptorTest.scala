@@ -10,9 +10,10 @@ import java.io.{
 }
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.freespec.AnyFreeSpec
+import support.TestSupport
 
-class FileDescriptorTest extends AnyFreeSpec with BeforeAndAfterEach {
-  private val platformId = "JDK" + System.getProperty("java.vm.version").replace('.', '-')
+class FileDescriptorTest extends AnyFreeSpec with BeforeAndAfterEach with TestSupport {
+  private val platformId = getNewPlatformFile("JDK", "")
 
   private[io] var fos: FileOutputStream    = _
   private[io] var os: BufferedOutputStream = _
