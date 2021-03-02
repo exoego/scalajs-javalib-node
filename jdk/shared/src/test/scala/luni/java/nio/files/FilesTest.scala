@@ -1561,23 +1561,155 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     }
   }
 
-  "write(Path, Array[Byte], OpenOption*)" in {
-    val tmpFile = Files.createTempFile("foo", ".txt")
-    assert(Files.size(tmpFile) === 0)
-    val written = Files.write(tmpFile, Array[Byte](97, 98, 99))
-    assert(written === tmpFile)
-    assert(Files.readAllLines(written).asScala.toSeq === Seq("abc"))
-    Files.write(tmpFile, Array[Byte](100, 101, 102))
-    assert(Files.size(tmpFile) === 3)
-    // Overwrite, not append
-    assert(Files.readAllLines(written).asScala.toSeq === Seq("def"))
+  "write(Path, Array[Byte], OpenOption*)" - {
+    "no option" in {
+      val tmpFile = Files.createTempFile("foo", ".txt")
+      assert(Files.size(tmpFile) === 0)
+      val written = Files.write(tmpFile, Array[Byte](97, 98, 99))
+      assert(written === tmpFile)
+      assert(Files.readAllLines(written).asScala.toSeq === Seq("abc"))
+      Files.write(tmpFile, Array[Byte](100, 101, 102))
+      assert(Files.size(tmpFile) === 3)
+      // Overwrite, not append
+      assert(Files.readAllLines(written).asScala.toSeq === Seq("def"))
 
-    Files.delete(tmpFile)
-    // Create if not exists
-    Files.write(tmpFile, Array[Byte](97, 98, 99))
+      Files.delete(tmpFile)
+      // Create if not exists
+      Files.write(tmpFile, Array[Byte](97, 98, 99))
 
-    assertThrows[IOException] {
-      Files.write(directory, Array[Byte](97, 98, 99))
+//      assertThrows[IOException] {
+//        Files.write(directory, Array[Byte](97, 98, 99))
+//      }
+    }
+
+    "options" - {
+      "LinkOption.NOFOLLOW_LINKS" ignore {}
+
+      "StandardOpenOption.READ" in {
+        val tmpFile = Files.createTempFile("1", "")
+        assertThrows[IllegalArgumentException] {
+          Files.write(tmpFile, Array.empty[Byte], StandardOpenOption.READ)
+        }
+      }
+
+      "StandardOpenOption.WRITE" in {
+        val exists = Files.createTempFile("2", "")
+        Files.write(exists, Array[Byte](97, 98, 99), StandardOpenOption.WRITE)
+        assert(Files.readAllLines(exists).asScala === List("abc"))
+        Files.write(exists, Array[Byte](100, 101, 102), StandardOpenOption.WRITE)
+        assert(Files.readAllLines(exists).asScala === List("def"))
+
+        val nonExists = Files.createTempDirectory("dir").resolve("file")
+        assertThrows[NoSuchFileException] {
+          Files.write(nonExists, Array[Byte](97, 98, 99), StandardOpenOption.WRITE)
+        }
+      }
+
+      "StandardOpenOption.APPEND" in {
+        val tmp = Files.createTempFile("2", "")
+        Files.write(tmp, Array[Byte](97, 98, 99), StandardOpenOption.APPEND)
+        assert(Files.readAllLines(tmp).asScala === List("abc"))
+        Files.write(tmp, Array[Byte](100, 101, 102), StandardOpenOption.APPEND)
+        assert(Files.readAllLines(tmp).asScala === List("abcdef"))
+
+        val nonExists = Files.createTempDirectory("dir").resolve("file")
+        assertThrows[NoSuchFileException] {
+          Files.write(nonExists, Array[Byte](97, 98, 99), StandardOpenOption.APPEND)
+        }
+      }
+
+      "StandardOpenOption.TRUNCATE_EXISTING" in {
+        val tmp = Files.createTempFile("2", "")
+        Files.write(tmp, Array[Byte](97, 98, 99), StandardOpenOption.TRUNCATE_EXISTING)
+        assert(Files.readAllLines(tmp).asScala === List("abc"))
+        Files.write(tmp, Array[Byte](100, 101, 102), StandardOpenOption.TRUNCATE_EXISTING)
+        assert(Files.readAllLines(tmp).asScala === List("def"))
+
+        val nonExists = Files.createTempDirectory("dir").resolve("file")
+        assertThrows[NoSuchFileException] {
+          Files.write(nonExists, Array[Byte](97, 98, 99), StandardOpenOption.TRUNCATE_EXISTING)
+        }
+      }
+
+      "StandardOpenOption.CREATE" in {
+        val exists = Files.createTempFile("2", "")
+        Files.write(exists, Array[Byte](97, 98, 99), StandardOpenOption.CREATE)
+        assert(Files.readAllLines(exists).asScala === List("abc"))
+        Files.write(exists, Array[Byte](100, 101, 102), StandardOpenOption.CREATE)
+        assert(Files.readAllLines(exists).asScala === List("def"))
+
+        val nonExists = Files.createTempDirectory("dir").resolve("file")
+        Files.write(nonExists, Array[Byte](97, 98, 99), StandardOpenOption.CREATE)
+        assert(Files.readAllLines(nonExists).asScala === List("abc"))
+
+        // This option is ignored if the CREATE_NEW option is also set
+        assertThrows[FileAlreadyExistsException] {
+          Files.write(
+            nonExists,
+            Array[Byte](97, 98, 99),
+            StandardOpenOption.CREATE,
+            StandardOpenOption.CREATE_NEW
+          )
+        }
+      }
+
+      "StandardOpenOption.CREATE_NEW" in {
+        val tmpDir    = Files.createTempDirectory("dir")
+        val nonExists = tmpDir.resolve("file")
+        Files.write(nonExists, Array[Byte](97, 98, 99), StandardOpenOption.CREATE_NEW)
+        assert(Files.readAllLines(nonExists).asScala === List("abc"))
+
+        val exists = Files.createTempFile("2", "")
+        assertThrows[FileAlreadyExistsException] {
+          Files.write(exists, Array.empty[Byte], StandardOpenOption.CREATE_NEW)
+        }
+      }
+
+      "StandardOpenOption.DELETE_ON_CLOSE" in {
+        val exists = Files.createTempFile("2", "")
+        Files.write(exists, Array[Byte](97, 98, 99), StandardOpenOption.DELETE_ON_CLOSE)
+        Files.notExists(exists)
+
+        val nonExists = Files.createTempDirectory("dir").resolve("file")
+        assertThrows[NoSuchFileException] {
+          Files.write(nonExists, Array[Byte](97, 98, 99), StandardOpenOption.DELETE_ON_CLOSE)
+        }
+      }
+
+      "StandardOpenOption.SPARSE" ignore {
+        // MacOS HFS+ dos not support sparse file
+      }
+
+      "StandardOpenOption.SYNC" in {
+        // same as write
+        val exists = Files.createTempFile("2", "")
+        Files.write(exists, Array[Byte](97, 98, 99), StandardOpenOption.SYNC)
+        assert(Files.readAllLines(exists).asScala === List("abc"))
+        Files.write(exists, Array[Byte](100, 101, 102), StandardOpenOption.SYNC)
+        assert(Files.readAllLines(exists).asScala === List("def"))
+
+        val nonExists = Files.createTempDirectory("dir").resolve("file")
+        assertThrows[NoSuchFileException] {
+          Files.write(nonExists, Array[Byte](97, 98, 99), StandardOpenOption.SYNC)
+        }
+
+        // todo: specific for sync
+      }
+
+      "StandardOpenOption.DSYNC" in {
+        // same as write
+        val exists = Files.createTempFile("2", "")
+        Files.write(exists, Array[Byte](97, 98, 99), StandardOpenOption.DSYNC)
+        assert(Files.readAllLines(exists).asScala === List("abc"))
+        Files.write(exists, Array[Byte](100, 101, 102), StandardOpenOption.DSYNC)
+        assert(Files.readAllLines(exists).asScala === List("def"))
+
+        val nonExists = Files.createTempDirectory("dir").resolve("file")
+        assertThrows[NoSuchFileException] {
+          Files.write(nonExists, Array[Byte](97, 98, 99), StandardOpenOption.DSYNC)
+        }
+        // todo: specific for sync
+      }
     }
   }
   "write(Path, JavaIterable[_ <: CharSequence], Charset, OpenOption*)" in {
@@ -1589,6 +1721,8 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     assert(written === tmpFile)
     assert(Files.readAllLines(written, utf16le).asScala.toSeq === Seq("abc"))
     assert(Files.size(tmpFile) === 8)
+
+    // TODO: options
   }
   "write(Path, JavaIterable[_ <: CharSequence], OpenOption*)" in {
     val tmpFile = Files.createTempFile("foo", ".txt")

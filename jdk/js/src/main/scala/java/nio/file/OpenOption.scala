@@ -5,6 +5,7 @@ trait CopyOption {}
 
 final class StandardOpenOption protected[file] (name: String, ordinal: Int)
     extends Enum[StandardOpenOption](name, ordinal)
+    with OpenOption
 object StandardOpenOption {
   val APPEND            = new StandardOpenOption("APPEND", 0)
   val CREATE            = new StandardOpenOption("CREATE", 1)

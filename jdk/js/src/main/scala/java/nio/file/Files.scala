@@ -8,7 +8,7 @@ import java.lang.{Iterable => JavaIterable}
 import java.util.{List => JavaList, Map => JavaMap, Set => JavaSet}
 import java.util.function.BiPredicate
 import java.util.stream.{Stream => JavaStream}
-import io.scalajs.nodejs.{fs, os, path}
+import io.scalajs.nodejs.{FileDescriptor, fs, os, path}
 
 import java.util
 import scala.annotation.varargs
@@ -740,42 +740,79 @@ object Files {
   }
 
   @varargs def write(path: Path, bytes: Array[Byte], options: OpenOption*): Path = {
-    if (Files.isDirectory(path)) {
-      throw new IOException(s"$path is a directory")
-    }
-    val fd       = fs.Fs.openSync(path.toString, "w")
+    val validatedOptions = validateWriteOptions(path, options)
+    val nodejsFlags =
+      if (!validatedOptions.contains(StandardOpenOption.APPEND)) {
+        "w"
+      } else {
+        "a"
+      }
+    val fd       = openFileErrorHandling(path, nodejsFlags)
     val jsBuffer = js.typedarray.byteArray2Int8Array(bytes)
-    // TODO: options
     fs.Fs.writeSync(fd, jsBuffer)
     path
   }
+  private def openFileErrorHandling(path: Path, flags: String): FileDescriptor =
+    try {
+      fs.Fs.openSync(path.toString, flags)
+    } catch {
+      case jse: js.JavaScriptException if jse.getMessage().contains("EISDIR") =>
+        throw new IOException(s"${path} is a directory")
+    }
+
   @varargs def write(
       path: Path,
       lines: JavaIterable[_ <: CharSequence],
       cs: Charset,
       options: OpenOption*
   ): Path = {
-    writeInternal(path, lines, cs.displayName(), options: _*)
+    writeInternal(path, lines, cs.displayName(), options)
   }
   @varargs def write(
       path: Path,
       lines: JavaIterable[_ <: CharSequence],
       options: OpenOption*
   ): Path = {
-    writeInternal(path, lines, "utf8", options: _*)
+    writeInternal(path, lines, "utf8", options)
   }
+  private def validateWriteOptions(path: Path, rawOptions: Seq[OpenOption]): Set[OpenOption] = {
+    val options: Set[OpenOption] = if (rawOptions.isEmpty) {
+      Set(
+        StandardOpenOption.CREATE,
+        StandardOpenOption.TRUNCATE_EXISTING,
+        StandardOpenOption.WRITE
+      )
+    } else if (rawOptions.contains(StandardOpenOption.READ)) {
+      throw new IllegalArgumentException()
+    } else {
+      rawOptions.toSet
+    }
+
+    if (Files.exists(path)) {
+      if (options.contains(StandardOpenOption.CREATE_NEW)) {
+        throw new FileAlreadyExistsException(path.toString)
+      }
+    } else {
+      if (!options.contains(StandardOpenOption.CREATE) && !options.contains(
+            StandardOpenOption.CREATE_NEW
+          )) {
+        throw new NoSuchFileException(path.toString)
+      }
+    }
+
+    options
+  }
+
   private def writeInternal(
       path: Path,
       lines: JavaIterable[_ <: CharSequence],
       encoding: String,
-      options: OpenOption*
+      rawOptions: Seq[OpenOption]
   ): Path = {
-    if (Files.isDirectory(path)) {
-      throw new IOException(s"$path is a directory")
-    }
-    val fd       = fs.Fs.openSync(path.toString, "w")
-    val jsBuffer = lines.asScala.mkString(start = "", sep = os.OS.EOL, end = os.OS.EOL)
+    val options = validateWriteOptions(path, rawOptions)
     // TODO: options
+    val fd       = openFileErrorHandling(path, "w")
+    val jsBuffer = lines.asScala.mkString(start = "", sep = os.OS.EOL, end = os.OS.EOL)
     fs.Fs.writeFileSync(
       fd,
       jsBuffer,
