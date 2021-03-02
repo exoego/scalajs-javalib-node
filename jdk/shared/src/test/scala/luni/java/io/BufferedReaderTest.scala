@@ -1,11 +1,11 @@
 package luni.java.io
 
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.freespec.AnyFreeSpec
 
 import java.io._
 
-class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
+class BufferedReaderTest extends AnyFreeSpec with BeforeAndAfterEach {
   private[io] var br: BufferedReader = _
   private[io] val testString =
     "Test_All_Tests\nTest_java_io_BufferedInputStream\nTest_java_io_BufferedOutputStream\nTest_java_io_ByteArrayInputStream\nTest_java_io_ByteArrayOutputStream\nTest_java_io_DataInputStream\nTest_java_io_File\nTest_java_io_FileDescriptor\nTest_java_io_FileInputStream\nTest_java_io_FileNotFoundException\nTest_java_io_FileOutputStream\nTest_java_io_FilterInputStream\nTest_java_io_FilterOutputStream\nTest_java_io_InputStream\nTest_java_io_IOException\nTest_java_io_OutputStream\nTest_java_io_PrintStream\nTest_java_io_RandomAccessFile\nTest_java_io_SyncFailedException\nTest_java_lang_AbstractMethodError\nTest_java_lang_ArithmeticException\nTest_java_lang_ArrayIndexOutOfBoundsException\nTest_java_lang_ArrayStoreException\nTest_java_lang_Boolean\nTest_java_lang_Byte\nTest_java_lang_Character\nTest_java_lang_Class\nTest_java_lang_ClassCastException\nTest_java_lang_ClassCircularityError\nTest_java_lang_ClassFormatError\nTest_java_lang_ClassLoader\nTest_java_lang_ClassNotFoundException\nTest_java_lang_CloneNotSupportedException\nTest_java_lang_Double\nTest_java_lang_Error\nTest_java_lang_Exception\nTest_java_lang_ExceptionInInitializerError\nTest_java_lang_Float\nTest_java_lang_IllegalAccessError\nTest_java_lang_IllegalAccessException\nTest_java_lang_IllegalArgumentException\nTest_java_lang_IllegalMonitorStateException\nTest_java_lang_IllegalThreadStateException\nTest_java_lang_IncompatibleClassChangeError\nTest_java_lang_IndexOutOfBoundsException\nTest_java_lang_InstantiationError\nTest_java_lang_InstantiationException\nTest_java_lang_Integer\nTest_java_lang_InternalError\nTest_java_lang_InterruptedException\nTest_java_lang_LinkageError\nTest_java_lang_Long\nTest_java_lang_Math\nTest_java_lang_NegativeArraySizeException\nTest_java_lang_NoClassDefFoundError\nTest_java_lang_NoSuchFieldError\nTest_java_lang_NoSuchMethodError\nTest_java_lang_NullPointerException\nTest_java_lang_Number\nTest_java_lang_NumberFormatException\nTest_java_lang_Object\nTest_java_lang_OutOfMemoryError\nTest_java_lang_RuntimeException\nTest_java_lang_SecurityManager\nTest_java_lang_Short\nTest_java_lang_StackOverflowError\nTest_java_lang_String\nTest_java_lang_StringBuffer\nTest_java_lang_StringIndexOutOfBoundsException\nTest_java_lang_System\nTest_java_lang_Thread\nTest_java_lang_ThreadDeath\nTest_java_lang_ThreadGroup\nTest_java_lang_Throwable\nTest_java_lang_UnknownError\nTest_java_lang_UnsatisfiedLinkError\nTest_java_lang_VerifyError\nTest_java_lang_VirtualMachineError\nTest_java_lang_vm_Image\nTest_java_lang_vm_MemorySegment\nTest_java_lang_vm_ROMStoreException\nTest_java_lang_vm_VM\nTest_java_lang_Void\nTest_java_net_BindException\nTest_java_net_ConnectException\nTest_java_net_DatagramPacket\nTest_java_net_DatagramSocket\nTest_java_net_DatagramSocketImpl\nTest_java_net_InetAddress\nTest_java_net_NoRouteToHostException\nTest_java_net_PlainDatagramSocketImpl\nTest_java_net_PlainSocketImpl\nTest_java_net_Socket\nTest_java_net_SocketException\nTest_java_net_SocketImpl\nTest_java_net_SocketInputStream\nTest_java_net_SocketOutputStream\nTest_java_net_UnknownHostException\nTest_java_util_ArrayEnumerator\nTest_java_util_Date\nTest_java_util_EventObject\nTest_java_util_HashEnumerator\nTest_java_util_Hashtable\nTest_java_util_Properties\nTest_java_util_ResourceBundle\nTest_java_util_tm\nTest_java_util_Vector\n"
@@ -17,11 +17,11 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     }
   }
 
-  ignore("readLine_IgnoresEbcdic85Characters") {
+  "readLine_IgnoresEbcdic85Characters" in {
     assertLines("A\u0085B", "A\u0085B")
   }
 
-  ignore("readLine_Separators") {
+  "readLine_Separators" in {
     assertLines("A\nB\nC", "A", "B", "C")
     assertLines("A\rB\rC", "A", "B", "C")
     assertLines("A\r\nB\r\nC", "A", "B", "C")
@@ -38,20 +38,20 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
   private def assertLines(in: String, lines: String*): Unit = {
     val bufferedReader = new BufferedReader(new StringReader(in))
     for (line <- lines) {
-      assert(line == bufferedReader.readLine)
+      assert(line === bufferedReader.readLine)
     }
-    assert(bufferedReader.readLine == null)
+    assert(bufferedReader.readLine === null)
   }
 
-  ignore("ConstructorLjava_io_Reader") {
+  "ConstructorLjava_io_Reader" in {
     assert(true, "Used in tests")
   }
 
-  ignore("ConstructorLjava_io_ReaderI") {
+  "ConstructorLjava_io_ReaderI" in {
     assert(true, "Used in tests")
   }
 
-  ignore("close") {
+  "close" in {
     br = new BufferedReader(new StringReader(testString))
     br.close()
     assertThrows[IOException] {
@@ -59,7 +59,7 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     }
   }
 
-  ignore("markI") {
+  "markI" in {
     br = new BufferedReader(new StringReader(testString))
     br.skip(500)
     br.mark(1000)
@@ -67,7 +67,7 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     br.reset()
     val buf = new Array[Char](testString.length)
     br.read(buf, 0, 500)
-    assert(testString.substring(500, 1000) == new String(buf, 0, 500))
+    assert(testString.substring(500, 1000) === new String(buf, 0, 500))
 
     br = new BufferedReader(new StringReader(testString), 800)
     br.skip(500)
@@ -87,77 +87,77 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     in.mark(14)
     in.read(new Array[Char](14), 0, 14)
     in.reset()
-    assert((in.read == 6.toChar) && (in.read == 7.toChar))
+    assert((in.read === 6.toChar) && (in.read === 7.toChar))
 
     in = new BufferedReader(new StringReader(new String(chars)), 12)
     in.skip(6)
     in.mark(8)
     in.skip(7)
     in.reset()
-    assert((in.read == 6.toChar) && (in.read == 7.toChar))
+    assert((in.read === 6.toChar) && (in.read === 7.toChar))
 
     br = new BufferedReader(new StringReader("01234"), 2)
     br.mark(3)
     var carray = new Array[Char](3)
     var result = br.read(carray)
-    assert(3 == result)
-    assert('0' == carray(0))
-    assert('1' == carray(1))
-    assert('2' == carray(2))
-    assert('3' == br.read)
+    assert(3 === result)
+    assert('0' === carray(0))
+    assert('1' === carray(1))
+    assert('2' === carray(2))
+    assert('3' === br.read)
     br = new BufferedReader(new StringReader("01234"), 2)
     br.mark(3)
     carray = new Array[Char](4)
     result = br.read(carray)
-    assert(4 == result)
-    assert('0' == carray(0))
-    assert('1' == carray(1))
-    assert('2' == carray(2))
-    assert('3' == carray(3))
-    assert('4' == br.read)
-    assert(-1 == br.read)
+    assert(4 === result)
+    assert('0' === carray(0))
+    assert('1' === carray(1))
+    assert('2' === carray(2))
+    assert('3' === carray(3))
+    assert('4' === br.read)
+    assert(-1 === br.read)
   }
 
   // OpenJDK 11 does not pass this
-  ignore("mark_huge") {
+  "mark_huge" ignore {
     val reader = new BufferedReader(new StringReader("01234"))
     reader.mark(Integer.MAX_VALUE)
     reader.read()
     reader.close()
   }
 
-  ignore("markSupported") {
+  "markSupported" in {
     br = new BufferedReader(new StringReader(testString))
     assert(br.markSupported)
   }
 
-  ignore("read") {
+  "read" in {
     br = new BufferedReader(new StringReader(testString))
     val r = br.read
-    assert(testString.charAt(0) == r)
+    assert(testString.charAt(0) === r)
     br = new BufferedReader(new StringReader(new String(Array[Char]('\u8765'))))
-    assert(br.read == '\u8765')
+    assert(br.read === '\u8765')
 
     val chars = new Array[Char](256)
     for (i <- 0 until 256) {
       chars(i) = i.toChar
     }
     val in = new BufferedReader(new StringReader(new String(chars)), 12)
-    assert(0 == in.read) // Fill the buffer
+    assert(0 === in.read) // Fill the buffer
     val buf = new Array[Char](14)
     in.read(buf, 0, 14) // Read greater than the buffer
     // On JS, conversion to String causes char corruption on test report, so comparing via sameElements instead of String
-    // assert(new String(buf) == new String(chars, 1, 14), "Wrong block read data")
+    // assert(new String(buf)  ===new String(chars, 1, 14), "Wrong block read data")
     assert(buf.sameElements(chars.slice(1, 15)), "Wrong block read data")
-    assert(15 == in.read) // Check next byte
+    assert(15 === in.read) // Check next byte
   }
 
   // FIXME: Issue in CharArrayReader ?
-  ignore("regression test for HARMONY-841") {
-    assert(new BufferedReader(new CharArrayReader(new Array[Char](5), 1, 0), 2).read == -1)
+  "regression test for HARMONY-841" in {
+    assert(new BufferedReader(new CharArrayReader(new Array[Char](5), 1, 0), 2).read === -1)
   }
 
-  ignore("read$CII") {
+  "read$CII" in {
     val ca    = new Array[Char](2)
     var toRet = new BufferedReader(new StringReader(new String(new Array[Byte](0))))
     assertThrows[NullPointerException] {
@@ -176,15 +176,15 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
 
     // Test to ensure that a drained stream returns 0 at EOF
     toRet = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(new Array[Byte](2))))
-    assert(2 == toRet.read(ca, 0, 2), "Emptying the reader should return two bytes")
-    assert(-1 == toRet.read(ca, 0, 2), "EOF on a reader should be -1")
-    assert(0 == toRet.read(ca, 0, 0), "Reading zero bytes at EOF should work")
+    assert(2 === toRet.read(ca, 0, 2), "Emptying the reader should return two bytes")
+    assert(-1 === toRet.read(ca, 0, 2), "EOF on a reader should be -1")
+    assert(0 === toRet.read(ca, 0, 0), "Reading zero bytes at EOF should work")
 
     // Test for method int java.io.BufferedReader.read(char [], int, int)
     val buf = new Array[Char](testString.length)
     br = new BufferedReader(new StringReader(testString))
     br.read(buf, 50, 500)
-    assert(new String(buf, 50, 500) == testString.substring(0, 500))
+    assert(new String(buf, 50, 500) === testString.substring(0, 500))
 
     val bufin = new BufferedReader(new Reader() {
       private[io] val size     = 2
@@ -214,7 +214,7 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
 
     bufin.read
     val result = bufin.read(new Array[Char](2), 0, 2)
-    assert(result == 1)
+    assert(result === 1)
 
 // TODO: PipedReader
 //    //regression for HARMONY-831
@@ -238,7 +238,7 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     }
   }
 
-  ignore("read_$CII_Exception") {
+  "read_$CII_Exception" in {
     br = new BufferedReader(new StringReader(testString))
     val nullCharArray: Array[Char] = null
     val charArray                  = testString.toCharArray
@@ -285,18 +285,18 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     }
   }
 
-  ignore("readLine") {
+  "readLine" in {
     br = new BufferedReader(new StringReader(testString))
     val r = br.readLine
-    assert("Test_All_Tests" == r)
+    assert("Test_All_Tests" === r)
   }
 
-  ignore("ready") {
+  "ready" in {
     br = new BufferedReader(new StringReader(testString))
     assert(br.ready)
   }
 
-  ignore("reset") {
+  "reset" in {
     br = new BufferedReader(new StringReader(testString))
     br.skip(500)
     br.mark(900)
@@ -304,7 +304,7 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     br.reset()
     val buf = new Array[Char](testString.length)
     br.read(buf, 0, 500)
-    assert(testString.substring(500, 1000) == new String(buf, 0, 500))
+    assert(testString.substring(500, 1000) === new String(buf, 0, 500))
 
     br = new BufferedReader(new StringReader(testString))
     br.skip(500)
@@ -313,35 +313,35 @@ class BufferedReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     }
   }
 
-  ignore("reset_IOException") {
+  "reset_IOException" in {
     val expected = Array[Int]('1', '2', '3', '4', '5', '6', '7', '8', '9', '0', -1)
     br = new BufferedReader(new StringReader("1234567890"), 9)
     br.mark(9)
     for (i <- 0 until 11) {
-      assert(expected(i) == br.read)
+      assert(expected(i) === br.read)
     }
     assertThrows[IOException] {
       br.reset()
     }
     for (i <- 0 until 11) {
-      assert(-1 == br.read)
+      assert(-1 === br.read)
     }
     br = new BufferedReader(new StringReader("1234567890"))
     br.mark(10)
     for (i <- 0 until 10) {
-      assert(expected(i) == br.read)
+      assert(expected(i) === br.read)
     }
     br.reset()
     for (i <- 0 until 11) {
-      assert(expected(i) == br.read)
+      assert(expected(i) === br.read)
     }
   }
 
-  ignore("skipJ") {
+  "skipJ" in {
     br = new BufferedReader(new StringReader(testString))
     br.skip(500)
     val buf = new Array[Char](testString.length)
     br.read(buf, 0, 500)
-    assert(testString.substring(500, 1000) == new String(buf, 0, 500))
+    assert(testString.substring(500, 1000) === new String(buf, 0, 500))
   }
 }

@@ -9,9 +9,9 @@ import java.io.{
   RandomAccessFile
 }
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.freespec.AnyFreeSpec
 
-class FileDescriptorTest extends AnyFunSuite with BeforeAndAfterEach {
+class FileDescriptorTest extends AnyFreeSpec with BeforeAndAfterEach {
   private val platformId = "JDK" + System.getProperty("java.vm.version").replace('.', '-')
 
   private[io] var fos: FileOutputStream    = _
@@ -26,44 +26,41 @@ class FileDescriptorTest extends AnyFunSuite with BeforeAndAfterEach {
     }
   }
 
-  test("Constructor") {
+  "Constructor" in {
     val fd = new FileDescriptor()
     assert(fd.isInstanceOf[FileDescriptor])
   }
 
-// TODO: not implemented
-  //  test("sync") {
-  //    f = new File(System.getProperty("user.dir"), "fd" + platformId + ".tst")
-  //    f.delete
-  //    fos = new FileOutputStream(f.getPath)
-  //    fos.write("Test String".getBytes)
-  //    fis = new FileInputStream(f.getPath)
-  //    var fd = fos.getFD
-  //    fd.sync()
-  //
-  //    val length = "Test String".length
-  //    assert(length == fis.available, "Bytes were not written after sync")
-  //
-  //    // Regression test for Harmony-1494
-  //    fd = fis.getFD
-  //    fd.sync()
-  //    assert(length == fis.available, "Bytes were not written after sync")
-  //    val raf = new RandomAccessFile(f, "r")
-  //    fd = raf.getFD
-  //    fd.sync()
-  //    raf.close()
-  //  }
+  "sync" in {
+    f = new File(System.getProperty("user.dir"), "fd" + platformId + ".tst")
+    f.delete
+    fos = new FileOutputStream(f.getPath)
+    fos.write("Test String".getBytes)
+    fis = new FileInputStream(f.getPath)
+    var fd = fos.getFD
+    fd.sync()
 
-  // TODO: Require BufferedOutputSTream
-//  test("valid") {
-//    f = new File(System.getProperty("user.dir"), "fd.tst")
-//    f.delete
-//    fos = new FileOutputStream(f.getPath)
-//    os = new BufferedOutputStream(fos, 4096)
-//    val fd = fos.getFD
-//    assert(fd.valid)
-//    os.close()
-//    assert(!fd.valid)
-//  }
+    val length = "Test String".length
+    assert(length === fis.available, "Bytes were not written after sync")
 
+    // Regression test for Harmony-1494
+    fd = fis.getFD
+    fd.sync()
+    assert(length === fis.available, "Bytes were not written after sync")
+    val raf = new RandomAccessFile(f, "r")
+    fd = raf.getFD
+    fd.sync()
+    raf.close()
+  }
+
+  "valid" in {
+    f = new File(System.getProperty("user.dir"), "fd.tst")
+    f.delete
+    fos = new FileOutputStream(f.getPath)
+    os = new BufferedOutputStream(fos, 4096)
+    val fd = fos.getFD
+    assert(fd.valid)
+    os.close()
+    assert(!fd.valid)
+  }
 }

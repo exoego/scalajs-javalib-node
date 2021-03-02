@@ -194,7 +194,7 @@ class File private (dirname: Option[String], basename: String) extends Comparabl
         false
       }
     } catch {
-      case jse: Throwable => throw new IOException(jse.getMessage)
+      case _: Throwable => false
     }
   }
 

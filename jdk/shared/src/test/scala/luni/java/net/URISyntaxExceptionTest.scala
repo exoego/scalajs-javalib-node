@@ -1,11 +1,11 @@
 package luni.java.net
 
-import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.freespec.AnyFreeSpec
 
 import java.net.URISyntaxException
 
-class URISyntaxExceptionTest extends AnyFunSuite {
-  test("ConstructorLjava_lang_StringLjava_lang_StringI") {
+class URISyntaxExceptionTest extends AnyFreeSpec {
+  "ConstructorLjava_lang_StringLjava_lang_StringI" in {
     assertThrows[NullPointerException] {
       new URISyntaxException(null, "problem", 2)
     }
@@ -16,12 +16,12 @@ class URISyntaxExceptionTest extends AnyFunSuite {
       new URISyntaxException("str", "problem", -2)
     }
     val e = new URISyntaxException("str", "problem", 2)
-    assert("problem" == e.getReason)
-    assert("str" == e.getInput)
-    assert(2 == e.getIndex)
+    assert("problem" === e.getReason)
+    assert("str" === e.getInput)
+    assert(2 === e.getIndex)
   }
 
-  test("ConstructorLjava_lang_StringLjava_lang_String") {
+  "ConstructorLjava_lang_StringLjava_lang_String" in {
     assertThrows[NullPointerException] {
       new URISyntaxException(null, "problem")
     }
@@ -29,27 +29,27 @@ class URISyntaxExceptionTest extends AnyFunSuite {
       new URISyntaxException("str", null)
     }
     val e = new URISyntaxException("str", "problem")
-    assert("problem" == e.getReason)
-    assert("str" == e.getInput)
-    assert(-1 == e.getIndex)
+    assert("problem" === e.getReason)
+    assert("str" === e.getInput)
+    assert(-1 === e.getIndex)
   }
 
-  test("getIndex") {
+  "getIndex" in {
     // see constructor tests
   }
 
-  test("getReason") {
+  "getReason" in {
     // see constructor tests
   }
 
-  test("getInput") {
+  "getInput" in {
     // see constructor tests
   }
 
-  test("getMessage") {
+  "getMessage" in {
     var e = new URISyntaxException("str", "problem", 3)
-    assert("problem at index 3: str" == e.getMessage)
+    assert("problem at index 3: str" === e.getMessage)
     e = new URISyntaxException("str", "problem")
-    assert("problem: str" == e.getMessage)
+    assert("problem: str" === e.getMessage)
   }
 }

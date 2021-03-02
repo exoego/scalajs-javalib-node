@@ -1,3 +1,5 @@
 package java.io
 
-class BufferedOutputStream {}
+class BufferedOutputStream(out: OutputStream, size: Int) extends FilterOutputStream(out) {
+  // TODO: implement buffering
+}

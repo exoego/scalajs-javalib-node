@@ -2,6 +2,8 @@ package java.io
 
 import io.scalajs.nodejs.fs.Fs
 
+import java.io.FileDescriptor.in
+
 final class FileDescriptor {
 
   private[io] var internal = -1
@@ -12,6 +14,12 @@ final class FileDescriptor {
 
   private[io] def invalidate(): Unit = {
     internal = -1
+  }
+
+  def sync(): Unit = {
+    if (!readOnly && valid()) {
+      Fs.fsyncSync(this.internal)
+    }
   }
 }
 

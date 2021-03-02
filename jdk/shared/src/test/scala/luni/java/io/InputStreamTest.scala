@@ -2,13 +2,13 @@ package luni.java.io
 
 import java.io.InputStream
 
-import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.freespec.AnyFreeSpec
 
-class InputStreamTest extends AnyFunSuite {
+class InputStreamTest extends AnyFreeSpec {
 
   private val isScalaJS = System.getProperty("java.vm.name") == "Scala.js"
 
-  test("Regression for HARMONY-4337") {
+  "Regression for HARMONY-4337" in {
     val in = new MockInputStream
     if (isScalaJS) {
       assertThrows[IndexOutOfBoundsException] {

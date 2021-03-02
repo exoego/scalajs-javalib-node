@@ -21,7 +21,6 @@ class FileReader private (in: FileInputStream, charset: Charset)
   }
 
   def this(fd: FileDescriptor) = {
-    this("")
-    throw new UnsupportedOperationException()
+    this(new FileInputStream(fd), Charset.defaultCharset())
   }
 }

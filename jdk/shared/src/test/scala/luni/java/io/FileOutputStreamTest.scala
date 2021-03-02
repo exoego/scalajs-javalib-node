@@ -9,9 +9,12 @@ import java.io.{
   IOException
 }
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.freespec.AnyFreeSpec
+import support.TestSupport
 
-class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
+import java.nio.channels.ClosedChannelException
+
+class FileOutputStreamTest extends AnyFreeSpec with BeforeAndAfterEach with TestSupport {
   private[io] var fileName: String = _
 
   private[io] var fos: FileOutputStream = _
@@ -40,12 +43,12 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     if (fos != null) fos.close()
   }
 
-  ignore("ConstructorLjava_io_File") {
+  "ConstructorLjava_io_File" in {
     f = new File(System.getProperty("user.home"), "fos.tst")
     fos = new FileOutputStream(f)
   }
 
-  ignore("ConstructorLjava_io_FileDescriptor") {
+  "ConstructorLjava_io_FileDescriptor" in {
     f = new File(System.getProperty("user.home"), "fos.tst")
     fileName = f.getAbsolutePath
     fos = new FileOutputStream(fileName)
@@ -57,7 +60,7 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     fis.close()
   }
 
-  ignore("ConstructorLjava_lang_String") {
+  "ConstructorLjava_lang_String" in {
     f = new File(System.getProperty("user.home"), "fos.tst")
     fileName = f.getAbsolutePath
     fos = new FileOutputStream(fileName)
@@ -65,7 +68,7 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     new FileOutputStream("nul")
   }
 
-  ignore("ConstructorLjava_lang_StringZ") {
+  "ConstructorLjava_lang_StringZ" in {
     f = new File(System.getProperty("user.home"), "fos.tst")
     fos = new FileOutputStream(f.getPath(), false)
     fos.write("HI".getBytes, 0, 2)
@@ -76,24 +79,24 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     val buf = new Array[Byte](fileString.length + 2)
     fis = new FileInputStream(f.getPath())
     fis.read(buf, 0, buf.length)
-    assert(new String(buf, 0, buf.length) == ("HI" + fileString))
+    assert(new String(buf, 0, buf.length) === ("HI" + fileString))
   }
 
-  ignore("ConstructorLjava_lang_String_I") {
+  "ConstructorLjava_lang_String_I" in {
     assertThrows[FileNotFoundException] {
       fos = new FileOutputStream("")
     }
     if (fos != null) fos.close()
   }
 
-  ignore("ConstructorLjava_lang_String_I_2") {
+  "ConstructorLjava_lang_String_I_2" in {
     assertThrows[FileNotFoundException] {
       fos = new FileOutputStream(new File(""))
     }
     if (fos != null) fos.close()
   }
 
-  ignore("close") {
+  "close" in {
     f = new File(System.getProperty("user.home", "./"), "output.tst")
     fos = new FileOutputStream(f.getPath())
     fos.close()
@@ -102,7 +105,7 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     }
   }
 
-  ignore("getFD") {
+  "getFD" in {
     f = new File(System.getProperty("user.home", "./"), "testfd")
     fileName = f.getAbsolutePath()
     fos = new FileOutputStream(f)
@@ -111,27 +114,27 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     assert(!fos.getFD.valid)
   }
 
-  ignore("write$B") {
+  "write$B" in {
     f = new File(System.getProperty("user.home"), "output.tst")
     fos = new FileOutputStream(f.getPath())
     fos.write(fileString.getBytes)
     fis = new FileInputStream(f.getPath())
     val rbytes = new Array[Byte](4000)
     fis.read(rbytes, 0, fileString.length)
-    assert(new String(rbytes, 0, fileString.length) == fileString)
+    assert(new String(rbytes, 0, fileString.length) === fileString)
   }
 
-  ignore("write$BII") {
+  "write$BII" in {
     f = new File(System.getProperty("user.home"), "output.tst")
     fos = new FileOutputStream(f.getPath())
     fos.write(fileString.getBytes, 0, fileString.length)
     fis = new FileInputStream(f.getPath())
     val rbytes = new Array[Byte](4000)
     fis.read(rbytes, 0, fileString.length)
-    assert(new String(rbytes, 0, fileString.length) == fileString)
+    assert(new String(rbytes, 0, fileString.length) === fileString)
   }
 
-  ignore("write$BII: Regression test for HARMONY-285") {
+  "write$BII: Regression test for HARMONY-285" in {
     f = new File("FileOutputStream.tmp")
     fos = new FileOutputStream(f)
     assertThrows[NullPointerException] {
@@ -139,15 +142,15 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     }
   }
 
-  ignore("writeI") {
+  "writeI" in {
     f = new File(System.getProperty("user.home"), "output.tst")
     fos = new FileOutputStream(f.getPath())
     fos.write('t')
     fis = new FileInputStream(f.getPath())
-    assert('t' == fis.read)
+    assert('t' === fis.read)
   }
 
-  ignore("write$BII2: Regression for HARMONY-437") {
+  "write$BII2: Regression for HARMONY-437" in {
     f = new File(System.getProperty("user.home"), "output.tst")
     fos = new FileOutputStream(f.getPath())
     assertThrows[NullPointerException] {
@@ -170,109 +173,119 @@ class FileOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     }
   }
 
-  ignore("write$BII3: Regression for HARMONY-834") {
+  "write$BII3: Regression for HARMONY-834" in {
     // no exception expected
     new FileOutputStream(new FileDescriptor).write(new Array[Byte](1), 0, 0)
   }
-// TODO getChannel
-//  ignore("getChannel* Regression for HARMONY-508") {
-//    val tmpfile = File.createTempFile("FileOutputStream", "tmp")
-//    tmpfile.deleteOnExit()
-//    val fos = new FileOutputStream(tmpfile)
-//    fos.write(bytes)
-//    fos.flush()
-//    fos.close()
-//    val f = new FileOutputStream(tmpfile, true)
-//    assert(10 == f.getChannel.position)
-//  }
-//
-//  public void test_getChannel_Append() {
-//    File tmpfile = File.createTempFile("FileOutputStream", "tmp");
-//    tmpfile.deleteOnExit();
-//    FileOutputStream fos = new FileOutputStream(tmpfile, true);
-//    assert(0 ==  fos.getChannel().position()))        fos.write(bytes);
-//    assertEquals(10, fos.getChannel().position());
-//    fos.write(bytes);
-//    assertEquals(20, fos.getChannel().position());
-//    fos.write(bytes);
-//    assertEquals(30, fos.getChannel().position());
-//    fos.close();
-//
-//    try {
-//      fos.getChannel().position();
-//      fail("should throw ClosedChannelException");
-//    } catch (java.nio.channels.ClosedChannelException e){
-//      // Expected
-//    }
-//  }
-//
-//  public void test_getChannel_UnAppend() {
-//    File tmpfile = File.createTempFile("FileOutputStream", "tmp");
-//    tmpfile.deleteOnExit();
-//    FileOutputStream fos = new FileOutputStream(tmpfile, false);
-//    assert(0 ==  fos.getChannel().position()))        fos.write(bytes);
-//    assertEquals(10, fos.getChannel().position());
-//    fos.write(bytes);
-//    assertEquals(20, fos.getChannel().position());
-//    fos.write(bytes);
-//    assertEquals(30, fos.getChannel().position());
-//    fos.close();
-//
-//    try {
-//      fos.getChannel().position();
-//      fail("should throw ClosedChannelException");
-//    } catch (java.nio.channels.ClosedChannelException e){
-//      // Expected
-//    }
-//  }
-//
-//  public void test_getChannel_Unappend_Unappend() {
-//    File tmpfile = File.createTempFile("FileOutputStream", "tmp");
-//    tmpfile.deleteOnExit();
-//    FileOutputStream fos = new FileOutputStream(tmpfile, false);
-//    assert(0 ==  fos.getChannel().position()))        fos.write(bytes);
-//    assertEquals(10, fos.getChannel().position());
-//    fos.close();
-//
-//    fos = new FileOutputStream(tmpfile, false);
-//    assert(0 ==  fos.getChannel().position()))        fos.close();
-//  }
-//
-//  public void test_getChannel_Unappend_Append() {
-//    File tmpfile = File.createTempFile("FileOutputStream", "tmp");
-//    tmpfile.deleteOnExit();
-//    FileOutputStream fos = new FileOutputStream(tmpfile, false);
-//    assert(0 ==  fos.getChannel().position()))        fos.write(bytes);
-//    assertEquals(10, fos.getChannel().position());
-//    fos.close();
-//
-//    fos = new FileOutputStream(tmpfile, true);
-//    assertEquals(10, fos.getChannel().position());
-//    fos.close();
-//  }
-//
-//  public void test_getChannel_Append_Unappend() {
-//    File tmpfile = File.createTempFile("FileOutputStream", "tmp");
-//    tmpfile.deleteOnExit();
-//    FileOutputStream fos = new FileOutputStream(tmpfile, true);
-//    assert(0 ==  fos.getChannel().position()))        fos.write(bytes);
-//    assertEquals(10, fos.getChannel().position());
-//    fos.close();
-//
-//    fos = new FileOutputStream(tmpfile, false);
-//    assert(0 ==  fos.getChannel().position()))        fos.close();
-//  }
-//
-//  public void test_getChanne_Append_Append() {
-//    File tmpfile = File.createTempFile("FileOutputStream", "tmp");
-//    tmpfile.deleteOnExit();
-//    FileOutputStream fos = new FileOutputStream(tmpfile, true);
-//    assert(0 ==  fos.getChannel().position()))        fos.write(bytes);
-//    assertEquals(10, fos.getChannel().position());
-//    fos.close();
-//
-//    fos = new FileOutputStream(tmpfile, true);
-//    assertEquals(10, fos.getChannel().position());
-//    fos.close();
-//  }
+
+  "getChannel* Regression for HARMONY-508" in {
+    assume(!isScalaJS, "not implemented yey")
+    val tmpfile = File.createTempFile("FileOutputStream", "tmp")
+    tmpfile.deleteOnExit()
+    val fos = new FileOutputStream(tmpfile)
+    fos.write(bytes)
+    fos.flush()
+    fos.close()
+    val f = new FileOutputStream(tmpfile, true)
+    assert(10 === f.getChannel.position)
+  }
+
+  "getChannel_Append" in {
+    assume(!isScalaJS, "not implemented yey")
+    val tmpfile = File.createTempFile("FileOutputStream", "tmp");
+    tmpfile.deleteOnExit();
+    val fos = new FileOutputStream(tmpfile, true)
+    assert(0 === fos.getChannel().position())
+    fos.write(bytes);
+    assert(fos.getChannel().position() === 10)
+    fos.write(bytes);
+    assert(fos.getChannel().position() === 20)
+    fos.write(bytes);
+    assert(fos.getChannel().position() === 30)
+    fos.close()
+
+    assertThrows[ClosedChannelException] {
+      fos.getChannel().position();
+    }
+  }
+
+  "getChannel_UnAppend" in {
+    assume(!isScalaJS, "not implemented yey")
+
+    val tmpfile = File.createTempFile("FileOutputStream", "tmp");
+    tmpfile.deleteOnExit();
+    val fos = new FileOutputStream(tmpfile, false);
+    assert(fos.getChannel().position() === 0)
+    fos.write(bytes);
+    assert(fos.getChannel().position() === 10);
+    fos.write(bytes);
+    assert(fos.getChannel().position() === 20)
+    fos.write(bytes);
+    assert(fos.getChannel().position() === 30);
+    fos.close();
+
+    assertThrows[ClosedChannelException] {
+      fos.getChannel().position();
+    }
+  }
+
+  "getChannel_Unappend_Unappend" in {
+    assume(!isScalaJS, "not implemented yey")
+    val tmpfile = File.createTempFile("FileOutputStream", "tmp");
+    tmpfile.deleteOnExit();
+    val fos = new FileOutputStream(tmpfile, false);
+    assert(fos.getChannel().position() === 0)
+    fos.write(bytes);
+    assert(fos.getChannel().position() === 10)
+    fos.close();
+
+    val fos2 = new FileOutputStream(tmpfile, false);
+    assert(fos2.getChannel().position() === 0)
+    fos2.close();
+  }
+
+  "getChannel_Unappend_Append" in {
+    assume(!isScalaJS, "not implemented yey")
+    val tmpfile = File.createTempFile("FileOutputStream", "tmp");
+    tmpfile.deleteOnExit();
+    val fos = new FileOutputStream(tmpfile, false);
+    assert(fos.getChannel().position() === 0)
+    fos.write(bytes);
+    assert(fos.getChannel().position() === 10);
+    fos.close();
+
+    val fos2 = new FileOutputStream(tmpfile, true);
+    assert(fos2.getChannel().position() === 10);
+    fos2.close();
+  }
+
+  "getChannel_Append_Unappend" in {
+    assume(!isScalaJS, "not implemented yey")
+    val tmpfile = File.createTempFile("FileOutputStream", "tmp");
+    tmpfile.deleteOnExit();
+    val fos = new FileOutputStream(tmpfile, true);
+    assert(fos.getChannel().position() === 0)
+    fos.write(bytes);
+    assert(fos.getChannel().position() === 10);
+    fos.close();
+
+    val fos2 = new FileOutputStream(tmpfile, false);
+    assert(fos2.getChannel().position() === 0)
+    fos2.close();
+  }
+
+  "getChanne_Append_Append" in {
+    assume(!isScalaJS, "not implemented yey")
+    val tmpfile = File.createTempFile("FileOutputStream", "tmp");
+    tmpfile.deleteOnExit();
+    val fos = new FileOutputStream(tmpfile, true);
+    assert(fos.getChannel().position() === 0)
+    fos.write(bytes);
+    assert(fos.getChannel().position() === 10);
+    fos.close();
+
+    val fos2 = new FileOutputStream(tmpfile, true);
+    assert(fos2.getChannel().position() === 10);
+    fos2.close();
+  }
 }

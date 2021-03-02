@@ -26,14 +26,17 @@ trait Path {
 
   def subpath(i: Int, i1: Int): Path = ???
 
-  def startsWith(path: Path): Boolean = ???
+  def startsWith(path: Path): Boolean   = ???
+  def startsWith(path: String): Boolean = ???
 
-  def endsWith(path: Path): Boolean = ???
+  def endsWith(path: Path): Boolean   = ???
+  def endsWith(path: String): Boolean = ???
 
   def normalize(): Path = ???
 
   def resolve(other: String): Path = {
-    this.resolve(this.getFileSystem.getPath(other, Array.empty))
+    val file = new File(this.toString, other)
+    PathHelper.fromFile(file)
   }
   def resolveSibling(other: Path): Path = {
     if (other == null) throw new NullPointerException
@@ -43,9 +46,9 @@ trait Path {
     }
   }
   def resolveSibling(other: String): Path = {
-    this.resolveSibling(this.getFileSystem.getPath(other, Array.empty))
+    this.resolveSibling(this.getFileSystem.getPath(other))
   }
-  def resolve(ptjer: Path): Path = ???
+  def resolve(other: Path): Path = ???
 
   def relativize(path: Path): Path = ???
 
@@ -80,10 +83,13 @@ private[java] object PathHelper {
       throw new UnsupportedOperationException
     }
     override def getFileName: Path = {
-      Paths.get(file.getName(), Array.empty.toIndexedSeq: _*)
+      Paths.get(file.getName())
     }
     override def getParent: Path = {
-      file.getParentFile().toPath()
+      file.getParentFile() match {
+        case null   => null
+        case parent => parent.toPath()
+      }
     }
     override def getNameCount: Int = {
       throw new UnsupportedOperationException
@@ -94,17 +100,21 @@ private[java] object PathHelper {
     override def subpath(i: Int, i1: Int): Path = {
       throw new UnsupportedOperationException
     }
-    override def startsWith(path: Path): Boolean = {
-      throw new UnsupportedOperationException
+    override def startsWith(path: Path): Boolean = ???
+    override def startsWith(path: String): Boolean = {
+      file.getName().startsWith(path)
     }
     override def endsWith(path: Path): Boolean = {
       throw new UnsupportedOperationException
+    }
+    override def endsWith(path: String): Boolean = {
+      file.getName().endsWith(path)
     }
     override def normalize(): Path = {
       throw new UnsupportedOperationException
     }
     override def resolve(path: Path): Path = {
-      throw new UnsupportedOperationException
+      new PathImpl(new File(this.toString, path.getFileName.toString))
     }
     override def relativize(path: Path): Path = {
       throw new UnsupportedOperationException

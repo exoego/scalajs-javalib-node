@@ -2,9 +2,10 @@ package luni.java.io
 
 import java.io.ByteArrayOutputStream
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.freespec.AnyFreeSpec
+import support.TestSupport
 
-class ByteArrayOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
+class ByteArrayOutputStreamTest extends AnyFreeSpec with BeforeAndAfterEach with TestSupport {
   private[io] var bos: ByteArrayOutputStream = _
 
   var fileString =
@@ -18,44 +19,43 @@ class ByteArrayOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     }
   }
 
-  ignore("ConstructorI") {
+  "ConstructorI" in {
     bos = new ByteArrayOutputStream(100)
-    assert(0 == bos.size)
+    assert(0 === bos.size)
   }
 
-  ignore("Constructor") {
+  "Constructor" in {
     bos = new ByteArrayOutputStream
-    assert(0 == bos.size)
+    assert(0 === bos.size)
   }
 
-  ignore("close") {
+  "close" in {
     // invalid spec
     bos = new ByteArrayOutputStream()
     bos.write(fileString.getBytes(), 0, 100)
 
     bos.close()
     bos.write(fileString.getBytes(), 0, 100)
-    assertThrows[Exception] {
-      bos.toByteArray()
-    }
+    // Apache Harmony expects Exception, but OpenJDK 8+ not throwing
+    assert(bos.toByteArray().nonEmpty)
   }
 
-  ignore("reset") {
+  "reset" in {
     bos = new ByteArrayOutputStream
     bos.write(fileString.getBytes, 0, 100)
     bos.reset()
-    assert(0 == bos.size)
+    assert(0 === bos.size)
   }
 
-  ignore("size") {
+  "size" in {
     bos = new ByteArrayOutputStream
     bos.write(fileString.getBytes, 0, 100)
-    assert(100 == bos.size)
+    assert(100 === bos.size)
     bos.reset()
-    assert(0 == bos.size)
+    assert(0 === bos.size)
   }
 
-  ignore("toByteArray") {
+  "toByteArray" in {
     val sbytes = fileString.getBytes
     bos = new ByteArrayOutputStream
     bos.write(sbytes, 0, fileString.length)
@@ -63,40 +63,41 @@ class ByteArrayOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     assert(bytes.sameElements(sbytes))
   }
 
-  ignore("toStringLjava_lang_String") {
+  "toStringLjava_lang_String" in {
+
     bos = new ByteArrayOutputStream
     bos.write(fileString.getBytes("UTF-8"), 0, fileString.length)
-    assert(bos.toString("8859_1") == fileString)
+    assert(bos.toString("8859_1") === fileString)
   }
 
-  // ISO8859-2 i not implemented
-  ignore("toStringLjava_lang_String: 8859_2") {
+  "toStringLjava_lang_String: 8859_2" in {
+    assume(!isScalaJS, " ISO8859-2 is not implemented in Scala-js")
     bos = new ByteArrayOutputStream
     bos.write(fileString.getBytes("UTF-8"), 0, fileString.length)
-    assert(bos.toString("8859_2") == fileString)
+    assert(bos.toString("8859_2") === fileString)
   }
 
-  ignore("toString") {
+  "toString" in {
     bos = new ByteArrayOutputStream
     bos.write(fileString.getBytes, 0, fileString.length)
-    assert(bos.toString == fileString)
+    assert(bos.toString === fileString)
   }
 
-  ignore("writeI") {
+  "writeI" in {
     bos = new ByteArrayOutputStream
     bos.write('t')
     val result = bos.toByteArray
-    assert("t" == new String(result, 0, result.length, "UTF-8"))
+    assert("t" === new String(result, 0, result.length, "UTF-8"))
   }
 
-  ignore("write$BII") {
+  "write$BII" in {
     bos = new ByteArrayOutputStream
     bos.write(fileString.getBytes, 0, 100)
     val result = bos.toByteArray
-    assert(new String(result, 0, result.length) == fileString.substring(0, 100))
+    assert(new String(result, 0, result.length) === fileString.substring(0, 100))
   }
 
-  ignore("write$BII_2: Regression for HARMONY-387") {
+  "write$BII_2: Regression for HARMONY-387" in {
     val obj = new ByteArrayOutputStream
     val ex = intercept[IndexOutOfBoundsException] {
       obj.write(Array[Byte](0x00.toByte), -1, 0)
@@ -107,11 +108,11 @@ class ByteArrayOutputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     )
   }
 
-  ignore("writeToLjava_io_OutputStream") {
+  "writeToLjava_io_OutputStream" in {
     val bos  = new ByteArrayOutputStream
     val bos2 = new ByteArrayOutputStream
     bos.write(fileString.getBytes, 0, 100)
     bos.writeTo(bos2)
-    assert(bos2.toString == fileString.substring(0, 100))
+    assert(bos2.toString === fileString.substring(0, 100))
   }
 }

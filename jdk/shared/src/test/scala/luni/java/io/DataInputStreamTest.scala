@@ -10,9 +10,9 @@ import java.io.{
 }
 
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.freespec.AnyFreeSpec
 
-class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
+class DataInputStreamTest extends AnyFreeSpec with BeforeAndAfterEach {
   private var os: DataOutputStream = _
 
   private var dis: DataInputStream = _
@@ -44,7 +44,7 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     dis = new DataInputStream(new ByteArrayInputStream(bos.toByteArray))
   }
 
-  ignore("ConstructorLjava_io_InputStream") {
+  "ConstructorLjava_io_InputStream" in {
     try {
       os.writeChar('t')
       os.close()
@@ -54,78 +54,78 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     }
   }
 
-  ignore("read$B") {
+  "read$B" in {
     os.write(fileString.getBytes())
     os.close()
     openDataInputStream()
     val rbytes = new Array[Byte](fileString.length())
     dis.read(rbytes)
-    assert(new String(rbytes, 0, fileString.length()) == fileString)
+    assert(new String(rbytes, 0, fileString.length()) === fileString)
   }
 
-  ignore("read$BII") {
+  "read$BII" in {
     os.write(fileString.getBytes())
     os.close()
     openDataInputStream()
     val rbytes = new Array[Byte](fileString.length())
     dis.read(rbytes, 0, rbytes.length)
-    assert(new String(rbytes, 0, fileString.length()) == fileString)
+    assert(new String(rbytes, 0, fileString.length()) === fileString)
   }
 
-  ignore("readBoolean") {
+  "readBoolean" in {
     os.writeBoolean(true)
     os.close()
     openDataInputStream()
     assert(dis.readBoolean())
   }
 
-  ignore("readByte") {
+  "readByte" in {
     os.writeByte(127.toByte)
     os.close()
     openDataInputStream()
-    assert(dis.readByte() == 127.toByte)
+    assert(dis.readByte() === 127.toByte)
   }
 
-  ignore("readChar") {
+  "readChar" in {
     os.writeChar('t')
     os.close()
     openDataInputStream()
-    assert('t' == dis.readChar())
+    assert('t' === dis.readChar())
   }
 
-  ignore("readDouble") {
+  "readDouble" in {
     os.writeDouble(2345.76834720202)
     os.close()
     openDataInputStream()
-    assert(2345.76834720202 == dis.readDouble())
+    assert(2345.76834720202 === dis.readDouble())
   }
 
-  ignore("readFloat") {
+  "readFloat" in {
     os.writeFloat(29.08764f)
     os.close()
     openDataInputStream()
-    assert(dis.readFloat() == 29.08764f)
+    assert(dis.readFloat() === 29.08764f)
   }
 
-  ignore("readFully$B") {
+  "readFully$B" in {
     os.write(fileString.getBytes())
     os.close()
     openDataInputStream()
     val rbytes = new Array[Byte](fileString.length())
     dis.readFully(rbytes)
-    assert(new String(rbytes, 0, fileString.length()) == fileString)
+    assert(new String(rbytes, 0, fileString.length()) === fileString)
   }
 
-  ignore("readFully$BII") {
+  "readFully$BII" in {
     os.write(fileString.getBytes())
     os.close()
     openDataInputStream()
     val rbytes = new Array[Byte](fileString.length())
     dis.readFully(rbytes, 0, fileString.length())
-    assert(new String(rbytes, 0, fileString.length()) == fileString)
+    assert(new String(rbytes, 0, fileString.length()) === fileString)
   }
 
-  ignore("readFully$BII_Exception") {
+  "readFully$BII_Exception" ignore {
     val is        = new DataInputStream(new ByteArrayInputStream(new Array[Byte](fileString.length)))
     val byteArray = new Array[Byte](fileString.length)
     assertThrows[IndexOutOfBoundsException] {
@@ -154,7 +154,7 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     }
   }
 
-  ignore("readFully$BII_NullArray") {
+  "readFully$BII_NullArray" ignore {
     val is            = new DataInputStream(new ByteArrayInputStream(new Array[Byte](fileString.length)))
     val nullByteArray = null
     assertThrows[IndexOutOfBoundsException] {
@@ -185,7 +185,7 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     }
   }
 
-  ignore("readFully$BII_NullStream_NullArray") {
+  "readFully$BII_NullStream_NullArray" ignore {
     val is            = new DataInputStream(null)
     val nullByteArray = null
 
@@ -218,94 +218,63 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     }
   }
 
-  ignore("readInt") {
+  "readInt" in {
     os.writeInt(768347202)
     os.close()
     openDataInputStream()
-    assert(768347202 == dis.readInt)
+    assert(768347202 === dis.readInt)
   }
 
-  ignore("readLong") {
+  "readLong" in {
     os.writeLong(9875645283333L)
     os.close()
     openDataInputStream()
-    assert(9875645283333L == dis.readLong)
+    assert(9875645283333L === dis.readLong)
   }
 
-  ignore("readShort") {
+  "readShort" in {
     os.writeShort(9875)
     os.close()
     openDataInputStream()
-    assert(dis.readShort == 9875.toShort)
+    assert(dis.readShort === 9875.toShort)
   }
 
-  ignore("readUnsignedByte") {
+  "readUnsignedByte" in {
     os.writeByte(-127.toByte)
     os.close()
     openDataInputStream()
-    assert(129 == dis.readUnsignedByte)
+    assert(129 === dis.readUnsignedByte)
   }
 
-  ignore("readUnsignedShort") {
+  "readUnsignedShort" in {
     os.writeShort(9875)
     os.close()
     openDataInputStream()
-    assert(9875 == dis.readUnsignedShort)
+    assert(9875 === dis.readUnsignedShort)
   }
 
-  ignore("readUTF") {
+  "readUTF" in {
     os.writeUTF(unihw)
     os.close()
     openDataInputStream()
-    assert(dis.available == unihw.length + 2)
-    assert(dis.readUTF == unihw)
+    assert(dis.available === unihw.length + 2)
+    assert(dis.readUTF === unihw)
   }
 
-  class TestDataInputStream extends DataInput {
-    def readBoolean = false
-
-    def readByte: Byte = 0.toByte
-
-    def readChar: Char = 0.toChar
-
-    def readDouble = 0.0
-
-    def readFloat: Float = 0.0.toFloat
-
-    def readFully(buffer: Array[Byte]): Unit = {}
-
-    def readFully(buffer: Array[Byte], offset: Int, count: Int): Unit = {}
-
-    def readInt = 0
-
-    def readLine: String = null
-
-    def readLong: Long = 0.toLong
-
-    def readShort: Short = 0.toShort
-
-    def readUnsignedByte = 0
-
-    def readUnsignedShort = 0
-
-    def readUTF: String = DataInputStream.readUTF(this)
-
-    def skipBytes(count: Int) = 0
-  }
-
-  ignore("readUTFLjava_io_DataInput") {
+  "readUTFLjava_io_DataInput" in {
     os.writeUTF(unihw)
     os.close()
     openDataInputStream()
-    assert(dis.available == unihw.length + 2)
-//    assert(DataInputStream.readUTF(dis) == unihw)
+    assert(dis.available === unihw.length + 2)
+//    assert(DataInputStream.readUTF(dis) === unihw)
   }
 
-//  ignore("readUTFLjava_io_DataInput: Regression test for HARMONY-5336") {
+  // TODO: DataInputStream.readUTF is not implemented in Scala-js
+//  "readUTFLjava_io_DataInput: Regression test for HARMONY-5336" ignore {
 //    new TestDataInputStream().readUTF
 //  }
 
-  ignore("skipBytesI") {
+  "skipBytesI" in {
     val fileBytes = fileString.getBytes
     os.write(fileBytes)
     os.close()
@@ -314,7 +283,7 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     val rbytes = new Array[Byte](fileString.length)
     dis.read(rbytes, 0, 50)
     dis.close()
-    assert(new String(rbytes, 0, 50) == fileString.substring(100, 150))
+    assert(new String(rbytes, 0, 50) === fileString.substring(100, 150))
 
     var skipped = 0
     openDataInputStream()
@@ -322,7 +291,38 @@ class DataInputStreamTest extends AnyFunSuite with BeforeAndAfterEach {
     catch {
       case _: EOFException =>
     }
-    assert(skipped == fileString.length)
+    assert(skipped === fileString.length)
   }
+}
 
+class TestDataInputStream extends DataInput {
+  def readBoolean = false
+
+  def readByte: Byte = 0.toByte
+
+  def readChar: Char = 0.toChar
+
+  def readDouble = 0.0
+
+  def readFloat: Float = 0.0.toFloat
+
+  def readFully(buffer: Array[Byte]): Unit = {}
+
+  def readFully(buffer: Array[Byte], offset: Int, count: Int): Unit = {}
+
+  def readInt = 0
+
+  def readLine: String = null
+
+  def readLong: Long = 0.toLong
+
+  def readShort: Short = 0.toShort
+
+  def readUnsignedByte = 0
+
+  def readUnsignedShort = 0
+
+  def readUTF: String = DataInputStream.readUTF(this)
+
+  def skipBytes(count: Int) = 0
 }

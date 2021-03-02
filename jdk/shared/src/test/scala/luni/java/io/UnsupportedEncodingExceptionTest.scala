@@ -2,23 +2,23 @@ package luni.java.io
 
 import java.io.{ByteArrayOutputStream, OutputStreamWriter, UnsupportedEncodingException}
 
-import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.freespec.AnyFreeSpec
 
-class UnsupportedEncodingExceptionTest extends AnyFunSuite {
+class UnsupportedEncodingExceptionTest extends AnyFreeSpec {
 
-  test("Constructor") {
+  "Constructor" in {
     val ex = intercept[UnsupportedEncodingException] {
       new OutputStreamWriter(new ByteArrayOutputStream(), "BogusEncoding")
     }
-    assert(ex.getMessage == "BogusEncoding")
+    assert(ex.getMessage === "BogusEncoding")
   }
 
-  test("ConstructorLjava_lang_String") {
+  "ConstructorLjava_lang_String" in {
     val message = null
     val ex = intercept[UnsupportedEncodingException] {
       throw new UnsupportedEncodingException(message)
     }
-    assert(ex.getMessage == message)
+    assert(ex.getMessage === message)
   }
 
 }

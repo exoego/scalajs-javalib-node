@@ -3,9 +3,9 @@ package luni.java.io
 import java.io.CharArrayReader
 import java.io.IOException
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.freespec.AnyFreeSpec
 
-class CharArrayReaderTest extends AnyFunSuite with BeforeAndAfterEach {
+class CharArrayReaderTest extends AnyFreeSpec with BeforeAndAfterEach {
   private[io] val hw                  = Array('H', 'e', 'l', 'l', 'o', 'W', 'o', 'r', 'l', 'd')
   private[io] var cr: CharArrayReader = _
 
@@ -13,19 +13,19 @@ class CharArrayReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     if (cr != null) cr.close()
   }
 
-  test("Constructor$C") {
+  "Constructor$C" in {
     cr = new CharArrayReader(hw)
     assert(cr.ready)
   }
 
-  test("Constructor$CII") {
+  "Constructor$CII" in {
     cr = new CharArrayReader(hw, 5, 5)
     assert(cr.ready)
     val c = cr.read
-    assert(c == 'W')
+    assert(c === 'W')
   }
 
-  test("close") {
+  "close" in {
     cr = new CharArrayReader(hw)
     cr.close()
     assertThrows[IOException] {
@@ -35,35 +35,35 @@ class CharArrayReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     cr.close()
   }
 
-  test("markI") {
+  "markI" in {
     cr = new CharArrayReader(hw)
     cr.skip(5L)
     cr.mark(100)
     cr.read()
     cr.reset()
-    assert('W' == cr.read)
+    assert('W' === cr.read)
   }
 
-  test("markSupported") {
+  "markSupported" in {
     cr = new CharArrayReader(hw)
     assert(cr.markSupported)
   }
 
-  test("read") {
+  "read" in {
     cr = new CharArrayReader(hw)
-    assert('H' == cr.read)
+    assert('H' === cr.read)
     cr = new CharArrayReader(Array[Char]('\u8765'))
-    assert(cr.read == '\u8765')
+    assert(cr.read === '\u8765')
   }
 
-  test("read$CII") {
+  "read$CII" in {
     val c = new Array[Char](11)
     cr = new CharArrayReader(hw)
     cr.read(c, 1, 10)
-    assert(new String(c, 1, 10) == new String(hw, 0, 10))
+    assert(new String(c, 1, 10) === new String(hw, 0, 10))
   }
 
-  test("ready") {
+  "ready" in {
     cr = new CharArrayReader(hw)
     assert(cr.ready)
     cr.skip(1000)
@@ -79,13 +79,13 @@ class CharArrayReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     }
   }
 
-  test("reset") {
+  "reset" in {
     cr = new CharArrayReader(hw)
     cr.skip(5L)
     cr.mark(100)
     cr.read()
     cr.reset()
-    assert('W' == cr.read)
+    assert('W' === cr.read)
 
     // Regression for HARMONY-4357
     val str  = "offsetHello world!"
@@ -96,14 +96,14 @@ class CharArrayReaderTest extends AnyFunSuite with BeforeAndAfterEach {
     val reader       = new CharArrayReader(data, offsetLength, length)
     reader.reset()
     for (i <- 0 until length) {
-      assert(data(offsetLength + i) == reader.read.asInstanceOf[Char])
+      assert(data(offsetLength + i) === reader.read.asInstanceOf[Char])
     }
   }
 
-  test("skipJ") {
+  "skipJ" in {
     cr = new CharArrayReader(hw)
     val skipped = cr.skip(5L)
-    assert(5L == skipped)
-    assert('W' == cr.read)
+    assert(5L === skipped)
+    assert('W' === cr.read)
   }
 }
