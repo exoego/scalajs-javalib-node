@@ -432,63 +432,107 @@ class FilesTest extends AnyFreeSpec with TestSupport {
         Files.getAttribute(file, "basic:typo")
       }
     }
-    // todo: linkoption
+
+    "linkOption" in {
+      assert(Files.getAttribute(fileInSymlink, "isRegularFile") === true)
+      assert(Files.getAttribute(fileInSymlink, "isRegularFile", LinkOption.NOFOLLOW_LINKS) === true)
+      assert(Files.getAttribute(symlinkText, "isRegularFile") === true)
+      assert(Files.getAttribute(symlinkText, "isRegularFile", LinkOption.NOFOLLOW_LINKS) === true)
+
+      assert(Files.getAttribute(directorySymlink, "isDirectory") === true)
+      assert(
+        Files.getAttribute(directorySymlink, "isDirectory", LinkOption.NOFOLLOW_LINKS) === false
+      )
+      assert(Files.getAttribute(directorySymlink, "isSymbolicLink") === false)
+      assert(
+        Files.getAttribute(directorySymlink, "isSymbolicLink", LinkOption.NOFOLLOW_LINKS) === true
+      )
+    }
   }
 
-  "getFileAttributeView[V <: FileAttributeView](Path, Class[V], LinkOption*)" in {
-    val tmpDir = Files.createTempFile("tmp", ".txt")
+  "getFileAttributeView[V <: FileAttributeView](Path, Class[V], LinkOption*)" - {
+    val posix = classOf[PosixFileAttributeView]
 
-    val view: PosixFileAttributeView =
-      Files.getFileAttributeView(tmpDir, classOf[PosixFileAttributeView])
-    assert(view.name() === "posix")
+    "default options" in {
+      val tmpDir = Files.createTempFile("tmp", ".txt")
 
-    val oldAttr = view.readAttributes()
-    assert(oldAttr.permissions() === PosixFilePermissions.fromString("rw-------"))
+      val view: PosixFileAttributeView =
+        Files.getFileAttributeView(tmpDir, posix)
+      assert(view.name() === "posix")
 
-    // oldAttr never affected by setter
-    view.setPermissions(PosixFilePermissions.fromString("rwxr-xr-x"))
-    assert(oldAttr.permissions() === PosixFilePermissions.fromString("rw-------"))
+      val oldAttr = view.readAttributes()
+      assert(oldAttr.permissions() === PosixFilePermissions.fromString("rw-------"))
 
-    val newAttr = view.readAttributes()
-    assert(newAttr.permissions() === PosixFilePermissions.fromString("rwxr-xr-x"))
+      // oldAttr never affected by setter
+      view.setPermissions(PosixFilePermissions.fromString("rwxr-xr-x"))
+      assert(oldAttr.permissions() === PosixFilePermissions.fromString("rw-------"))
 
-    val noSuchFileView = Files.getFileAttributeView(noSuchFile, classOf[PosixFileAttributeView])
-    assert(noSuchFileView.name() === "posix")
-    assertThrows[IOException] {
-      noSuchFileView.readAttributes()
+      val newAttr = view.readAttributes()
+      assert(newAttr.permissions() === PosixFilePermissions.fromString("rwxr-xr-x"))
+
+      val noSuchFileView = Files.getFileAttributeView(noSuchFile, posix)
+      assert(noSuchFileView.name() === "posix")
+      assertThrows[IOException] {
+        noSuchFileView.readAttributes()
+      }
+
+      // creation time can not be changed on JDK
+      view.setTimes(null, null, FileTime.from(1, DAYS))
+      assert(oldAttr.creationTime() !== FileTime.from(1, DAYS))
+      assert(view.readAttributes().lastModifiedTime() !== FileTime.from(3, DAYS))
+      assert(view.readAttributes().lastAccessTime() !== FileTime.from(2, DAYS))
+      assert(view.readAttributes().creationTime() !== FileTime.from(1, DAYS))
+
+      view.setTimes(null, FileTime.from(2, DAYS), null)
+      assert(oldAttr.lastAccessTime() !== FileTime.from(2, DAYS))
+      assert(view.readAttributes().lastModifiedTime() !== FileTime.from(3, DAYS))
+      assert(view.readAttributes().lastAccessTime() === FileTime.from(2, DAYS))
+      assert(view.readAttributes().creationTime() !== FileTime.from(1, DAYS))
+
+      view.setTimes(FileTime.from(3, DAYS), null, null)
+      assert(oldAttr.lastModifiedTime() !== FileTime.from(3, DAYS))
+      assert(view.readAttributes().lastModifiedTime() === FileTime.from(3, DAYS))
+      assert(view.readAttributes().lastAccessTime() === FileTime.from(2, DAYS))
+      assert(view.readAttributes().creationTime() !== FileTime.from(1, DAYS))
+
+      view.setTimes(FileTime.from(4, DAYS), FileTime.from(5, DAYS), FileTime.from(6, DAYS))
+      assert(oldAttr.lastModifiedTime() !== FileTime.from(4, DAYS))
+      assert(view.readAttributes().lastModifiedTime() === FileTime.from(4, DAYS))
+      assert(view.readAttributes().lastAccessTime() === FileTime.from(5, DAYS))
+      assert(view.readAttributes().creationTime() !== FileTime.from(6, DAYS))
     }
-
-    // creation time can not be changed on JDK
-    view.setTimes(null, null, FileTime.from(1, DAYS))
-    assert(oldAttr.creationTime() !== FileTime.from(1, DAYS))
-    assert(view.readAttributes().lastModifiedTime() !== FileTime.from(3, DAYS))
-    assert(view.readAttributes().lastAccessTime() !== FileTime.from(2, DAYS))
-    assert(view.readAttributes().creationTime() !== FileTime.from(1, DAYS))
-
-    view.setTimes(null, FileTime.from(2, DAYS), null)
-    assert(oldAttr.lastAccessTime() !== FileTime.from(2, DAYS))
-    assert(view.readAttributes().lastModifiedTime() !== FileTime.from(3, DAYS))
-    assert(view.readAttributes().lastAccessTime() === FileTime.from(2, DAYS))
-    assert(view.readAttributes().creationTime() !== FileTime.from(1, DAYS))
-
-    view.setTimes(FileTime.from(3, DAYS), null, null)
-    assert(oldAttr.lastModifiedTime() !== FileTime.from(3, DAYS))
-    assert(view.readAttributes().lastModifiedTime() === FileTime.from(3, DAYS))
-    assert(view.readAttributes().lastAccessTime() === FileTime.from(2, DAYS))
-    assert(view.readAttributes().creationTime() !== FileTime.from(1, DAYS))
-
-    view.setTimes(FileTime.from(4, DAYS), FileTime.from(5, DAYS), FileTime.from(6, DAYS))
-    assert(oldAttr.lastModifiedTime() !== FileTime.from(4, DAYS))
-    assert(view.readAttributes().lastModifiedTime() === FileTime.from(4, DAYS))
-    assert(view.readAttributes().lastAccessTime() === FileTime.from(5, DAYS))
-    assert(view.readAttributes().creationTime() !== FileTime.from(6, DAYS))
-
     // TODO: node.js can not support these
     // view.getOwner()
     // newAttr.group()
     // newAttr.owner()
 
-    // todo: linkoption
+    "linkoption" in {
+      assert(
+        Files.getFileAttributeView(fileInSymlink, posix).readAttributes().isRegularFile === true
+      )
+      assert(
+        Files
+          .getFileAttributeView(fileInSymlink, posix, LinkOption.NOFOLLOW_LINKS)
+          .readAttributes()
+          .isRegularFile === true
+      )
+      assert(Files.getFileAttributeView(symlinkText, posix).readAttributes().isRegularFile === true)
+      assert(
+        Files
+          .getFileAttributeView(symlinkText, posix, LinkOption.NOFOLLOW_LINKS)
+          .readAttributes()
+          .isRegularFile === true
+      )
+
+      val symlinkAttrs = Files.getFileAttributeView(directorySymlink, posix).readAttributes()
+      assert(symlinkAttrs.isDirectory === true)
+      assert(symlinkAttrs.isSymbolicLink === false)
+      val symlinkNofollowAttrs = Files
+        .getFileAttributeView(directorySymlink, posix, LinkOption.NOFOLLOW_LINKS)
+        .readAttributes()
+      assert(symlinkNofollowAttrs.isDirectory === false)
+      assert(symlinkNofollowAttrs.isSymbolicLink === true)
+    }
   }
 
   "getFileStore(Path)" ignore {
