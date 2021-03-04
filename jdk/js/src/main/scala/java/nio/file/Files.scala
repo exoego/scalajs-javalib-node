@@ -742,10 +742,10 @@ object Files {
   @varargs def write(path: Path, bytes: Array[Byte], options: OpenOption*): Path = {
     val validatedOptions = validateWriteOptions(path, options)
     val nodejsFlags =
-      if (!validatedOptions.contains(StandardOpenOption.APPEND)) {
-        "w"
-      } else {
+      if (validatedOptions.contains(StandardOpenOption.APPEND)) {
         "a"
+      } else {
+        "w"
       }
     val fd       = openFileErrorHandling(path, nodejsFlags)
     val jsBuffer = js.typedarray.byteArray2Int8Array(bytes)
@@ -809,13 +809,18 @@ object Files {
       encoding: String,
       rawOptions: Seq[OpenOption]
   ): Path = {
-    val options = validateWriteOptions(path, rawOptions)
-    // TODO: options
-    val fd       = openFileErrorHandling(path, "w")
-    val jsBuffer = lines.asScala.mkString(start = "", sep = os.OS.EOL, end = os.OS.EOL)
+    val validatedOptions = validateWriteOptions(path, rawOptions)
+    val nodejsFlags =
+      if (validatedOptions.contains(StandardOpenOption.APPEND)) {
+        "a"
+      } else {
+        "w"
+      }
+    val fd         = openFileErrorHandling(path, nodejsFlags)
+    val dataString = lines.asScala.mkString(start = "", sep = os.OS.EOL, end = os.OS.EOL)
     fs.Fs.writeFileSync(
       fd,
-      jsBuffer,
+      dataString,
       fs.FileAppendOptions(
         encoding = encoding
       )

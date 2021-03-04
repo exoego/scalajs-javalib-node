@@ -1712,36 +1712,64 @@ class FilesTest extends AnyFreeSpec with TestSupport {
       }
     }
   }
-  "write(Path, JavaIterable[_ <: CharSequence], Charset, OpenOption*)" in {
-    val tmpFile = Files.createTempFile("foo", ".txt")
-    assert(Files.size(tmpFile) === 0)
+  "write(Path, JavaIterable[_ <: CharSequence], Charset, OpenOption*)" - {
+    "default options" in {
+      val tmpFile = Files.createTempFile("foo", ".txt")
+      assert(Files.size(tmpFile) === 0)
 
-    val utf16le = utf16leCharset
-    val written = Files.write(tmpFile, Seq("abc").asJava, utf16le)
-    assert(written === tmpFile)
-    assert(Files.readAllLines(written, utf16le).asScala.toSeq === Seq("abc"))
-    assert(Files.size(tmpFile) === 8)
+      val written = Files.write(tmpFile, Seq("abc").asJava, utf16leCharset)
+      assert(written === tmpFile)
+      assert(Files.readAllLines(written, utf16leCharset).asScala.toSeq === Seq("abc"))
+      assert(Files.size(tmpFile) === 8)
+    }
 
-    // TODO: options
+    "StandardOpenOption.APPEND" in {
+      val tmp = Files.createTempFile("2", "")
+      assert(Files.write(tmp, Seq("abc").asJava, utf16leCharset, StandardOpenOption.APPEND) === tmp)
+      assert(Files.readAllLines(tmp, utf16leCharset).asScala === List("abc"))
+      assert(Files.write(tmp, Seq("def").asJava, utf16leCharset, StandardOpenOption.APPEND) === tmp)
+      assert(Files.readAllLines(tmp, utf16leCharset).asScala === List("abc", "def"))
+
+      val nonExists = Files.createTempDirectory("dir").resolve("file")
+      assertThrows[NoSuchFileException] {
+        Files.write(nonExists, Seq("a").asJava, utf16leCharset, StandardOpenOption.APPEND)
+      }
+    }
   }
-  "write(Path, JavaIterable[_ <: CharSequence], OpenOption*)" in {
-    val tmpFile = Files.createTempFile("foo", ".txt")
-    assert(Files.size(tmpFile) === 0)
-    val written = Files.write(tmpFile, Seq("abc").asJava)
-    assert(written === tmpFile)
-    assert(Files.readAllLines(written).asScala.toSeq === Seq("abc"))
-    assert(Files.size(tmpFile) === 4)
-    Files.write(tmpFile, Seq("a", "b", "c").asJava)
-    assert(Files.size(tmpFile) === 6)
-    // Overwrite, not append
-    assert(Files.readAllLines(written).asScala.toSeq === Seq("a", "b", "c"))
 
-    Files.delete(tmpFile)
-    // Create if not exists
-    Files.write(tmpFile, Seq("abc").asJava)
+  "write(Path, JavaIterable[_ <: CharSequence], OpenOption*)" - {
+    "default options" in {
+      val tmpFile = Files.createTempFile("foo", ".txt")
+      assert(Files.size(tmpFile) === 0)
+      val written = Files.write(tmpFile, Seq("abc").asJava)
+      assert(written === tmpFile)
+      assert(Files.readAllLines(written).asScala.toSeq === Seq("abc"))
+      assert(Files.size(tmpFile) === 4)
+      Files.write(tmpFile, Seq("a", "b", "c").asJava)
+      assert(Files.size(tmpFile) === 6)
+      // Overwrite, not append
+      assert(Files.readAllLines(written).asScala.toSeq === Seq("a", "b", "c"))
 
-    assertThrows[IOException] {
-      Files.write(directory, Seq("abc").asJava)
+      Files.delete(tmpFile)
+      // Create if not exists
+      Files.write(tmpFile, Seq("abc").asJava)
+
+      assertThrows[IOException] {
+        Files.write(directory, Seq("abc").asJava)
+      }
+    }
+
+    "StandardOpenOption.APPEND" in {
+      val tmp = Files.createTempFile("2", "")
+      assert(Files.write(tmp, Seq("abc").asJava,  StandardOpenOption.APPEND) === tmp)
+      assert(Files.readAllLines(tmp).asScala === List("abc"))
+      assert(Files.write(tmp, Seq("def").asJava,  StandardOpenOption.APPEND) === tmp)
+      assert(Files.readAllLines(tmp).asScala === List("abc", "def"))
+
+      val nonExists = Files.createTempDirectory("dir").resolve("file")
+      assertThrows[NoSuchFileException] {
+        Files.write(nonExists, Seq("a").asJava, StandardOpenOption.APPEND)
+      }
     }
   }
 
