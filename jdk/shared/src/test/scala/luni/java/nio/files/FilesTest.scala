@@ -1088,20 +1088,36 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     // todo: linkoption
   }
 
-  "setLastModifiedTime(Path, FileTime)" in {
-    val file = Files.createTempFile("lastmodified", ".txt")
+  "setLastModifiedTime(Path, FileTime)" - {
+    "can work with an existing file" in {
+      val file = Files.createTempFile("lastmodified", ".txt")
 
-    assert(Files.setLastModifiedTime(file, FileTime.from(100, DAYS)) === file)
-    assert(Files.getLastModifiedTime(file) === FileTime.from(100, DAYS))
+      assert(Files.setLastModifiedTime(file, FileTime.from(100, DAYS)) === file)
+      assert(Files.getLastModifiedTime(file) === FileTime.from(100, DAYS))
 
-    assert(Files.setLastModifiedTime(file, FileTime.from(200, DAYS)) === file)
-    assert(Files.getLastModifiedTime(file) === FileTime.from(200, DAYS))
-
-    assertThrows[NullPointerException] {
-      Files.setLastModifiedTime(file, null)
+      assert(Files.setLastModifiedTime(file, FileTime.from(200, DAYS)) === file)
+      assert(Files.getLastModifiedTime(file) === FileTime.from(200, DAYS))
     }
-    assertThrows[IOException] {
-      Files.setLastModifiedTime(noSuchFile, FileTime.from(200, DAYS))
+    "can work with an existing directory" in {
+      val file = Files.createTempDirectory("lastmodified")
+
+      assert(Files.setLastModifiedTime(file, FileTime.from(100, DAYS)) === file)
+      assert(Files.getLastModifiedTime(file) === FileTime.from(100, DAYS))
+
+      assert(Files.setLastModifiedTime(file, FileTime.from(200, DAYS)) === file)
+      assert(Files.getLastModifiedTime(file) === FileTime.from(200, DAYS))
+    }
+    "reject null time" in {
+      assume(isScalaJS || isJDK11AndLater, "Java 8 does not throw NPE")
+      val file = Files.createTempFile("lastmodified", ".txt")
+      assertThrows[NullPointerException] {
+        Files.setLastModifiedTime(file, null)
+      }
+    }
+    "reject non-existent file" in {
+      assertThrows[IOException] {
+        Files.setLastModifiedTime(noSuchFile, FileTime.from(200, DAYS))
+      }
     }
   }
 

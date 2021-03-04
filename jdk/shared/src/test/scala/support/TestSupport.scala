@@ -4,7 +4,7 @@ trait TestSupport {
   private var platformId: String = _
 
   val isScalaJS: Boolean       = System.getProperty("java.vm.name") == "Scala.js"
-  val isJDK11AndLater: Boolean = System.getProperty("java.vm.version").split('.').head.toInt >= 11
+  val isJDK11AndLater: Boolean = !isScalaJS && System.getProperty("java.runtime.version").split('.').head.toInt >= 11
 
   def getNewPlatformFile(pre: String, post: String): String = {
     if (platformId == null) {
