@@ -7,7 +7,7 @@ import java.io._
 import java.nio.charset.Charset
 import java.nio.file._
 import java.nio.file.attribute._
-import java.util.{Set => JavaSet}
+import java.nio.file.LinkOption.NOFOLLOW_LINKS
 import java.util.concurrent.TimeUnit._
 import scala.jdk.CollectionConverters._
 import scala.collection.mutable.ListBuffer
@@ -25,7 +25,6 @@ class FilesTest extends AnyFreeSpec with TestSupport {
   private val utf16leCharset: Charset = Charset.forName("UTF-16LE")
 
   private val directory        = Paths.get("project")
-  private val resourceRoot     = Paths.get("jdk/shared/src/test/resources")
   private val directorySource  = Paths.get("jdk/shared/src/test/resources/source")
   private val directorySymlink = Paths.get("jdk/shared/src/test/resources/symlink")
   private val subDirectory     = Paths.get("project/target")
@@ -387,16 +386,16 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     assert(!Files.exists(noSuchFileInDir))
 
     assert(Files.exists(fileInSymlink))
-    assert(Files.exists(fileInSymlink, LinkOption.NOFOLLOW_LINKS))
+    assert(Files.exists(fileInSymlink, NOFOLLOW_LINKS))
 
     assert(Files.exists(fileInSymlink))
-    assert(Files.exists(fileInSymlink, LinkOption.NOFOLLOW_LINKS))
+    assert(Files.exists(fileInSymlink, NOFOLLOW_LINKS))
 
     assert(!Files.exists(fileInDeletedSymlink))
-    assert(!Files.exists(fileInDeletedSymlink, LinkOption.NOFOLLOW_LINKS))
+    assert(!Files.exists(fileInDeletedSymlink, NOFOLLOW_LINKS))
 
     assert(!Files.exists(deletedSymlinkFile))
-    assert(Files.exists(deletedSymlinkFile, LinkOption.NOFOLLOW_LINKS))
+    assert(Files.exists(deletedSymlinkFile, NOFOLLOW_LINKS))
   }
 
   "find(Path, Int, BiPredicate[Path, BasicFileAttributes], FileVisitOption*)" ignore {
@@ -435,18 +434,14 @@ class FilesTest extends AnyFreeSpec with TestSupport {
 
     "linkOption" in {
       assert(Files.getAttribute(fileInSymlink, "isRegularFile") === true)
-      assert(Files.getAttribute(fileInSymlink, "isRegularFile", LinkOption.NOFOLLOW_LINKS) === true)
+      assert(Files.getAttribute(fileInSymlink, "isRegularFile", NOFOLLOW_LINKS) === true)
       assert(Files.getAttribute(symlinkText, "isRegularFile") === true)
-      assert(Files.getAttribute(symlinkText, "isRegularFile", LinkOption.NOFOLLOW_LINKS) === true)
+      assert(Files.getAttribute(symlinkText, "isRegularFile", NOFOLLOW_LINKS) === true)
 
       assert(Files.getAttribute(directorySymlink, "isDirectory") === true)
-      assert(
-        Files.getAttribute(directorySymlink, "isDirectory", LinkOption.NOFOLLOW_LINKS) === false
-      )
+      assert(Files.getAttribute(directorySymlink, "isDirectory", NOFOLLOW_LINKS) === false)
       assert(Files.getAttribute(directorySymlink, "isSymbolicLink") === false)
-      assert(
-        Files.getAttribute(directorySymlink, "isSymbolicLink", LinkOption.NOFOLLOW_LINKS) === true
-      )
+      assert(Files.getAttribute(directorySymlink, "isSymbolicLink", NOFOLLOW_LINKS) === true)
     }
   }
 
@@ -507,31 +502,29 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     // newAttr.owner()
 
     "linkoption" in {
-      assert(
-        Files.getFileAttributeView(fileInSymlink, posix).readAttributes().isRegularFile === true
-      )
+      assert(Files.getFileAttributeView(fileInSymlink, posix).readAttributes().isRegularFile)
       assert(
         Files
-          .getFileAttributeView(fileInSymlink, posix, LinkOption.NOFOLLOW_LINKS)
+          .getFileAttributeView(fileInSymlink, posix, NOFOLLOW_LINKS)
           .readAttributes()
-          .isRegularFile === true
+          .isRegularFile
       )
-      assert(Files.getFileAttributeView(symlinkText, posix).readAttributes().isRegularFile === true)
+      assert(Files.getFileAttributeView(symlinkText, posix).readAttributes().isRegularFile)
       assert(
         Files
-          .getFileAttributeView(symlinkText, posix, LinkOption.NOFOLLOW_LINKS)
+          .getFileAttributeView(symlinkText, posix, NOFOLLOW_LINKS)
           .readAttributes()
-          .isRegularFile === true
+          .isRegularFile
       )
 
       val symlinkAttrs = Files.getFileAttributeView(directorySymlink, posix).readAttributes()
-      assert(symlinkAttrs.isDirectory === true)
-      assert(symlinkAttrs.isSymbolicLink === false)
+      assert(symlinkAttrs.isDirectory)
+      assert(!symlinkAttrs.isSymbolicLink)
       val symlinkNofollowAttrs = Files
-        .getFileAttributeView(directorySymlink, posix, LinkOption.NOFOLLOW_LINKS)
+        .getFileAttributeView(directorySymlink, posix, NOFOLLOW_LINKS)
         .readAttributes()
-      assert(symlinkNofollowAttrs.isDirectory === false)
-      assert(symlinkNofollowAttrs.isSymbolicLink === true)
+      assert(!symlinkNofollowAttrs.isDirectory)
+      assert(symlinkNofollowAttrs.isSymbolicLink)
     }
   }
 
@@ -583,12 +576,11 @@ class FilesTest extends AnyFreeSpec with TestSupport {
   }
 
   "isDirectory(Path, LinkOption*)" in {
-    val option = LinkOption.NOFOLLOW_LINKS
-    assert(Files.isDirectory(directory, option))
-    assert(Files.isDirectory(directorySource, option))
-    assert(!Files.isDirectory(directorySymlink, option))
+    assert(Files.isDirectory(directory, NOFOLLOW_LINKS))
+    assert(Files.isDirectory(directorySource, NOFOLLOW_LINKS))
+    assert(!Files.isDirectory(directorySymlink, NOFOLLOW_LINKS))
 
-    assert(!Files.isDirectory(regularText, option))
+    assert(!Files.isDirectory(regularText, NOFOLLOW_LINKS))
   }
 
   "isExecutable(Path)" in {
@@ -619,18 +611,18 @@ class FilesTest extends AnyFreeSpec with TestSupport {
   "isRegularFile(Path, LinkOption*)" in {
     assert(!Files.isRegularFile(directorySource))
     assert(Files.isRegularFile(fileInSource))
-    assert(!Files.isRegularFile(directorySymlink, LinkOption.NOFOLLOW_LINKS))
-    assert(Files.isRegularFile(fileInSource, LinkOption.NOFOLLOW_LINKS))
+    assert(!Files.isRegularFile(directorySymlink, NOFOLLOW_LINKS))
+    assert(Files.isRegularFile(fileInSource, NOFOLLOW_LINKS))
 
     assert(!Files.isRegularFile(directorySymlink))
-    assert(!Files.isRegularFile(directorySymlink, LinkOption.NOFOLLOW_LINKS))
+    assert(!Files.isRegularFile(directorySymlink, NOFOLLOW_LINKS))
     assert(Files.isRegularFile(fileInSymlink))
-    assert(Files.isRegularFile(fileInSymlink, LinkOption.NOFOLLOW_LINKS))
+    assert(Files.isRegularFile(fileInSymlink, NOFOLLOW_LINKS))
 
     assert(Files.isRegularFile(regularText))
-    assert(Files.isRegularFile(regularText, LinkOption.NOFOLLOW_LINKS))
+    assert(Files.isRegularFile(regularText, NOFOLLOW_LINKS))
     assert(Files.isRegularFile(symlinkText))
-    assert(Files.isRegularFile(symlinkText, LinkOption.NOFOLLOW_LINKS))
+    assert(Files.isRegularFile(symlinkText, NOFOLLOW_LINKS))
 
     assert(!Files.isRegularFile(noSuchFile))
   }
@@ -855,16 +847,16 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     assert(Files.notExists(noSuchFileInDir))
 
     assert(!Files.notExists(fileInSymlink))
-    assert(!Files.notExists(fileInSymlink, LinkOption.NOFOLLOW_LINKS))
+    assert(!Files.notExists(fileInSymlink, NOFOLLOW_LINKS))
 
     assert(!Files.notExists(fileInSymlink))
-    assert(!Files.notExists(fileInSymlink, LinkOption.NOFOLLOW_LINKS))
+    assert(!Files.notExists(fileInSymlink, NOFOLLOW_LINKS))
 
     assert(Files.notExists(fileInDeletedSymlink))
-    assert(Files.notExists(fileInDeletedSymlink, LinkOption.NOFOLLOW_LINKS))
+    assert(Files.notExists(fileInDeletedSymlink, NOFOLLOW_LINKS))
 
     assert(Files.notExists(deletedSymlinkFile))
-    assert(!Files.notExists(deletedSymlinkFile, LinkOption.NOFOLLOW_LINKS))
+    assert(!Files.notExists(deletedSymlinkFile, NOFOLLOW_LINKS))
   }
 
   "probeContentType(Path)" in {
@@ -939,7 +931,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     val symAttr: BasicFileAttributes = Files.readAttributes(
       directorySymlink,
       classOf[BasicFileAttributes],
-      LinkOption.NOFOLLOW_LINKS
+      NOFOLLOW_LINKS
     )
     assert(!symAttr.isDirectory)
     assert(!symAttr.isOther)
@@ -962,7 +954,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
 
     // files
     Seq(fileInSource, fileInHidden, fileInSymlink).foreach { file =>
-      Seq(Seq.empty[LinkOption], Seq(LinkOption.NOFOLLOW_LINKS)).foreach { options =>
+      Seq(Seq.empty[LinkOption], Seq(NOFOLLOW_LINKS)).foreach { options =>
         val fileAttr: BasicFileAttributes =
           Files.readAttributes(file, classOf[BasicFileAttributes], options: _*)
         assert(!fileAttr.isDirectory)
@@ -1038,13 +1030,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     }
 
     // symbolic link with NOFOLLOW_LINK
-    val symAttr = Files
-      .readAttributes(
-        directorySymlink,
-        "*",
-        LinkOption.NOFOLLOW_LINKS
-      )
-      .asScala
+    val symAttr = Files.readAttributes(directorySymlink, "*", NOFOLLOW_LINKS).asScala
     assert(symAttr("isDirectory") === false)
 
     // non-exist
@@ -1656,7 +1642,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     }
 
     "options" - {
-      "LinkOption.NOFOLLOW_LINKS" ignore {}
+      "NOFOLLOW_LINKS" ignore {}
 
       "StandardOpenOption.READ" in {
         val tmpFile = Files.createTempFile("1", "")
