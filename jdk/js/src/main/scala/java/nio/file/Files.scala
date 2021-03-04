@@ -149,21 +149,30 @@ object Files {
   }
 
   @varargs def createTempDirectory(dir: Path, prefix: String, attrs: FileAttribute[_]*): Path = {
-    createTempDirectoryInternal(dir.toString, prefix, attrs: _*)
+    createTempDirectoryInternal(dir.toString, prefix, attrs)
   }
 
   @varargs def createTempDirectory(prefix: String, attrs: FileAttribute[_]*): Path = {
-    createTempDirectoryInternal(defaultTempDir(), prefix, attrs: _*)
+    createTempDirectoryInternal(defaultTempDir(), prefix, attrs)
   }
 
   private def createTempDirectoryInternal(
       dir: String,
       prefix: String,
-      attrs: FileAttribute[_]*
+      attrs: Seq[FileAttribute[_]]
   ): Path = {
-    val joined     = path.Path.join(dir, prefix)
-    val created    = fs.Fs.mkdtempSync(joined)
-    val normalized = path.Path.resolve(created)
+    val joined = path.Path.join(dir, getRandomId(prefix, ""))
+    val mode = toNodejsFileMode(
+      attrs,
+      fs.Fs.constants.S_IRUSR | fs.Fs.constants.S_IWUSR | fs.Fs.constants.S_IXUSR
+    )
+    fs.Fs.mkdirSync(
+      joined,
+      fs.MkdirOptions(
+        mode = mode
+      )
+    )
+    val normalized = path.Path.resolve(joined)
     Paths.get(normalized)
   }
 
@@ -172,23 +181,19 @@ object Files {
       prefix: String,
       suffix: String,
       attrs: FileAttribute[_]*
-  ): Path = createTempFileInternal(dir.toString, prefix, suffix, attrs: _*)
+  ): Path = createTempFileInternal(dir.toString, prefix, suffix, attrs)
 
   @varargs def createTempFile(prefix: String, suffix: String, attrs: FileAttribute[_]*): Path =
-    createTempFileInternal(defaultTempDir(), prefix, suffix, attrs: _*)
+    createTempFileInternal(defaultTempDir(), prefix, suffix, attrs)
 
-  private def createTempFileInternal(
-      dir: String,
-      prefix: String,
-      suffix: String,
-      attrs: FileAttribute[_]*
-  ): Path = {
-    val random   = Random.between(1000000000000000000L, Long.MaxValue)
-    val suffix2  = if (suffix == null) ".tmp" else suffix
-    val fileName = s"${prefix}${random}${suffix2}"
-    val joined   = path.Path.join(dir, fileName)
+  private def getRandomId(prefix: String, suffix: String): String = {
+    val random  = Random.between(1000000000000000000L, Long.MaxValue)
+    val suffix2 = if (suffix == null) ".tmp" else suffix
+    s"${prefix}${random}${suffix2}"
+  }
 
-    val fileMode: Int = attrs.collectFirst {
+  private def toNodejsFileMode(attrs: Seq[FileAttribute[_]], default: Int): Int = {
+    attrs.collectFirst {
       case attr if attr.name() == "posix:permissions" =>
         attr.value().asInstanceOf[JavaSet[PosixFilePermission]]
     } match {
@@ -208,8 +213,19 @@ object Files {
         // if (permissions.contains(PosixFilePermission.OTHERS_WRITE)) mode |= fs.Fs.constants.S_IWOTH
         mode
       case None =>
-        fs.Fs.constants.S_IRUSR | fs.Fs.constants.S_IWUSR
+        default
     }
+  }
+
+  private def createTempFileInternal(
+      dir: String,
+      prefix: String,
+      suffix: String,
+      attrs: Seq[FileAttribute[_]]
+  ): Path = {
+    val fileName = getRandomId(prefix, suffix)
+    val joined   = path.Path.join(dir, fileName)
+    val fileMode = toNodejsFileMode(attrs, fs.Fs.constants.S_IRUSR | fs.Fs.constants.S_IWUSR)
 
     fs.Fs.writeFileSync(
       joined,

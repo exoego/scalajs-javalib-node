@@ -246,7 +246,14 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     assert(Files.isDirectory(tempDir))
     assert(Files.getPosixFilePermissions(tempDir) === PosixFilePermissions.fromString("rwx------"))
 
-    // TODO: attrs
+    val tmpDir2 = Files.createTempDirectory(
+      base,
+      "foobar2",
+      PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwxrwxrwx"))
+    )
+    assert(Files.exists(tmpDir2))
+    assert(Files.isDirectory(tmpDir2))
+    assert(Files.getPosixFilePermissions(tmpDir2) === PosixFilePermissions.fromString("rwxr-xr-x"))
   }
 
   "createTempDirectory(String, FileAttribute[_])" in {
@@ -256,7 +263,13 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     assert(Files.isDirectory(tempDir))
     assert(Files.getPosixFilePermissions(tempDir) === PosixFilePermissions.fromString("rwx------"))
 
-    // TODO: attrs
+    val tmpDir2 = Files.createTempDirectory(
+      "foobar2",
+      PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwxrwxrwx"))
+    )
+    assert(Files.exists(tmpDir2))
+    assert(Files.isDirectory(tmpDir2))
+    assert(Files.getPosixFilePermissions(tmpDir2) === PosixFilePermissions.fromString("rwxr-xr-x"))
   }
 
   "createTempFile(Path, String, String, FileAttribute[_])" in {
@@ -1777,9 +1790,9 @@ class FilesTest extends AnyFreeSpec with TestSupport {
 
     "StandardOpenOption.APPEND" in {
       val tmp = Files.createTempFile("2", "")
-      assert(Files.write(tmp, Seq("abc").asJava,  StandardOpenOption.APPEND) === tmp)
+      assert(Files.write(tmp, Seq("abc").asJava, StandardOpenOption.APPEND) === tmp)
       assert(Files.readAllLines(tmp).asScala === List("abc"))
-      assert(Files.write(tmp, Seq("def").asJava,  StandardOpenOption.APPEND) === tmp)
+      assert(Files.write(tmp, Seq("def").asJava, StandardOpenOption.APPEND) === tmp)
       assert(Files.readAllLines(tmp).asScala === List("abc", "def"))
 
       val nonExists = Files.createTempDirectory("dir").resolve("file")
