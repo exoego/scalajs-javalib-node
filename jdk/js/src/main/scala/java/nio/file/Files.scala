@@ -274,21 +274,21 @@ object Files {
     )
 
   @varargs def getAttribute(path: Path, attribute: String, options: LinkOption*): AnyRef = {
-    attributeFormatCheck(attribute)
-    // TODO: posix
-    val attrs         = readAttributes(path, classOf[BasicFileAttributes], options: _*)
+    val typeName      = attributeFormatCheck(attribute)
+    val attrs         = readAttributes(path, classOf[PosixFileAttributes], options: _*)
     val attributeName = attribute.substring(attribute.indexOf(':') + 1)
     (attributeName match {
-      case "isDirectory"      => attrs.isDirectory
-      case "isOther"          => attrs.isOther
-      case "isRegularFile"    => attrs.isRegularFile
-      case "isSymbolicLink"   => attrs.isSymbolicLink
-      case "size"             => attrs.size
-      case "fileKey"          => attrs.fileKey
-      case "creationTime"     => attrs.creationTime
-      case "lastAccessTime"   => attrs.lastAccessTime
-      case "lastModifiedTime" => attrs.lastModifiedTime
-      case _                  => throw new IllegalArgumentException(s"`${attribute}` not recognized")
+      case "isDirectory"                        => attrs.isDirectory()
+      case "isOther"                            => attrs.isOther()
+      case "isRegularFile"                      => attrs.isRegularFile()
+      case "isSymbolicLink"                     => attrs.isSymbolicLink()
+      case "size"                               => attrs.size()
+      case "fileKey"                            => attrs.fileKey()
+      case "creationTime"                       => attrs.creationTime()
+      case "lastAccessTime"                     => attrs.lastAccessTime()
+      case "lastModifiedTime"                   => attrs.lastModifiedTime()
+      case "permissions" if typeName == "posix" => attrs.permissions()
+      case _                                    => throw new IllegalArgumentException(s"`${attribute}` not recognized")
     }).asInstanceOf[AnyRef]
   }
 
@@ -523,13 +523,14 @@ object Files {
     "lastModifiedTime"
   )
 
-  private def attributeFormatCheck(attributes: String): Unit = {
+  private def attributeFormatCheck(attributes: String): String = {
+    val typeName = attributes.substring(0, attributes.indexOf(":"))
     if (attributes.contains(":") && !attributes.startsWith("basic:") && !attributes.startsWith(
           "posix:"
         )) {
-      val unsupportedType = attributes.substring(0, attributes.indexOf(":"))
-      throw new UnsupportedOperationException(s"View '${unsupportedType}' not available")
+      throw new UnsupportedOperationException(s"View '${typeName}' not available")
     }
+    typeName
   }
 
   @varargs def readAttributes(
@@ -553,15 +554,15 @@ object Files {
       }
     }
     val mapBuilder = mutable.Map[String, Any]()
-    if (keys("isDirectory")) mapBuilder.put("isDirectory", attrs.isDirectory)
-    if (keys("isOther")) mapBuilder.put("isOther", attrs.isOther)
-    if (keys("isRegularFile")) mapBuilder.put("isRegularFile", attrs.isRegularFile)
-    if (keys("isSymbolicLink")) mapBuilder.put("isSymbolicLink", attrs.isSymbolicLink)
-    if (keys("size")) mapBuilder.put("size", attrs.size)
-    if (keys("fileKey")) mapBuilder.put("fileKey", attrs.fileKey)
-    if (keys("creationTime")) mapBuilder.put("creationTime", attrs.creationTime)
-    if (keys("lastAccessTime")) mapBuilder.put("lastAccessTime", attrs.lastAccessTime)
-    if (keys("lastModifiedTime")) mapBuilder.put("lastModifiedTime", attrs.lastModifiedTime)
+    if (keys("isDirectory")) mapBuilder.put("isDirectory", attrs.isDirectory())
+    if (keys("isOther")) mapBuilder.put("isOther", attrs.isOther())
+    if (keys("isRegularFile")) mapBuilder.put("isRegularFile", attrs.isRegularFile())
+    if (keys("isSymbolicLink")) mapBuilder.put("isSymbolicLink", attrs.isSymbolicLink())
+    if (keys("size")) mapBuilder.put("size", attrs.size())
+    if (keys("fileKey")) mapBuilder.put("fileKey", attrs.fileKey())
+    if (keys("creationTime")) mapBuilder.put("creationTime", attrs.creationTime())
+    if (keys("lastAccessTime")) mapBuilder.put("lastAccessTime", attrs.lastAccessTime())
+    if (keys("lastModifiedTime")) mapBuilder.put("lastModifiedTime", attrs.lastModifiedTime())
     mapBuilder.asJava
   }
 

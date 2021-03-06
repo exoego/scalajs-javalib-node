@@ -421,9 +421,17 @@ class FilesTest extends AnyFreeSpec with TestSupport {
         assert(Files.getAttribute(file, s"${prefix}isSymbolicLink") === false)
         assert(Files.getAttribute(file, s"${prefix}fileKey") !== null)
       }
+
+      assert(Files.getAttribute(file, "posix:permissions").isInstanceOf[java.util.Set[_]])
     }
 
     "invalid attribute" in {
+      assertThrows[IllegalArgumentException] {
+        Files.getAttribute(file, "permissions")
+      }
+      assertThrows[IllegalArgumentException] {
+        Files.getAttribute(file, "basic:permissions")
+      }
       assertThrows[UnsupportedOperationException] {
         Files.getAttribute(file, "unknown:lastModifiedTime")
       }
