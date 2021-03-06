@@ -988,7 +988,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
   }
 
   "readAttributes(Path, String, LinkOption*)" in {
-    // unavailabel attrs
+    // unavailable attrs
     assertThrows[IllegalArgumentException] {
       Files.readAttributes(directory, "").asScala
     }
@@ -1020,7 +1020,10 @@ class FilesTest extends AnyFreeSpec with TestSupport {
         assert(dirAttr("creationTime").asInstanceOf[FileTime].toMillis > 0L)
         assert(dirAttr("lastAccessTime").asInstanceOf[FileTime].toMillis > 0L)
         assert(dirAttr("lastModifiedTime").asInstanceOf[FileTime].toMillis > 0L)
+        assert(dirAttr.get("permissions") === None)
       }
+
+      assert(Files.readAttributes(dir, "posix:permissions").asScala.apply("permissions") !== null)
 
       Seq("isDirectory", "basic:isDirectory").foreach { attrs =>
         val dirAttr = Files.readAttributes(dir, attrs).asScala
@@ -1089,6 +1092,12 @@ class FilesTest extends AnyFreeSpec with TestSupport {
       assert(Files.getAttribute(file, "posix:lastAccessTime") === FileTime.from(22, DAYS))
       Files.setAttribute(file, "basic:lastAccessTime", FileTime.from(33, DAYS))
       assert(Files.getAttribute(file, "basic:lastAccessTime") === FileTime.from(33, DAYS))
+
+      Files.setAttribute(file, "posix:permissions", PosixFilePermissions.fromString("rwxrwxrwx"))
+      assert(
+        Files.getAttribute(file, "posix:permissions") === PosixFilePermissions
+          .fromString("rwxrwxrwx")
+      )
     }
 
     "creationTime is recognized, but no effect" in {
@@ -1119,6 +1128,9 @@ class FilesTest extends AnyFreeSpec with TestSupport {
       }
       assertThrows[IllegalArgumentException] {
         Files.setAttribute(file, "fileKey", "fobar")
+      }
+      assertThrows[IllegalArgumentException] {
+        Files.setAttribute(file, "permissions", true)
       }
     }
 

@@ -522,9 +522,10 @@ object Files {
     "lastAccessTime",
     "lastModifiedTime"
   )
+  private lazy val posixFileAttributesKeys = basicFileAttributesKeys ++ Set("permissions")
 
   private def attributeFormatCheck(attributes: String): String = {
-    val typeName = attributes.substring(0, attributes.indexOf(":"))
+    val typeName = attributes.slice(0, attributes.indexOf(':'))
     if (attributes.contains(":") && !attributes.startsWith("basic:") && !attributes.startsWith(
           "posix:"
         )) {
@@ -538,13 +539,16 @@ object Files {
       attributes: String,
       options: LinkOption*
   ): JavaMap[String, Any] = {
-    attributeFormatCheck(attributes)
-
-    // TODO: posix
-    val attrs = readAttributes(path, classOf[BasicFileAttributes], options: _*)
+    val typeName = attributeFormatCheck(attributes)
+    val (attrs, attrKeys) = typeName match {
+      case "" | "basic" =>
+        (readAttributes(path, classOf[BasicFileAttributes], options: _*), basicFileAttributesKeys)
+      case "posix" =>
+        (readAttributes(path, classOf[PosixFileAttributes], options: _*), posixFileAttributesKeys)
+    }
     val keys = {
       val keySet  = attributes.substring(attributes.indexOf(':') + 1).split(",").toSet
-      val keyDiff = keySet.diff(basicFileAttributesKeys) - "*"
+      val keyDiff = keySet.diff(attrKeys) - "*"
       if (keyDiff.nonEmpty) {
         throw new IllegalArgumentException(s"Unknown attributes `${keyDiff.mkString(",")}`")
       } else if (keySet.contains("*")) {
@@ -563,6 +567,8 @@ object Files {
     if (keys("creationTime")) mapBuilder.put("creationTime", attrs.creationTime())
     if (keys("lastAccessTime")) mapBuilder.put("lastAccessTime", attrs.lastAccessTime())
     if (keys("lastModifiedTime")) mapBuilder.put("lastModifiedTime", attrs.lastModifiedTime())
+    if (keys("permissions"))
+      mapBuilder.put("permissions", attrs.asInstanceOf[PosixFileAttributes].permissions())
     mapBuilder.asJava
   }
 
@@ -580,7 +586,7 @@ object Files {
       value: AnyRef,
       options: LinkOption*
   ): Path = {
-    attributeFormatCheck(attribute)
+    val typeName = attributeFormatCheck(attribute)
 
     val attributeName = attribute.substring(attribute.indexOf(':') + 1)
     def transformValue[V](setter: V => Unit)(implicit classtag: ClassTag[V]): Unit = value match {
@@ -611,6 +617,8 @@ object Files {
         }
       case "creationTime" =>
       // do nothing
+      case "permissions" if typeName == "posix" =>
+        Files.setPosixFilePermissions(path, value.asInstanceOf[java.util.Set[PosixFilePermission]])
       case _ => throw new IllegalArgumentException(s"`${attribute}` not recognized")
     }
     path
