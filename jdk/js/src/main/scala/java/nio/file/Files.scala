@@ -65,30 +65,30 @@ object Files {
   }
 
   @varargs def copy(source: Path, target: Path, options: CopyOption*): Path = {
+    def innerCopy(): Unit = {
+      if (Files.isDirectory(source)) {
+        Files.createDirectories(target)
+      } else {
+        fs.Fs.copyFileSync(source.toString, target.toString, 0)
+      }
+    }
+
     if (options.contains(StandardCopyOption.ATOMIC_MOVE)) {
       throw new UnsupportedOperationException("StandardCopyOption.ATOMIC_MOVE")
-    }
-    if (Files.exists(target)) {
+    } else if (Files.exists(target)) {
       if (Files.isSameFile(source, target)) {
         // do nothing
       } else if (options.contains(StandardCopyOption.REPLACE_EXISTING)) {
         Files.delete(target)
-        if (Files.isDirectory(source)) {
-          Files.createDirectories(target)
-        } else {
-          fs.Fs.copyFileSync(source.toString, target.toString, 0)
-        }
+        innerCopy()
       } else {
         throw new FileAlreadyExistsException(target.toString)
       }
     } else if (Files.notExists(source)) {
       throw new NoSuchFileException(source.toString)
-    } else if (Files.isDirectory(source)) {
-      Files.createDirectories(target)
     } else {
-      fs.Fs.copyFileSync(source.toString, target.toString, 0)
+      innerCopy()
     }
-    // TODO options
     target
   }
 
