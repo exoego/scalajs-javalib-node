@@ -65,9 +65,19 @@ object Files {
   }
 
   @varargs def copy(source: Path, target: Path, options: CopyOption*): Path = {
+    if (options.contains(StandardCopyOption.ATOMIC_MOVE)) {
+      throw new UnsupportedOperationException("StandardCopyOption.ATOMIC_MOVE")
+    }
     if (Files.exists(target)) {
       if (Files.isSameFile(source, target)) {
         // do nothing
+      } else if (options.contains(StandardCopyOption.REPLACE_EXISTING)) {
+        Files.delete(target)
+        if (Files.isDirectory(source)) {
+          Files.createDirectories(target)
+        } else {
+          fs.Fs.copyFileSync(source.toString, target.toString, 0)
+        }
       } else {
         throw new FileAlreadyExistsException(target.toString)
       }

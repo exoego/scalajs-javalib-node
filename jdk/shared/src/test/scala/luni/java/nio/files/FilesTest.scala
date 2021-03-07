@@ -102,48 +102,169 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     }
   }
 
-  "copy(Path, Path, CopyOption*)" in {
-    // If source is directory, create an empty dir
-    val root        = Files.createTempDirectory("root")
-    val nonEmptyDir = Files.createTempDirectory(root, "nonEmptyDir")
-    Files.createTempFile(nonEmptyDir, "file", ".txt")
+  "copy(Path, Path, CopyOption*)" - {
+    val root = Files.createTempDirectory("root")
 
-    val targetDir = root.resolve("targetDir")
-    assert(Files.copy(nonEmptyDir, targetDir) === targetDir)
-    assert(Files.exists(targetDir))
-    assertThrows[FileAlreadyExistsException] {
-      Files.copy(nonEmptyDir, targetDir)
+    "default options" - {
+      "If source is directory, create an empty dir" in {
+        val nonEmptyDir = Files.createTempDirectory(root, "nonEmptyDir")
+        Files.createTempFile(nonEmptyDir, "file", ".txt")
+        val targetDir = root.resolve("targetDir")
+        assert(Files.copy(nonEmptyDir, targetDir) === targetDir)
+        assert(Files.exists(targetDir))
+        assertThrows[FileAlreadyExistsException] {
+          Files.copy(nonEmptyDir, targetDir)
+        }
+      }
+
+      "copy file" in {
+        val sourceFile = Files.createFile(root.resolve("foo.txt"))
+        Files.write(sourceFile, Seq("abc").asJava)
+        val newFile = root.resolve("newFile.txt")
+        assert(Files.copy(sourceFile, newFile) === newFile)
+        assert(Files.readAllLines(newFile).asScala.toSeq === Seq("abc"))
+        assert(!Files.isSameFile(sourceFile, newFile))
+        assertThrows[FileAlreadyExistsException] {
+          Files.copy(sourceFile, newFile)
+        }
+      }
+
+      "copy symbolic link" in {
+        val sourceFile     = Files.createFile(root.resolve("source.txt"))
+        val symbolicSource = Files.createSymbolicLink(root.resolve("symbolic"), sourceFile)
+        val newFile2       = root.resolve("newFile2.txt")
+        Files.write(sourceFile, Seq("abc").asJava)
+        assert(Files.copy(symbolicSource, newFile2) === newFile2)
+        assert(Files.readAllLines(newFile2).asScala.toSeq === Seq("abc"))
+        assert(!Files.isSameFile(symbolicSource, newFile2))
+      }
     }
 
-    // Copy file
-    val sourceFile = Files.createFile(root.resolve("foo.txt"))
-    Files.write(sourceFile, Seq("abc").asJava)
-    val newFile = root.resolve("newFile.txt")
-    assert(Files.copy(sourceFile, newFile) === newFile)
-    assert(Files.readAllLines(newFile).asScala.toSeq === Seq("abc"))
-    assert(!Files.isSameFile(sourceFile, newFile))
-    assertThrows[FileAlreadyExistsException] {
-      Files.copy(sourceFile, newFile)
+    "fail if source not exists" in {
+      val notExist = root.resolve("not-exist")
+      assertThrows[IOException] {
+        Files.copy(notExist, root)
+      }
+      assertThrows[IOException] {
+        Files.copy(notExist, notExist)
+      }
     }
 
-    // Source is symbolic link
-    val symbolicSource = Files.createSymbolicLink(
-      root.resolve("symbolic"),
-      sourceFile
-    )
-    val newFile2 = root.resolve("newFile2.txt")
-    assert(Files.copy(symbolicSource, newFile2) === newFile2)
-    assert(Files.readAllLines(newFile).asScala.toSeq === Seq("abc"))
-    assert(!Files.isSameFile(symbolicSource, newFile2))
-
-    // Fail if source not exists
-    assertThrows[IOException] {
-      Files.copy(root.resolve("not-exist"), root)
+    "no effect if same file" in {
+      Seq(Files.createTempFile("file", ".d"), root).foreach { path =>
+        Files.copy(path, path)
+      }
     }
 
-    // Do nothing if same file
-    Seq(sourceFile, root).foreach { path =>
-      Files.copy(path, path)
+    "REPLACE_EXISTING" - {
+      "source is file" - {
+        "If the target file exists, then the target file is replaced if it is not a non-empty directory" in {
+          val source     = Files.write(Files.createTempFile("source", ".md"), Seq("source").asJava)
+          val targetFile = Files.write(Files.createTempFile("target", ".md"), Seq("target").asJava)
+          assert(Files.copy(source, targetFile, StandardCopyOption.REPLACE_EXISTING) === targetFile)
+          assert(Files.readAllLines(targetFile).asScala === Seq("source"))
+
+          val targetEmptyDir = Files.createTempDirectory("emptyDir")
+          assert(
+            Files
+              .copy(source, targetEmptyDir, StandardCopyOption.REPLACE_EXISTING) === targetEmptyDir
+          )
+          assert(Files.readAllLines(targetEmptyDir).asScala === Seq("source"))
+
+          val targetNonEmptyDir = Files.createTempDirectory("nonEmptyDir")
+          Files.createFile(targetNonEmptyDir.resolve("file"))
+          assertThrows[DirectoryNotEmptyException] {
+            Files.copy(source, targetNonEmptyDir, StandardCopyOption.REPLACE_EXISTING)
+          }
+        }
+
+        "If the target file exists and is a symbolic link, then the symbolic link itself, not the target of the link, is replaced." in {
+          val source = Files.write(Files.createTempFile("source", ".md"), Seq("source").asJava)
+
+          val tmpDir  = Files.createTempDirectory("tmp")
+          val file    = Files.createTempFile("temp", "file")
+          val symlink = Files.createSymbolicLink(tmpDir.resolve("symlink"), file)
+
+          assertThrows[FileAlreadyExistsException] {
+            Files.copy(source, symlink)
+          }
+          assert(Files.copy(source, symlink, StandardCopyOption.REPLACE_EXISTING) === symlink)
+          assert(Files.readAllLines(symlink).asScala === Seq("source"))
+        }
+      }
+
+      "source is directory" - {
+        "If the target file exists, then the target file is replaced if it is not a non-empty directory" in {
+          val source = Files.createTempDirectory("tmpdir")
+          Files.createFile(source.resolve("file"))
+
+          val targetFile = Files.write(Files.createTempFile("target", ".md"), Seq("target").asJava)
+          assert(Files.copy(source, targetFile, StandardCopyOption.REPLACE_EXISTING) === targetFile)
+          assert(Files.isDirectory(targetFile))
+          assert(Files.notExists(targetFile.resolve("file")))
+
+          val targetEmptyDir = Files.createTempDirectory("emptyDir")
+          assert(
+            Files
+              .copy(source, targetEmptyDir, StandardCopyOption.REPLACE_EXISTING) === targetEmptyDir
+          )
+          assert(Files.isDirectory(targetFile))
+          assert(Files.notExists(targetFile.resolve("file")))
+
+          val targetNonEmptyDir = Files.createTempDirectory("nonEmptyDir")
+          Files.createFile(targetNonEmptyDir.resolve("file"))
+          assertThrows[DirectoryNotEmptyException] {
+            Files.copy(source, targetNonEmptyDir, StandardCopyOption.REPLACE_EXISTING)
+          }
+        }
+
+        "If the target file exists and is a symbolic link, then the symbolic link itself, not the target of the link, is replaced." in {
+          val source = Files.createTempDirectory("tmpdir")
+          Files.createFile(source.resolve("file"))
+
+          val tmpDir  = Files.createTempDirectory("tmp")
+          val file    = Files.createTempFile("temp", "file")
+          val symlink = Files.createSymbolicLink(tmpDir.resolve("symlink"), file)
+
+          assertThrows[FileAlreadyExistsException] {
+            Files.copy(source, symlink)
+          }
+          assert(Files.copy(source, symlink, StandardCopyOption.REPLACE_EXISTING) === symlink)
+          assert(Files.isDirectory(symlink))
+          assert(Files.notExists(symlink.resolve("file")))
+        }
+      }
+    }
+
+    "COPY_ATTRIBUTES" - {
+      "Minimally, the last-modified-time is copied to the target file if supported by both the source and target file stores." ignore {
+        // TODO
+        fail()
+      }
+    }
+
+    "NOFOLLOW_LINKS" - {
+      "If the file is a symbolic link, then the symbolic link itself, not the target of the link, is copied." ignore {
+        // TODO
+        fail()
+      }
+    }
+
+    "unsupported options" in {
+      assertThrows[UnsupportedOperationException] {
+        Files.copy(
+          Files.createTempDirectory("dir"),
+          root.resolve("fail"),
+          StandardCopyOption.ATOMIC_MOVE
+        )
+      }
+      assertThrows[UnsupportedOperationException] {
+        Files.copy(
+          Files.createTempFile("file", ".md"),
+          root.resolve("fail"),
+          StandardCopyOption.ATOMIC_MOVE
+        )
+      }
     }
   }
 
