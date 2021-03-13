@@ -120,10 +120,15 @@ class FilesTest extends AnyFreeSpec with TestSupport {
       "copy file" in {
         val sourceFile = Files.createFile(root.resolve("foo.txt"))
         Files.write(sourceFile, Seq("abc").asJava)
+        Files.setPosixFilePermissions(sourceFile, PosixFilePermissions.fromString("rwxrwxrwx"))
         val newFile = root.resolve("newFile.txt")
         assert(Files.copy(sourceFile, newFile) === newFile)
         assert(Files.readAllLines(newFile).asScala.toSeq === Seq("abc"))
         assert(!Files.isSameFile(sourceFile, newFile))
+        assert(
+          Files.getPosixFilePermissions(newFile) === PosixFilePermissions.fromString("rwxr-xr-x")
+        )
+        assert(Files.getPosixFilePermissions(newFile) !== Files.getPosixFilePermissions(sourceFile))
         assertThrows[FileAlreadyExistsException] {
           Files.copy(sourceFile, newFile)
         }
@@ -237,9 +242,15 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     }
 
     "COPY_ATTRIBUTES" - {
-      "Minimally, the last-modified-time is copied to the target file if supported by both the source and target file stores." ignore {
-        // TODO
-        fail()
+      "Minimally, the last-modified-time is copied to the target file if supported by both the source and target file stores." in {
+        val sourceFile = Files.createFile(root.resolve("copyAttributes.txt"))
+        Files.write(sourceFile, Seq("abc").asJava)
+        Files.setPosixFilePermissions(sourceFile, PosixFilePermissions.fromString("rwxrwxrwx"))
+        val newFile = root.resolve("copyAttributes_new.txt")
+        assert(Files.copy(sourceFile, newFile, StandardCopyOption.COPY_ATTRIBUTES) === newFile)
+        assert(Files.readAllLines(newFile).asScala.toSeq === Seq("abc"))
+        // assert(Files.getLastModifiedTime(sourceFile) === Files.getLastModifiedTime(newFile))
+        assert(Files.getPosixFilePermissions(sourceFile) === Files.getPosixFilePermissions(newFile))
       }
     }
 

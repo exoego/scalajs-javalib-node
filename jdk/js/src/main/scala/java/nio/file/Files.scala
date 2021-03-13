@@ -65,11 +65,22 @@ object Files {
   }
 
   @varargs def copy(source: Path, target: Path, options: CopyOption*): Path = {
-    def innerCopy(): Unit = {
+    @inline def innerCopy(): Unit = {
       if (Files.isDirectory(source)) {
         Files.createDirectories(target)
       } else {
         fs.Fs.copyFileSync(source.toString, target.toString, 0)
+        val sourcePermissions = getPosixFilePermissions(source)
+        if (options.contains(StandardCopyOption.COPY_ATTRIBUTES)) {
+          setPosixFilePermissions(target, sourcePermissions)
+          setLastModifiedTime(target, getLastModifiedTime(source))
+        } else {
+          val securedPermissions = (sourcePermissions.asScala.toSet diff Set(
+            PosixFilePermission.GROUP_WRITE,
+            PosixFilePermission.OTHERS_WRITE
+          )).asJava
+          setPosixFilePermissions(target, securedPermissions)
+        }
       }
     }
 
