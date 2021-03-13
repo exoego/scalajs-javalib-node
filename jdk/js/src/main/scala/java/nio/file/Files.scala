@@ -20,8 +20,7 @@ import scala.util.Random
 
 object Files {
   @varargs def copy(in: InputStream, target: Path, options: CopyOption*): Long = {
-    // TODO: options
-    if (Files.exists(target)) {
+    if (Files.exists(target) && !options.contains(StandardCopyOption.REPLACE_EXISTING)) {
       throw new FileAlreadyExistsException(target.toString)
     }
 

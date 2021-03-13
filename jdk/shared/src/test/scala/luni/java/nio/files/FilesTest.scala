@@ -50,31 +50,43 @@ class FilesTest extends AnyFreeSpec with TestSupport {
   private val noSuchFile      = Paths.get("no-such-file")
   private val noSuchSubDir    = Paths.get("no-such-dir/no-such-sub")
 
-  "copy(InputStream, Path, CopyOption*)" in {
-    val sourceFile = Files.createTempFile("foo", ".txt")
-    val tmpDir     = Files.createTempDirectory("foo")
-    using(new FileInputStream(sourceFile.toFile)) { in =>
-      val targetFile = tmpDir.resolve("newFile1.txt")
-      assert(Files.copy(in, targetFile) === 0)
+  "copy(InputStream, Path, CopyOption*)" - {
+    "default options" in {
+      val sourceFile = Files.createTempFile("foo", ".txt")
+      val tmpDir     = Files.createTempDirectory("foo")
+      using(new FileInputStream(sourceFile.toFile)) { in =>
+        val targetFile = tmpDir.resolve("newFile1.txt")
+        assert(Files.copy(in, targetFile) === 0)
+      }
+
+      Files.write(sourceFile, Seq("abc").asJava)
+      using(new FileInputStream(sourceFile.toFile)) { in =>
+        val targetFile = tmpDir.resolve("newFile2.txt")
+        assert(Files.copy(in, targetFile) === 4)
+        assert(Files.readAllLines(targetFile).asScala === Seq("abc"))
+      }
+
+      assertThrows[IOException] {
+        val closedStream = new FileInputStream(sourceFile.toFile)
+        closedStream.close()
+        Files.copy(closedStream, tmpDir.resolve("empty.txt"))
+      }
+
+      using(new FileInputStream(sourceFile.toFile)) { in =>
+        val targetFile = tmpDir.resolve("newFile1.txt")
+        assertThrows[FileAlreadyExistsException] {
+          Files.copy(in, targetFile)
+        }
+      }
     }
 
-    Files.write(sourceFile, Seq("abc").asJava)
-    using(new FileInputStream(sourceFile.toFile)) { in =>
-      val targetFile = tmpDir.resolve("newFile2.txt")
-      assert(Files.copy(in, targetFile) === 4)
-      assert(Files.readAllLines(targetFile).asScala === Seq("abc"))
-    }
-
-    assertThrows[IOException] {
-      val closedStream = new FileInputStream(sourceFile.toFile)
-      closedStream.close()
-      Files.copy(closedStream, tmpDir.resolve("empty.txt"))
-    }
-
-    using(new FileInputStream(sourceFile.toFile)) { in =>
-      val targetFile = tmpDir.resolve("newFile1.txt")
-      assertThrows[FileAlreadyExistsException] {
-        Files.copy(in, targetFile)
+    "REPLACE_EXISTING" in {
+      val sourceFile = Files.createTempFile("foo", ".txt")
+      Files.write(sourceFile, Seq("abc").asJava)
+      val targetFile = Files.createTempFile("target", ".txt")
+      using(new FileInputStream(sourceFile.toFile)) { in =>
+        assert(Files.copy(in, targetFile, StandardCopyOption.REPLACE_EXISTING) === 4)
+        assert(Files.readAllLines(targetFile).asScala === Seq("abc"))
       }
     }
   }
