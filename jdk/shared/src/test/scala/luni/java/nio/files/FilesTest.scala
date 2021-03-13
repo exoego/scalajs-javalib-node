@@ -249,8 +249,13 @@ class FilesTest extends AnyFreeSpec with TestSupport {
         val newFile = root.resolve("copyAttributes_new.txt")
         assert(Files.copy(sourceFile, newFile, StandardCopyOption.COPY_ATTRIBUTES) === newFile)
         assert(Files.readAllLines(newFile).asScala.toSeq === Seq("abc"))
-        // assert(Files.getLastModifiedTime(sourceFile) === Files.getLastModifiedTime(newFile))
-        assert(Files.getPosixFilePermissions(sourceFile) === Files.getPosixFilePermissions(newFile))
+        assert(
+          Files
+            .getLastModifiedTime(newFile)
+            .toMillis / 1000 === Files.getLastModifiedTime(sourceFile).toMillis / 1000,
+          "precision loss"
+        )
+        assert(Files.getPosixFilePermissions(newFile) === Files.getPosixFilePermissions(sourceFile))
       }
     }
 
@@ -1217,6 +1222,11 @@ class FilesTest extends AnyFreeSpec with TestSupport {
       assert(Files.getLastModifiedTime(file) === FileTime.from(22, DAYS))
       Files.setAttribute(file, "basic:lastModifiedTime", FileTime.from(33, DAYS))
       assert(Files.getLastModifiedTime(file) === FileTime.from(33, DAYS))
+      Files.setAttribute(file, "basic:lastModifiedTime", FileTime.fromMillis(1615679182864L))
+      assert(
+        Files.getLastModifiedTime(file) === FileTime.fromMillis(1615679182000L),
+        "precision loss"
+      )
 
       Files.setAttribute(file, "lastAccessTime", FileTime.from(11, DAYS))
       assert(Files.getAttribute(file, "lastAccessTime") === FileTime.from(11, DAYS))
@@ -1224,6 +1234,11 @@ class FilesTest extends AnyFreeSpec with TestSupport {
       assert(Files.getAttribute(file, "posix:lastAccessTime") === FileTime.from(22, DAYS))
       Files.setAttribute(file, "basic:lastAccessTime", FileTime.from(33, DAYS))
       assert(Files.getAttribute(file, "basic:lastAccessTime") === FileTime.from(33, DAYS))
+      Files.setAttribute(file, "basic:lastModifiedTime", FileTime.fromMillis(1615679182864L))
+      assert(
+        Files.getAttribute(file, "basic:lastModifiedTime") === FileTime.fromMillis(1615679182000L),
+        "precision loss"
+      )
 
       Files.setAttribute(file, "posix:permissions", PosixFilePermissions.fromString("rwxrwxrwx"))
       assert(

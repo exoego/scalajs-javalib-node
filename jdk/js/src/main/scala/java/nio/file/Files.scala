@@ -627,15 +627,7 @@ object Files {
           }
         }
       case "lastModifiedTime" =>
-        transformValue { time: FileTime =>
-          transformStatsOrThrow(path, options) { stats =>
-            fs.Fs.utimesSync(
-              path.toString,
-              atime = stats.atime,
-              mtime = (time.toMillis() / 1000).toString
-            )
-          }
-        }
+        setLastModifiedTime(path, value.asInstanceOf[FileTime])
       case "creationTime" =>
       // do nothing
       case "permissions" if typeName == "posix" =>
