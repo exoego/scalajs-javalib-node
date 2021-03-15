@@ -333,15 +333,8 @@ class FilesTest extends AnyFreeSpec with TestSupport {
 
     "file-attributes to set atomically when creating the directory" in {
       val tmpDir = Files.createTempDirectory("createDirectory")
-      val created = Files.createDirectories(
-        tmpDir.resolve("x").resolve("y").resolve("z"),
-        new FileAttribute[JavaSet[PosixFilePermission]] {
-          override def name(): String = "posix:permissions"
-
-          override def value(): JavaSet[PosixFilePermission] =
-            PosixFilePermissions.fromString("rwx------")
-        }
-      )
+      val created =
+        Files.createDirectories(tmpDir.resolve("x").resolve("y"), new FilePermissions("rwx------"))
       assert(
         Files.getPosixFilePermissions(created) === PosixFilePermissions.fromString("rwx------")
       )
@@ -385,16 +378,8 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     }
 
     "file-attributes to set atomically when creating the directory" in {
-      val tmpDir = Files.createTempDirectory("createDirectory")
-      val created = Files.createDirectory(
-        tmpDir.resolve("x"),
-        new FileAttribute[JavaSet[PosixFilePermission]] {
-          override def name(): String = "posix:permissions"
-
-          override def value(): JavaSet[PosixFilePermission] =
-            PosixFilePermissions.fromString("rwx------")
-        }
-      )
+      val tmpDir  = Files.createTempDirectory("createDirectory")
+      val created = Files.createDirectory(tmpDir.resolve("x"), new FilePermissions("rwx------"))
       assert(
         Files.getPosixFilePermissions(created) === PosixFilePermissions.fromString("rwx------")
       )
@@ -432,13 +417,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     "permissions" in {
       val dir  = Files.createTempDirectory("createFile")
       val file = dir.resolve("foo.txt")
-      val permission = new FileAttribute[JavaSet[PosixFilePermission]] {
-        override def name(): String = "posix:permissions"
-
-        override def value(): JavaSet[PosixFilePermission] =
-          PosixFilePermissions.fromString("rwxrwxrwx")
-      }
-      assert(Files.createFile(file, permission) === file)
+      assert(Files.createFile(file, new FilePermissions("rwxrwxrwx")) === file)
       assert(Files.getPosixFilePermissions(file) === PosixFilePermissions.fromString("rwxr-xr-x"))
     }
 
@@ -474,36 +453,60 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     assert(Files.notExists(link2))
   }
 
-  "createSymbolicLink(Path, Path, FileAttribute[_])" in {
-    val sourceDir = Files.createTempDirectory("source")
-    val targetDir = Files.createTempDirectory("source").resolve("tmp-symlink")
-    val created   = Files.createSymbolicLink(targetDir, sourceDir)
-    assert(Files.getPosixFilePermissions(created) === PosixFilePermissions.fromString("rwx------"))
+  "createSymbolicLink(Path, Path, FileAttribute[_])" - {
+    "no attributes" in {
+      val sourceDir = Files.createTempDirectory("source")
+      val targetDir = Files.createTempDirectory("source").resolve("tmp-symlink")
+      val created   = Files.createSymbolicLink(targetDir, sourceDir)
+      assert(
+        Files.getPosixFilePermissions(created) === PosixFilePermissions.fromString("rwx------")
+      )
 
-    assert(Files.isSymbolicLink(created))
-    assert(Files.exists(created))
+      assert(Files.isSymbolicLink(created))
+      assert(Files.exists(created))
 
-    assertThrows[FileAlreadyExistsException] {
-      Files.createSymbolicLink(sourceDir, targetDir)
+      assertThrows[FileAlreadyExistsException] {
+        Files.createSymbolicLink(sourceDir, targetDir)
+      }
+    }
+
+    "permissions not supported on symbolic link" in {
+      val sourceDir = Files.createTempDirectory("source")
+      val targetDir = Files.createTempDirectory("source").resolve("tmp-symlink")
+      assertThrows[UnsupportedOperationException] {
+        Files.createSymbolicLink(targetDir, sourceDir, new FilePermissions("rwxrwxrwx"))
+      }
+    }
+
+    "unsupported attributes" in {
+      unsupportedInitialAttributes.foreach { key =>
+        val sourceDir = Files.createTempDirectory("source")
+        val targetDir = Files.createTempDirectory("source").resolve("tmp-symlink")
+        assertThrows[UnsupportedOperationException] {
+          Files.createSymbolicLink(targetDir, sourceDir, new ConstantFileAttributes(key))
+        }
+      }
     }
   }
 
-  "createTempDirectory(Path, String, FileAttribute[_])" in {
-    val base    = Files.createTempDirectory("more")
-    val tempDir = Files.createTempDirectory(base, "foobar")
-    assert("/more[^/]+/foobar[^/]+$".r.findFirstIn(tempDir.toString).isDefined)
-    assert(Files.exists(tempDir))
-    assert(Files.isDirectory(tempDir))
-    assert(Files.getPosixFilePermissions(tempDir) === PosixFilePermissions.fromString("rwx------"))
+  "createTempDirectory(Path, String, FileAttribute[_])" - {
+    "no attributes" in {
+      val base    = Files.createTempDirectory("more")
+      val tempDir = Files.createTempDirectory(base, "foobar")
+      assert("/more[^/]+/foobar[^/]+$".r.findFirstIn(tempDir.toString).isDefined)
+      assert(Files.exists(tempDir))
+      assert(Files.isDirectory(tempDir))
+      assert(
+        Files.getPosixFilePermissions(tempDir) === PosixFilePermissions.fromString("rwx------")
+      )
 
-    val tmpDir2 = Files.createTempDirectory(
-      base,
-      "foobar2",
-      PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwxrwxrwx"))
-    )
-    assert(Files.exists(tmpDir2))
-    assert(Files.isDirectory(tmpDir2))
-    assert(Files.getPosixFilePermissions(tmpDir2) === PosixFilePermissions.fromString("rwxr-xr-x"))
+      val tmpDir2 = Files.createTempDirectory(base, "foobar2", new FilePermissions("rwxrwxrwx"))
+      assert(Files.exists(tmpDir2))
+      assert(Files.isDirectory(tmpDir2))
+      assert(
+        Files.getPosixFilePermissions(tmpDir2) === PosixFilePermissions.fromString("rwxr-xr-x")
+      )
+    }
   }
 
   "createTempDirectory(String, FileAttribute[_])" in {
@@ -513,10 +516,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     assert(Files.isDirectory(tempDir))
     assert(Files.getPosixFilePermissions(tempDir) === PosixFilePermissions.fromString("rwx------"))
 
-    val tmpDir2 = Files.createTempDirectory(
-      "foobar2",
-      PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwxrwxrwx"))
-    )
+    val tmpDir2 = Files.createTempDirectory("foobar2", new FilePermissions("rwxrwxrwx"))
     assert(Files.exists(tmpDir2))
     assert(Files.isDirectory(tmpDir2))
     assert(Files.getPosixFilePermissions(tmpDir2) === PosixFilePermissions.fromString("rwxr-xr-x"))
@@ -530,12 +530,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     assert(Files.isRegularFile(tmpFile))
     assert(Files.getPosixFilePermissions(tmpFile) === PosixFilePermissions.fromString("rw-------"))
 
-    val tmpFile2 = Files.createTempFile(
-      base,
-      "foobar",
-      ".md",
-      PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwxrwxrwx"))
-    )
+    val tmpFile2 = Files.createTempFile(base, "foobar", ".md", new FilePermissions("rwxrwxrwx"))
     assert(Files.exists(tmpFile2))
     assert(Files.isRegularFile(tmpFile2))
     assert(Files.getPosixFilePermissions(tmpFile2) === PosixFilePermissions.fromString("rwxr-xr-x"))
@@ -548,11 +543,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     assert(Files.isRegularFile(tmpFile))
     assert(Files.getPosixFilePermissions(tmpFile) === PosixFilePermissions.fromString("rw-------"))
 
-    val tmpFile2 = Files.createTempFile(
-      "foobar",
-      ".md",
-      PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwxrwxrwx"))
-    )
+    val tmpFile2 = Files.createTempFile("foobar", ".md", new FilePermissions("rwxrwxrwx"))
     assert(Files.exists(tmpFile2))
     assert(Files.isRegularFile(tmpFile2))
     assert(Files.getPosixFilePermissions(tmpFile2) === PosixFilePermissions.fromString("rwxr-xr-x"))
@@ -2187,4 +2178,10 @@ class BaseCountingPathCollector extends FileVisitor[Path] {
 
 class ConstantFileAttributes(val name: String) extends FileAttribute[Boolean] {
   override def value(): Boolean = true
+}
+
+class FilePermissions(perms: String) extends FileAttribute[JavaSet[PosixFilePermission]] {
+  override def name(): String = "posix:permissions"
+
+  override def value(): JavaSet[PosixFilePermission] = PosixFilePermissions.fromString(perms)
 }
