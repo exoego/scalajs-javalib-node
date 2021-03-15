@@ -27,17 +27,16 @@ trait Path {
   def subpath(i: Int, i1: Int): Path = ???
 
   def startsWith(path: Path): Boolean   = ???
-  def startsWith(path: String): Boolean = ???
+  def startsWith(path: String): Boolean = startsWith(Paths.get(path))
 
   def endsWith(path: Path): Boolean   = ???
-  def endsWith(path: String): Boolean = ???
+  def endsWith(path: String): Boolean = startsWith(Paths.get(path))
 
   def normalize(): Path = ???
 
-  def resolve(other: String): Path = {
-    val file = new File(this.toString, other)
-    PathHelper.fromFile(file)
-  }
+  def resolve(other: Path): Path   = ???
+  def resolve(other: String): Path = Paths.get(this.toString, other)
+
   def resolveSibling(other: Path): Path = {
     if (other == null) throw new NullPointerException
     this.getParent match {
@@ -45,10 +44,7 @@ trait Path {
       case parent => parent.resolve(other)
     }
   }
-  def resolveSibling(other: String): Path = {
-    this.resolveSibling(this.getFileSystem.getPath(other))
-  }
-  def resolve(other: Path): Path = ???
+  def resolveSibling(other: String): Path = this.resolveSibling(Paths.get(other))
 
   def relativize(path: Path): Path = ???
 
