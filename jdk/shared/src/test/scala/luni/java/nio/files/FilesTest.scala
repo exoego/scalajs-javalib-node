@@ -420,20 +420,50 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     }
   }
 
-  "createFile(Path, FileAttribute[_]*)" in {
-    val dir  = Files.createTempDirectory("createFile")
-    val file = dir.resolve("foo.txt")
-    assert(Files.notExists(file))
-    assert(Files.createFile(file) === file)
-    assert(Files.getPosixFilePermissions(file) === PosixFilePermissions.fromString("rw-r--r--"))
-    assert(Files.exists(file))
-    assertThrows[FileAlreadyExistsException] {
-      Files.createFile(file)
+  "createFile(Path, FileAttribute[_]*)" - {
+    "no attributes" in {
+      val dir  = Files.createTempDirectory("createFile")
+      val file = dir.resolve("foo.txt")
+      assert(Files.notExists(file))
+      assert(Files.createFile(file) === file)
+      assert(Files.getPosixFilePermissions(file) === PosixFilePermissions.fromString("rw-r--r--"))
+      assert(Files.exists(file))
+      assertThrows[FileAlreadyExistsException] {
+        Files.createFile(file)
+      }
+
+      val nonExistSubDir = dir.resolve("sub")
+      assertThrows[IOException] {
+        Files.createFile(nonExistSubDir.resolve("bar.txt"))
+      }
     }
 
-    val nonExistSubDir = dir.resolve("sub")
-    assertThrows[IOException] {
-      Files.createFile(nonExistSubDir.resolve("bar.txt"))
+    "permissions" in {
+      val dir  = Files.createTempDirectory("createFile")
+      val file = dir.resolve("foo.txt")
+      val permission = new FileAttribute[JavaSet[PosixFilePermission]] {
+        override def name(): String = "posix:permissions"
+
+        override def value(): JavaSet[PosixFilePermission] =
+          PosixFilePermissions.fromString("rwxrwxrwx")
+      }
+      assert(Files.createFile(file, permission) === file)
+      assert(Files.getPosixFilePermissions(file) === PosixFilePermissions.fromString("rwxr-xr-x"))
+    }
+
+    "unsupported attributes" in {
+      val tmpDir = Files.createTempDirectory("createDirectory")
+      unsupportedInitialAttributes.foreach { key =>
+        assertThrows[UnsupportedOperationException] {
+          Files.createFile(
+            tmpDir.resolve("x"),
+            new FileAttribute[Boolean] {
+              override def name(): String   = key
+              override def value(): Boolean = true
+            }
+          )
+        }
+      }
     }
   }
 

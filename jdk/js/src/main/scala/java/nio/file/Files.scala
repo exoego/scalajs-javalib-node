@@ -142,13 +142,17 @@ object Files {
   }
 
   @varargs def createFile(path: Path, attrs: FileAttribute[_]*): Path = {
-    // TODO: attrs
+    validateUnsupportedAttributes(attrs)
     try {
       fs.Fs.writeFileSync(
         path.toString,
         "",
         fs.FileAppendOptions(
-          flag = "wx"
+          flag = "wx",
+          mode = toNodejsFileMode(
+            attrs,
+            fs.Fs.constants.S_IRUSR | fs.Fs.constants.S_IWUSR | fs.Fs.constants.S_IRGRP | fs.Fs.constants.S_IROTH
+          )
         )
       )
     } catch {
