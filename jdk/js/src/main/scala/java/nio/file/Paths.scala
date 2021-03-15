@@ -17,6 +17,6 @@ object Paths {
     if (joined.contains('\u0000')) {
       throw new InvalidPathException("", "Nul character not allowed")
     }
-    new File(joined).toPath()
+    PathHelper.fromString(joined)
   }
 }

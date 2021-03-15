@@ -43,12 +43,12 @@ object FileHelper {
     new File(tmpdir)
   }
 
-  def getPermissionCode(file: File): Int = {
-    Fs.statSync(file.getPath()).mode & Integer.parseInt("777", 8)
+  def getPermissionCode(path: Path): Int = {
+    Fs.statSync(path.toString).mode & Integer.parseInt("777", 8)
   }
 
   def getPermissions(path: Path): java.util.Set[PosixFilePermission] = {
-    val code = getPermissionCode(path.toFile())
+    val code = getPermissionCode(path)
     val set  = new java.util.HashSet[PosixFilePermission]()
     if ((code & READ_BY_OWNER) > 0) {
       set.add(PosixFilePermission.OWNER_READ)
