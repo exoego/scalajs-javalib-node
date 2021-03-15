@@ -5,6 +5,18 @@ import scala.annotation.varargs
 
 object Paths {
   @varargs def get(first: String, more: String*): Path = {
-    new File((first +: more).mkString(File.separator)).toPath()
+    val joined = if (more.isEmpty) {
+      first
+    } else {
+      val elements = first +: more
+      if (elements.contains(null)) {
+        throw new NullPointerException
+      }
+      elements.filter(_.nonEmpty).mkString(File.separator)
+    }
+    if (joined.contains('\u0000')) {
+      throw new InvalidPathException("", "Nul character not allowed")
+    }
+    new File(joined).toPath()
   }
 }
