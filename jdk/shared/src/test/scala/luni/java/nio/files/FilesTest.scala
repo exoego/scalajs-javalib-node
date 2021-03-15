@@ -1235,8 +1235,8 @@ class FilesTest extends AnyFreeSpec with TestSupport {
       assert(dirAttr.creationTime().toMillis > 0L)
       assert(dirAttr.lastAccessTime().toMillis > 0L)
       assert(dirAttr.lastModifiedTime().toMillis > 0L)
-      assert(dirAttr.lastAccessTime().compareTo(dirAttr.creationTime()) > 0)
-      assert(dirAttr.lastModifiedTime().compareTo(dirAttr.creationTime()) > 0)
+      assert(dirAttr.lastAccessTime().compareTo(dirAttr.creationTime()) >= 0)
+      assert(dirAttr.lastModifiedTime().compareTo(dirAttr.creationTime()) >= 0)
     }
 
     // symbolic link with NOFOLLOW_LINK
@@ -1278,8 +1278,8 @@ class FilesTest extends AnyFreeSpec with TestSupport {
         assert(fileAttr.creationTime().toMillis > 0L)
         assert(fileAttr.lastAccessTime().toMillis > 0L)
         assert(fileAttr.lastModifiedTime().toMillis > 0L)
-        assert(fileAttr.lastAccessTime().compareTo(fileAttr.creationTime()) > 0)
-        assert(fileAttr.lastModifiedTime().compareTo(fileAttr.creationTime()) > 0)
+        assert(fileAttr.lastAccessTime().compareTo(fileAttr.creationTime()) >= 0)
+        assert(fileAttr.lastModifiedTime().compareTo(fileAttr.creationTime()) >= 0)
       }
     }
 
