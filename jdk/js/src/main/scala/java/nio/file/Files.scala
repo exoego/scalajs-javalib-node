@@ -103,7 +103,7 @@ object Files {
   }
 
   @varargs def createDirectories(dir: Path, attrs: FileAttribute[_]*): Path = {
-    validateUnsupportedAttributes(attrs)
+    validateInitialFileAttributes(attrs)
     val dirStr = dir.toString
     createDirectoryImpl(dirStr, attrs, recursive = true)
     dir
@@ -128,7 +128,7 @@ object Files {
     )
 
   @varargs def createDirectory(dir: Path, attrs: FileAttribute[_]*): Path = {
-    validateUnsupportedAttributes(attrs)
+    validateInitialFileAttributes(attrs)
     val dirStr = dir.toString
     if (Files.exists(dir)) {
       throw new FileAlreadyExistsException(dirStr)
@@ -142,7 +142,7 @@ object Files {
   }
 
   @varargs def createFile(path: Path, attrs: FileAttribute[_]*): Path = {
-    validateUnsupportedAttributes(attrs)
+    validateInitialFileAttributes(attrs)
     try {
       fs.Fs.writeFileSync(
         path.toString,
@@ -206,6 +206,7 @@ object Files {
       prefix: String,
       attrs: Seq[FileAttribute[_]]
   ): Path = {
+    validateInitialFileAttributes(attrs)
     val joined = path.Path.join(dir, getRandomId(prefix, ""))
     val mode = toNodejsFileMode(
       attrs,
@@ -237,7 +238,7 @@ object Files {
     s"${prefix}${random}${suffix2}"
   }
 
-  private def validateUnsupportedAttributes(attrs: Seq[FileAttribute[_]]): Unit = {
+  private def validateInitialFileAttributes(attrs: Seq[FileAttribute[_]]): Unit = {
     attrs.find(_.name() != "posix:permissions").foreach { attr =>
       throw new UnsupportedOperationException(
         s"`${attr.name()}` not supported as initial attribute"
@@ -276,6 +277,7 @@ object Files {
       suffix: String,
       attrs: Seq[FileAttribute[_]]
   ): Path = {
+    validateInitialFileAttributes(attrs)
     val fileName = getRandomId(prefix, suffix)
     val joined   = path.Path.join(dir, fileName)
     val fileMode = toNodejsFileMode(attrs, fs.Fs.constants.S_IRUSR | fs.Fs.constants.S_IWUSR)

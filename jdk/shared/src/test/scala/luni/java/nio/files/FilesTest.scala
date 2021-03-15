@@ -499,54 +499,116 @@ class FilesTest extends AnyFreeSpec with TestSupport {
       assert(
         Files.getPosixFilePermissions(tempDir) === PosixFilePermissions.fromString("rwx------")
       )
+    }
 
-      val tmpDir2 = Files.createTempDirectory(base, "foobar2", new FilePermissions("rwxrwxrwx"))
-      assert(Files.exists(tmpDir2))
-      assert(Files.isDirectory(tmpDir2))
+    "permissions" in {
+      val base = Files.createTempDirectory("more")
+      val created =
+        Files.createTempDirectory(base, "createDirectory", new FilePermissions("rwxrwxrwx"))
       assert(
-        Files.getPosixFilePermissions(tmpDir2) === PosixFilePermissions.fromString("rwxr-xr-x")
+        Files.getPosixFilePermissions(created) === PosixFilePermissions.fromString("rwxr-xr-x")
       )
+      assert(Files.isDirectory(created))
+    }
+
+    "unsupported attributes" in {
+      val base = Files.createTempDirectory("more")
+      unsupportedInitialAttributes.foreach { key =>
+        assertThrows[UnsupportedOperationException] {
+          Files.createTempDirectory(base, "x", new ConstantFileAttributes(key))
+        }
+      }
     }
   }
 
-  "createTempDirectory(String, FileAttribute[_])" in {
-    val tempDir = Files.createTempDirectory("foobar")
-    assert(tempDir.toString.contains("/foobar"))
-    assert(Files.exists(tempDir))
-    assert(Files.isDirectory(tempDir))
-    assert(Files.getPosixFilePermissions(tempDir) === PosixFilePermissions.fromString("rwx------"))
+  "createTempDirectory(String, FileAttribute[_])" - {
+    "no attributes" in {
+      val tempDir = Files.createTempDirectory("foobar")
+      assert(tempDir.toString.contains("/foobar"))
+      assert(Files.exists(tempDir))
+      assert(Files.isDirectory(tempDir))
+      assert(
+        Files.getPosixFilePermissions(tempDir) === PosixFilePermissions.fromString("rwx------")
+      )
+    }
 
-    val tmpDir2 = Files.createTempDirectory("foobar2", new FilePermissions("rwxrwxrwx"))
-    assert(Files.exists(tmpDir2))
-    assert(Files.isDirectory(tmpDir2))
-    assert(Files.getPosixFilePermissions(tmpDir2) === PosixFilePermissions.fromString("rwxr-xr-x"))
+    "permissions" in {
+      val created = Files.createTempDirectory("createDirectory", new FilePermissions("rwxrwxrwx"))
+      assert(
+        Files.getPosixFilePermissions(created) === PosixFilePermissions.fromString("rwxr-xr-x")
+      )
+      assert(Files.isDirectory(created))
+    }
+
+    "unsupported attributes" in {
+      unsupportedInitialAttributes.foreach { key =>
+        assertThrows[UnsupportedOperationException] {
+          Files.createTempDirectory("x", new ConstantFileAttributes(key))
+        }
+      }
+    }
   }
 
-  "createTempFile(Path, String, String, FileAttribute[_])" in {
-    val base    = Files.createTempDirectory("more")
-    val tmpFile = Files.createTempFile(base, "foobar", ".txt")
-    assert("/more[^/]+/foobar[^/]+\\.txt$".r.findFirstIn(tmpFile.toString).isDefined)
-    assert(Files.exists(tmpFile))
-    assert(Files.isRegularFile(tmpFile))
-    assert(Files.getPosixFilePermissions(tmpFile) === PosixFilePermissions.fromString("rw-------"))
+  "createTempFile(Path, String, String, FileAttribute[_])" - {
+    "no attributes" in {
+      val base    = Files.createTempDirectory("more")
+      val tmpFile = Files.createTempFile(base, "foobar", ".txt")
+      assert("/more[^/]+/foobar[^/]+\\.txt$".r.findFirstIn(tmpFile.toString).isDefined)
+      assert(Files.exists(tmpFile))
+      assert(Files.isRegularFile(tmpFile))
+      assert(
+        Files.getPosixFilePermissions(tmpFile) === PosixFilePermissions.fromString("rw-------")
+      )
+    }
 
-    val tmpFile2 = Files.createTempFile(base, "foobar", ".md", new FilePermissions("rwxrwxrwx"))
-    assert(Files.exists(tmpFile2))
-    assert(Files.isRegularFile(tmpFile2))
-    assert(Files.getPosixFilePermissions(tmpFile2) === PosixFilePermissions.fromString("rwxr-xr-x"))
+    "permissions" in {
+      val base     = Files.createTempDirectory("more")
+      val tmpFile2 = Files.createTempFile(base, "foobar", ".md", new FilePermissions("rwxrwxrwx"))
+      assert(Files.exists(tmpFile2))
+      assert(Files.isRegularFile(tmpFile2))
+      assert(
+        Files.getPosixFilePermissions(tmpFile2) === PosixFilePermissions.fromString("rwxr-xr-x")
+      )
+    }
+
+    "unsupported attributes" in {
+      val base = Files.createTempDirectory("more")
+      unsupportedInitialAttributes.foreach { key =>
+        assertThrows[UnsupportedOperationException] {
+          Files.createTempFile(base, "x", "y", new ConstantFileAttributes(key))
+        }
+      }
+    }
   }
 
-  "createTempFile(String, String, FileAttribute[_])" in {
-    val tmpFile = Files.createTempFile("foobar", ".md")
-    assert("/foobar[^/]+\\.md$".r.findFirstIn(tmpFile.toString).isDefined)
-    assert(Files.exists(tmpFile))
-    assert(Files.isRegularFile(tmpFile))
-    assert(Files.getPosixFilePermissions(tmpFile) === PosixFilePermissions.fromString("rw-------"))
+  "createTempFile(String, String, FileAttribute[_])" - {
+    "no attributes" in {
+      val tmpFile = Files.createTempFile("foobar", ".md")
+      assert("/foobar[^/]+\\.md$".r.findFirstIn(tmpFile.toString).isDefined)
+      assert(Files.exists(tmpFile))
+      assert(Files.isRegularFile(tmpFile))
+      assert(
+        Files.getPosixFilePermissions(tmpFile) === PosixFilePermissions.fromString("rw-------")
+      )
+    }
 
-    val tmpFile2 = Files.createTempFile("foobar", ".md", new FilePermissions("rwxrwxrwx"))
-    assert(Files.exists(tmpFile2))
-    assert(Files.isRegularFile(tmpFile2))
-    assert(Files.getPosixFilePermissions(tmpFile2) === PosixFilePermissions.fromString("rwxr-xr-x"))
+    "permissions" in {
+      val tmpFile2 = Files.createTempFile("foobar", ".md", new FilePermissions("rwxrwxrwx"))
+      assert(Files.exists(tmpFile2))
+      assert(Files.isRegularFile(tmpFile2))
+      assert(
+        Files.getPosixFilePermissions(tmpFile2) === PosixFilePermissions.fromString("rwxr-xr-x")
+      )
+    }
+
+    "unsupported attributes" in {
+      val base = Files.createTempDirectory("more")
+      unsupportedInitialAttributes.foreach { key =>
+        assertThrows[UnsupportedOperationException] {
+          Files.createTempFile("x", "y", new ConstantFileAttributes(key))
+        }
+      }
+    }
   }
 
   "delete(Path)" in {
