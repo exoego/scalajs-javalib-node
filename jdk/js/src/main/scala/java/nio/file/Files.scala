@@ -103,21 +103,38 @@ object Files {
   }
 
   @varargs def createDirectories(dir: Path, attrs: FileAttribute[_]*): Path = {
+    validateUnsupportedAttributes(attrs)
     val dirStr = dir.toString
-    fs.Fs.mkdirSync(dirStr, fs.MkdirOptions(recursive = true))
-    // TODO: attrs
+    createDirectoryImpl(dirStr, attrs, recursive = true)
     dir
   }
 
+  private def createDirectoryImpl(
+      dir: String,
+      attrs: Seq[FileAttribute[_]],
+      recursive: Boolean
+  ): Unit =
+    fs.Fs.mkdirSync(
+      dir,
+      fs.MkdirOptions(
+        recursive = recursive,
+        mode = toNodejsFileMode(
+          attrs,
+          fs.Fs.constants.S_IRUSR | fs.Fs.constants.S_IWUSR | fs.Fs.constants.S_IXUSR |
+            fs.Fs.constants.S_IRGRP | fs.Fs.constants.S_IXGRP |
+            fs.Fs.constants.S_IROTH | fs.Fs.constants.S_IXOTH
+        )
+      )
+    )
+
   @varargs def createDirectory(dir: Path, attrs: FileAttribute[_]*): Path = {
+    validateUnsupportedAttributes(attrs)
     val dirStr = dir.toString
     if (Files.exists(dir)) {
       throw new FileAlreadyExistsException(dirStr)
     }
-
     try {
-      fs.Fs.mkdirSync(dirStr)
-      // TODO: attrs
+      createDirectoryImpl(dirStr, attrs, recursive = false)
     } catch {
       case _: Throwable => throw new NoSuchFileException(dirStr)
     }
@@ -210,6 +227,14 @@ object Files {
     val random  = Random.between(1000000000000000000L, Long.MaxValue)
     val suffix2 = if (suffix == null) ".tmp" else suffix
     s"${prefix}${random}${suffix2}"
+  }
+
+  private def validateUnsupportedAttributes(attrs: Seq[FileAttribute[_]]): Unit = {
+    attrs.find(_.name() != "posix:permissions").foreach { attr =>
+      throw new UnsupportedOperationException(
+        s"`${attr.name()}` not supported as initial attribute"
+      )
+    }
   }
 
   private def toNodejsFileMode(attrs: Seq[FileAttribute[_]], default: Int): Int = {

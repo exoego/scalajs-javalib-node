@@ -3,6 +3,7 @@ package luni.java.nio.files
 import org.scalatest.freespec.AnyFreeSpec
 import support.TestSupport
 
+import java.util.{Set => JavaSet}
 import java.io._
 import java.nio.charset.Charset
 import java.nio.file._
@@ -49,6 +50,19 @@ class FilesTest extends AnyFreeSpec with TestSupport {
   private val noSuchFileInDir = Paths.get("project", "no-such-file")
   private val noSuchFile      = Paths.get("no-such-file")
   private val noSuchSubDir    = Paths.get("no-such-dir/no-such-sub")
+
+  private val unsupportedInitialAttributes = Seq(
+    "nosuchattr",
+    "isDirectory",
+    "isOther",
+    "isRegularFile",
+    "isSymbolicLink",
+    "size",
+    "fileKey",
+    "creationTime",
+    "lastAccessTime",
+    "lastModifiedTime"
+  )
 
   "copy(InputStream, Path, CopyOption*)" - {
     "default options" in {
@@ -296,40 +310,113 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     }
   }
 
-  "createDirectories(Path, FileAttribute[_]*)" in {
-    val tmpDir = Files.createTempDirectory("createDirectories")
-    // No throw
-    Files.createDirectories(tmpDir)
+  "createDirectories(Path, FileAttribute[_]*)" - {
+    "no attributes" in {
+      val tmpDir = Files.createTempDirectory("createDirectories")
+      // No throw
+      Files.createDirectories(tmpDir)
 
-    val created = Files.createDirectories(tmpDir.resolve("sub"))
-    assert(Files.getPosixFilePermissions(created) === PosixFilePermissions.fromString("rwxr-xr-x"))
-    assert(Files.exists(created))
-    assert(Files.isDirectory(created))
-    assert(created.getFileName.toString === "sub")
+      val created = Files.createDirectories(tmpDir.resolve("sub"))
+      assert(
+        Files.getPosixFilePermissions(created) === PosixFilePermissions.fromString("rwxr-xr-x")
+      )
+      assert(Files.exists(created))
+      assert(Files.isDirectory(created))
+      assert(created.getFileName.toString === "sub")
 
-    val nestedPath = tmpDir.resolve("1").resolve("2").resolve("3")
-    assert(Files.notExists(nestedPath))
-    val createdDeep = Files.createDirectories(nestedPath)
-    assert(Files.exists(createdDeep))
-    assert(Files.isDirectory(createdDeep))
-  }
-
-  "createDirectory(Path, FileAttribute[_]*)" in {
-    val tmpDir = Files.createTempDirectory("createDirectory")
-    assertThrows[FileAlreadyExistsException] {
-      Files.createDirectory(tmpDir)
+      val nestedPath = tmpDir.resolve("1").resolve("2").resolve("3")
+      assert(Files.notExists(nestedPath))
+      val createdDeep = Files.createDirectories(nestedPath)
+      assert(Files.exists(createdDeep))
+      assert(Files.isDirectory(createdDeep))
     }
 
-    val created = Files.createDirectory(tmpDir.resolve("sub"))
-    assert(Files.getPosixFilePermissions(created) === PosixFilePermissions.fromString("rwxr-xr-x"))
-    assert(Files.exists(created))
-    assert(Files.isDirectory(created))
-    assert(created.getFileName.toString === "sub")
+    "file-attributes to set atomically when creating the directory" in {
+      val tmpDir = Files.createTempDirectory("createDirectory")
+      val created = Files.createDirectories(
+        tmpDir.resolve("x").resolve("y").resolve("z"),
+        new FileAttribute[JavaSet[PosixFilePermission]] {
+          override def name(): String = "posix:permissions"
 
-    val nestedPath = tmpDir.resolve("1").resolve("2").resolve("3")
-    assert(Files.notExists(nestedPath))
-    assertThrows[NoSuchFileException] {
-      Files.createDirectory(nestedPath)
+          override def value(): JavaSet[PosixFilePermission] =
+            PosixFilePermissions.fromString("rwx------")
+        }
+      )
+      assert(
+        Files.getPosixFilePermissions(created) === PosixFilePermissions.fromString("rwx------")
+      )
+      assert(Files.exists(created))
+    }
+
+    "unsupported attributes" in {
+      val tmpDir = Files.createTempDirectory("createDirectory")
+
+      unsupportedInitialAttributes.foreach { key =>
+        assertThrows[UnsupportedOperationException] {
+          Files.createDirectories(
+            tmpDir.resolve("x").resolve("y").resolve("z"),
+            new FileAttribute[Boolean] {
+              override def name(): String   = key
+              override def value(): Boolean = true
+            }
+          )
+        }
+      }
+    }
+  }
+
+  "createDirectory(Path, FileAttribute[_]*)" - {
+    "no attributes" in {
+      val tmpDir = Files.createTempDirectory("createDirectory")
+      assertThrows[FileAlreadyExistsException] {
+        Files.createDirectory(tmpDir)
+      }
+
+      val created = Files.createDirectory(tmpDir.resolve("sub"))
+      assert(
+        Files.getPosixFilePermissions(created) === PosixFilePermissions.fromString("rwxr-xr-x")
+      )
+      assert(Files.exists(created))
+      assert(Files.isDirectory(created))
+      assert(created.getFileName.toString === "sub")
+
+      val nestedPath = tmpDir.resolve("1").resolve("2").resolve("3")
+      assert(Files.notExists(nestedPath))
+      assertThrows[NoSuchFileException] {
+        Files.createDirectory(nestedPath)
+      }
+    }
+
+    "file-attributes to set atomically when creating the directory" in {
+      val tmpDir = Files.createTempDirectory("createDirectory")
+      val created = Files.createDirectory(
+        tmpDir.resolve("x"),
+        new FileAttribute[JavaSet[PosixFilePermission]] {
+          override def name(): String = "posix:permissions"
+
+          override def value(): JavaSet[PosixFilePermission] =
+            PosixFilePermissions.fromString("rwx------")
+        }
+      )
+      assert(
+        Files.getPosixFilePermissions(created) === PosixFilePermissions.fromString("rwx------")
+      )
+      assert(Files.exists(created))
+    }
+
+    "unsupported attributes" in {
+      val tmpDir = Files.createTempDirectory("createDirectory")
+      unsupportedInitialAttributes.foreach { key =>
+        assertThrows[UnsupportedOperationException] {
+          Files.createDirectory(
+            tmpDir.resolve("x"),
+            new FileAttribute[Boolean] {
+              override def name(): String   = key
+              override def value(): Boolean = true
+            }
+          )
+        }
+      }
     }
   }
 
