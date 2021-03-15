@@ -18,7 +18,7 @@ class PathTest extends AnyFreeSpec {
   }
   "getFileSystem()" ignore {}
   "getName(index)" ignore {}
-  "getNameCount()" ignore {
+  "getNameCount()" in {
     assert(Paths.get("/").getNameCount === 0)
     assert(Paths.get("///").getNameCount === 0)
 
