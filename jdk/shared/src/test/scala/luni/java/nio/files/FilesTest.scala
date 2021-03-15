@@ -3,14 +3,16 @@ package luni.java.nio.files
 import org.scalatest.freespec.AnyFreeSpec
 import support.TestSupport
 
+import java.util.{Set => JavaSet}
 import java.io._
 import java.nio.charset.Charset
 import java.nio.file._
 import java.nio.file.attribute._
-import java.util.{Set => JavaSet}
+import java.nio.file.LinkOption.NOFOLLOW_LINKS
 import java.util.concurrent.TimeUnit._
 import scala.jdk.CollectionConverters._
 import scala.collection.mutable.ListBuffer
+import scala.language.reflectiveCalls
 
 class FilesTest extends AnyFreeSpec with TestSupport {
 
@@ -24,7 +26,6 @@ class FilesTest extends AnyFreeSpec with TestSupport {
   private val utf16leCharset: Charset = Charset.forName("UTF-16LE")
 
   private val directory        = Paths.get("project")
-  private val resourceRoot     = Paths.get("jdk/shared/src/test/resources")
   private val directorySource  = Paths.get("jdk/shared/src/test/resources/source")
   private val directorySymlink = Paths.get("jdk/shared/src/test/resources/symlink")
   private val subDirectory     = Paths.get("project/target")
@@ -50,31 +51,56 @@ class FilesTest extends AnyFreeSpec with TestSupport {
   private val noSuchFile      = Paths.get("no-such-file")
   private val noSuchSubDir    = Paths.get("no-such-dir/no-such-sub")
 
-  "copy(InputStream, Path, CopyOption*)" in {
-    val sourceFile = Files.createTempFile("foo", ".txt")
-    val tmpDir     = Files.createTempDirectory("foo")
-    using(new FileInputStream(sourceFile.toFile)) { in =>
-      val targetFile = tmpDir.resolve("newFile1.txt")
-      assert(Files.copy(in, targetFile) === 0)
+  private val unsupportedInitialAttributes = Seq(
+    "nosuchattr",
+    "isDirectory",
+    "isOther",
+    "isRegularFile",
+    "isSymbolicLink",
+    "size",
+    "fileKey",
+    "creationTime",
+    "lastAccessTime",
+    "lastModifiedTime"
+  )
+
+  "copy(InputStream, Path, CopyOption*)" - {
+    "default options" in {
+      val sourceFile = Files.createTempFile("foo", ".txt")
+      val tmpDir     = Files.createTempDirectory("foo")
+      using(new FileInputStream(sourceFile.toFile)) { in =>
+        val targetFile = tmpDir.resolve("newFile1.txt")
+        assert(Files.copy(in, targetFile) === 0)
+      }
+
+      Files.write(sourceFile, Seq("abc").asJava)
+      using(new FileInputStream(sourceFile.toFile)) { in =>
+        val targetFile = tmpDir.resolve("newFile2.txt")
+        assert(Files.copy(in, targetFile) === 4)
+        assert(Files.readAllLines(targetFile).asScala === Seq("abc"))
+      }
+
+      assertThrows[IOException] {
+        val closedStream = new FileInputStream(sourceFile.toFile)
+        closedStream.close()
+        Files.copy(closedStream, tmpDir.resolve("empty.txt"))
+      }
+
+      using(new FileInputStream(sourceFile.toFile)) { in =>
+        val targetFile = tmpDir.resolve("newFile1.txt")
+        assertThrows[FileAlreadyExistsException] {
+          Files.copy(in, targetFile)
+        }
+      }
     }
 
-    Files.write(sourceFile, Seq("abc").asJava)
-    using(new FileInputStream(sourceFile.toFile)) { in =>
-      val targetFile = tmpDir.resolve("newFile2.txt")
-      assert(Files.copy(in, targetFile) === 4)
-      assert(Files.readAllLines(targetFile).asScala === Seq("abc"))
-    }
-
-    assertThrows[IOException] {
-      val closedStream = new FileInputStream(sourceFile.toFile)
-      closedStream.close()
-      Files.copy(closedStream, tmpDir.resolve("empty.txt"))
-    }
-
-    using(new FileInputStream(sourceFile.toFile)) { in =>
-      val targetFile = tmpDir.resolve("newFile1.txt")
-      assertThrows[FileAlreadyExistsException] {
-        Files.copy(in, targetFile)
+    "REPLACE_EXISTING" in {
+      val sourceFile = Files.createTempFile("foo", ".txt")
+      Files.write(sourceFile, Seq("abc").asJava)
+      val targetFile = Files.createTempFile("target", ".txt")
+      using(new FileInputStream(sourceFile.toFile)) { in =>
+        assert(Files.copy(in, targetFile, StandardCopyOption.REPLACE_EXISTING) === 4)
+        assert(Files.readAllLines(targetFile).asScala === Seq("abc"))
       }
     }
   }
@@ -102,102 +128,306 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     }
   }
 
-  "copy(Path, Path, CopyOption*)" in {
-    // If source is directory, create an empty dir
-    val root        = Files.createTempDirectory("root")
-    val nonEmptyDir = Files.createTempDirectory(root, "nonEmptyDir")
-    Files.createTempFile(nonEmptyDir, "file", ".txt")
+  "copy(Path, Path, CopyOption*)" - {
+    val root = Files.createTempDirectory("root")
 
-    val targetDir = root.resolve("targetDir")
-    assert(Files.copy(nonEmptyDir, targetDir) === targetDir)
-    assert(Files.exists(targetDir))
-    assertThrows[FileAlreadyExistsException] {
-      Files.copy(nonEmptyDir, targetDir)
+    "default options" - {
+      "If source is directory, create an empty dir" in {
+        val nonEmptyDir = Files.createTempDirectory(root, "nonEmptyDir")
+        Files.createTempFile(nonEmptyDir, "file", ".txt")
+        val targetDir = root.resolve("targetDir")
+        assert(Files.copy(nonEmptyDir, targetDir) === targetDir)
+        assert(Files.exists(targetDir))
+        assertThrows[FileAlreadyExistsException] {
+          Files.copy(nonEmptyDir, targetDir)
+        }
+      }
+
+      "copy file" in {
+        val sourceFile = Files.createFile(root.resolve("foo.txt"))
+        Files.write(sourceFile, Seq("abc").asJava)
+        Files.setPosixFilePermissions(sourceFile, PosixFilePermissions.fromString("rwxrwxrwx"))
+        val newFile = root.resolve("newFile.txt")
+        assert(Files.copy(sourceFile, newFile) === newFile)
+        assert(Files.readAllLines(newFile).asScala.toSeq === Seq("abc"))
+        assert(!Files.isSameFile(sourceFile, newFile))
+        assert(
+          Files.getPosixFilePermissions(newFile) === PosixFilePermissions.fromString("rwxr-xr-x")
+        )
+        assert(Files.getPosixFilePermissions(newFile) !== Files.getPosixFilePermissions(sourceFile))
+        assertThrows[FileAlreadyExistsException] {
+          Files.copy(sourceFile, newFile)
+        }
+      }
+
+      "copy symbolic link" in {
+        val sourceFile     = Files.createFile(root.resolve("source.txt"))
+        val symbolicSource = Files.createSymbolicLink(root.resolve("symbolic"), sourceFile)
+        val newFile2       = root.resolve("newFile2.txt")
+        Files.write(sourceFile, Seq("abc").asJava)
+        assert(Files.copy(symbolicSource, newFile2) === newFile2)
+        assert(Files.readAllLines(newFile2).asScala.toSeq === Seq("abc"))
+        assert(!Files.isSameFile(symbolicSource, newFile2))
+      }
     }
 
-    // Copy file
-    val sourceFile = Files.createFile(root.resolve("foo.txt"))
-    Files.write(sourceFile, Seq("abc").asJava)
-    val newFile = root.resolve("newFile.txt")
-    assert(Files.copy(sourceFile, newFile) === newFile)
-    assert(Files.readAllLines(newFile).asScala.toSeq === Seq("abc"))
-    assert(!Files.isSameFile(sourceFile, newFile))
-    assertThrows[FileAlreadyExistsException] {
-      Files.copy(sourceFile, newFile)
+    "fail if source not exists" in {
+      val notExist = root.resolve("not-exist")
+      assertThrows[IOException] {
+        Files.copy(notExist, root)
+      }
+      assertThrows[IOException] {
+        Files.copy(notExist, notExist)
+      }
     }
 
-    // Source is symbolic link
-    val symbolicSource = Files.createSymbolicLink(
-      root.resolve("symbolic"),
-      sourceFile
-    )
-    val newFile2 = root.resolve("newFile2.txt")
-    assert(Files.copy(symbolicSource, newFile2) === newFile2)
-    assert(Files.readAllLines(newFile).asScala.toSeq === Seq("abc"))
-    assert(!Files.isSameFile(symbolicSource, newFile2))
-
-    // Fail if source not exists
-    assertThrows[IOException] {
-      Files.copy(root.resolve("not-exist"), root)
+    "no effect if same file" in {
+      Seq(Files.createTempFile("file", ".d"), root).foreach { path =>
+        Files.copy(path, path)
+      }
     }
 
-    // Do nothing if same file
-    Seq(sourceFile, root).foreach { path =>
-      Files.copy(path, path)
+    "REPLACE_EXISTING" - {
+      "source is file" - {
+        "If the target file exists, then the target file is replaced if it is not a non-empty directory" in {
+          val source     = Files.write(Files.createTempFile("source", ".md"), Seq("source").asJava)
+          val targetFile = Files.write(Files.createTempFile("target", ".md"), Seq("target").asJava)
+          assert(Files.copy(source, targetFile, StandardCopyOption.REPLACE_EXISTING) === targetFile)
+          assert(Files.readAllLines(targetFile).asScala === Seq("source"))
+
+          val targetEmptyDir = Files.createTempDirectory("emptyDir")
+          assert(
+            Files
+              .copy(source, targetEmptyDir, StandardCopyOption.REPLACE_EXISTING) === targetEmptyDir
+          )
+          assert(Files.readAllLines(targetEmptyDir).asScala === Seq("source"))
+
+          val targetNonEmptyDir = Files.createTempDirectory("nonEmptyDir")
+          Files.createFile(targetNonEmptyDir.resolve("file"))
+          assertThrows[DirectoryNotEmptyException] {
+            Files.copy(source, targetNonEmptyDir, StandardCopyOption.REPLACE_EXISTING)
+          }
+        }
+
+        "If the target file exists and is a symbolic link, then the symbolic link itself, not the target of the link, is replaced." in {
+          val source = Files.write(Files.createTempFile("source", ".md"), Seq("source").asJava)
+
+          val tmpDir  = Files.createTempDirectory("tmp")
+          val file    = Files.createTempFile("temp", "file")
+          val symlink = Files.createSymbolicLink(tmpDir.resolve("symlink"), file)
+
+          assertThrows[FileAlreadyExistsException] {
+            Files.copy(source, symlink)
+          }
+          assert(Files.copy(source, symlink, StandardCopyOption.REPLACE_EXISTING) === symlink)
+          assert(Files.readAllLines(symlink).asScala === Seq("source"))
+        }
+      }
+
+      "source is directory" - {
+        "If the target file exists, then the target file is replaced if it is not a non-empty directory" in {
+          val source = Files.createTempDirectory("tmpdir")
+          Files.createFile(source.resolve("file"))
+
+          val targetFile = Files.write(Files.createTempFile("target", ".md"), Seq("target").asJava)
+          assert(Files.copy(source, targetFile, StandardCopyOption.REPLACE_EXISTING) === targetFile)
+          assert(Files.isDirectory(targetFile))
+          assert(Files.notExists(targetFile.resolve("file")))
+
+          val targetEmptyDir = Files.createTempDirectory("emptyDir")
+          assert(
+            Files
+              .copy(source, targetEmptyDir, StandardCopyOption.REPLACE_EXISTING) === targetEmptyDir
+          )
+          assert(Files.isDirectory(targetFile))
+          assert(Files.notExists(targetFile.resolve("file")))
+
+          val targetNonEmptyDir = Files.createTempDirectory("nonEmptyDir")
+          Files.createFile(targetNonEmptyDir.resolve("file"))
+          assertThrows[DirectoryNotEmptyException] {
+            Files.copy(source, targetNonEmptyDir, StandardCopyOption.REPLACE_EXISTING)
+          }
+        }
+
+        "If the target file exists and is a symbolic link, then the symbolic link itself, not the target of the link, is replaced." in {
+          val source = Files.createTempDirectory("tmpdir")
+          Files.createFile(source.resolve("file"))
+
+          val tmpDir  = Files.createTempDirectory("tmp")
+          val file    = Files.createTempFile("temp", "file")
+          val symlink = Files.createSymbolicLink(tmpDir.resolve("symlink"), file)
+
+          assertThrows[FileAlreadyExistsException] {
+            Files.copy(source, symlink)
+          }
+          assert(Files.copy(source, symlink, StandardCopyOption.REPLACE_EXISTING) === symlink)
+          assert(Files.isDirectory(symlink))
+          assert(Files.notExists(symlink.resolve("file")))
+        }
+      }
+    }
+
+    "COPY_ATTRIBUTES" - {
+      "Minimally, the last-modified-time is copied to the target file if supported by both the source and target file stores." in {
+        val sourceFile = Files.createFile(root.resolve("copyAttributes.txt"))
+        Files.write(sourceFile, Seq("abc").asJava)
+        Files.setPosixFilePermissions(sourceFile, PosixFilePermissions.fromString("rwxrwxrwx"))
+        val newFile = root.resolve("copyAttributes_new.txt")
+        assert(Files.copy(sourceFile, newFile, StandardCopyOption.COPY_ATTRIBUTES) === newFile)
+        assert(Files.readAllLines(newFile).asScala.toSeq === Seq("abc"))
+        assert(
+          Files
+            .getLastModifiedTime(newFile)
+            .toMillis / 1000 === Files.getLastModifiedTime(sourceFile).toMillis / 1000,
+          "precision loss"
+        )
+        assert(Files.getPosixFilePermissions(newFile) === Files.getPosixFilePermissions(sourceFile))
+      }
+    }
+
+    "NOFOLLOW_LINKS" - {
+      "If the file is a symbolic link, then the symbolic link itself, not the target of the link, is copied." ignore {
+        // TODO
+        fail()
+      }
+    }
+
+    "unsupported options" in {
+      assertThrows[UnsupportedOperationException] {
+        Files.copy(
+          Files.createTempDirectory("dir"),
+          root.resolve("fail"),
+          StandardCopyOption.ATOMIC_MOVE
+        )
+      }
+      assertThrows[UnsupportedOperationException] {
+        Files.copy(
+          Files.createTempFile("file", ".md"),
+          root.resolve("fail"),
+          StandardCopyOption.ATOMIC_MOVE
+        )
+      }
     }
   }
 
-  "createDirectories(Path, FileAttribute[_]*)" in {
-    val tmpDir = Files.createTempDirectory("createDirectories")
-    // No throw
-    Files.createDirectories(tmpDir)
+  "createDirectories(Path, FileAttribute[_]*)" - {
+    "no attributes" in {
+      val tmpDir = Files.createTempDirectory("createDirectories")
+      // No throw
+      Files.createDirectories(tmpDir)
 
-    val created = Files.createDirectories(tmpDir.resolve("sub"))
-    assert(Files.getPosixFilePermissions(created) === PosixFilePermissions.fromString("rwxr-xr-x"))
-    assert(Files.exists(created))
-    assert(Files.isDirectory(created))
-    assert(created.getFileName.toString === "sub")
+      val created = Files.createDirectories(tmpDir.resolve("sub"))
+      assert(
+        Files.getPosixFilePermissions(created) === PosixFilePermissions.fromString("rwxr-xr-x")
+      )
+      assert(Files.exists(created))
+      assert(Files.isDirectory(created))
+      assert(created.getFileName.toString === "sub")
 
-    val nestedPath = tmpDir.resolve("1").resolve("2").resolve("3")
-    assert(Files.notExists(nestedPath))
-    val createdDeep = Files.createDirectories(nestedPath)
-    assert(Files.exists(createdDeep))
-    assert(Files.isDirectory(createdDeep))
+      val nestedPath = tmpDir.resolve("1").resolve("2").resolve("3")
+      assert(Files.notExists(nestedPath))
+      val createdDeep = Files.createDirectories(nestedPath)
+      assert(Files.exists(createdDeep))
+      assert(Files.isDirectory(createdDeep))
+    }
+
+    "file-attributes to set atomically when creating the directory" in {
+      val tmpDir = Files.createTempDirectory("createDirectory")
+      val created =
+        Files.createDirectories(tmpDir.resolve("x").resolve("y"), new FilePermissions("rwx------"))
+      assert(
+        Files.getPosixFilePermissions(created) === PosixFilePermissions.fromString("rwx------")
+      )
+      assert(Files.exists(created))
+    }
+
+    "unsupported attributes" in {
+      val tmpDir = Files.createTempDirectory("createDirectory")
+
+      unsupportedInitialAttributes.foreach { key =>
+        assertThrows[UnsupportedOperationException] {
+          Files.createDirectories(
+            tmpDir.resolve("x").resolve("y").resolve("z"),
+            new ConstantFileAttributes(key)
+          )
+        }
+      }
+    }
   }
 
-  "createDirectory(Path, FileAttribute[_]*)" in {
-    val tmpDir = Files.createTempDirectory("createDirectory")
-    assertThrows[FileAlreadyExistsException] {
-      Files.createDirectory(tmpDir)
+  "createDirectory(Path, FileAttribute[_]*)" - {
+    "no attributes" in {
+      val tmpDir = Files.createTempDirectory("createDirectory")
+      assertThrows[FileAlreadyExistsException] {
+        Files.createDirectory(tmpDir)
+      }
+
+      val created = Files.createDirectory(tmpDir.resolve("sub"))
+      assert(
+        Files.getPosixFilePermissions(created) === PosixFilePermissions.fromString("rwxr-xr-x")
+      )
+      assert(Files.exists(created))
+      assert(Files.isDirectory(created))
+      assert(created.getFileName.toString === "sub")
+
+      val nestedPath = tmpDir.resolve("1").resolve("2").resolve("3")
+      assert(Files.notExists(nestedPath))
+      assertThrows[NoSuchFileException] {
+        Files.createDirectory(nestedPath)
+      }
     }
 
-    val created = Files.createDirectory(tmpDir.resolve("sub"))
-    assert(Files.getPosixFilePermissions(created) === PosixFilePermissions.fromString("rwxr-xr-x"))
-    assert(Files.exists(created))
-    assert(Files.isDirectory(created))
-    assert(created.getFileName.toString === "sub")
+    "file-attributes to set atomically when creating the directory" in {
+      val tmpDir  = Files.createTempDirectory("createDirectory")
+      val created = Files.createDirectory(tmpDir.resolve("x"), new FilePermissions("rwx------"))
+      assert(
+        Files.getPosixFilePermissions(created) === PosixFilePermissions.fromString("rwx------")
+      )
+      assert(Files.exists(created))
+    }
 
-    val nestedPath = tmpDir.resolve("1").resolve("2").resolve("3")
-    assert(Files.notExists(nestedPath))
-    assertThrows[NoSuchFileException] {
-      Files.createDirectory(nestedPath)
+    "unsupported attributes" in {
+      val tmpDir = Files.createTempDirectory("createDirectory")
+      unsupportedInitialAttributes.foreach { key =>
+        assertThrows[UnsupportedOperationException] {
+          Files.createDirectory(tmpDir.resolve("x"), new ConstantFileAttributes(key))
+        }
+      }
     }
   }
 
-  "createFile(Path, FileAttribute[_]*)" in {
-    val dir  = Files.createTempDirectory("createFile")
-    val file = dir.resolve("foo.txt")
-    assert(Files.notExists(file))
-    assert(Files.createFile(file) === file)
-    assert(Files.getPosixFilePermissions(file) === PosixFilePermissions.fromString("rw-r--r--"))
-    assert(Files.exists(file))
-    assertThrows[FileAlreadyExistsException] {
-      Files.createFile(file)
+  "createFile(Path, FileAttribute[_]*)" - {
+    "no attributes" in {
+      val dir  = Files.createTempDirectory("createFile")
+      val file = dir.resolve("foo.txt")
+      assert(Files.notExists(file))
+      assert(Files.createFile(file) === file)
+      assert(Files.getPosixFilePermissions(file) === PosixFilePermissions.fromString("rw-r--r--"))
+      assert(Files.exists(file))
+      assertThrows[FileAlreadyExistsException] {
+        Files.createFile(file)
+      }
+
+      val nonExistSubDir = dir.resolve("sub")
+      assertThrows[IOException] {
+        Files.createFile(nonExistSubDir.resolve("bar.txt"))
+      }
     }
 
-    val nonExistSubDir = dir.resolve("sub")
-    assertThrows[IOException] {
-      Files.createFile(nonExistSubDir.resolve("bar.txt"))
+    "permissions" in {
+      val dir  = Files.createTempDirectory("createFile")
+      val file = dir.resolve("foo.txt")
+      assert(Files.createFile(file, new FilePermissions("rwxrwxrwx")) === file)
+      assert(Files.getPosixFilePermissions(file) === PosixFilePermissions.fromString("rwxr-xr-x"))
+    }
+
+    "unsupported attributes" in {
+      val tmpDir = Files.createTempDirectory("createDirectory")
+      unsupportedInitialAttributes.foreach { key =>
+        assertThrows[UnsupportedOperationException] {
+          Files.createFile(tmpDir.resolve("x"), new ConstantFileAttributes(key))
+        }
+      }
     }
   }
 
@@ -223,75 +453,162 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     assert(Files.notExists(link2))
   }
 
-  "createSymbolicLink(Path, Path, FileAttribute[_])" in {
-    val sourceDir = Files.createTempDirectory("source")
-    val targetDir = Files.createTempDirectory("source").resolve("tmp-symlink")
-    val created   = Files.createSymbolicLink(targetDir, sourceDir)
-    assert(Files.getPosixFilePermissions(created) === PosixFilePermissions.fromString("rwx------"))
+  "createSymbolicLink(Path, Path, FileAttribute[_])" - {
+    "no attributes" in {
+      val sourceDir = Files.createTempDirectory("source")
+      val targetDir = Files.createTempDirectory("source").resolve("tmp-symlink")
+      val created   = Files.createSymbolicLink(targetDir, sourceDir)
+      assert(
+        Files.getPosixFilePermissions(created) === PosixFilePermissions.fromString("rwx------")
+      )
 
-    assert(Files.isSymbolicLink(created))
-    assert(Files.exists(created))
+      assert(Files.isSymbolicLink(created))
+      assert(Files.exists(created))
 
-    assertThrows[FileAlreadyExistsException] {
-      Files.createSymbolicLink(sourceDir, targetDir)
+      assertThrows[FileAlreadyExistsException] {
+        Files.createSymbolicLink(sourceDir, targetDir)
+      }
+    }
+
+    "permissions not supported on symbolic link" in {
+      val sourceDir = Files.createTempDirectory("source")
+      val targetDir = Files.createTempDirectory("source").resolve("tmp-symlink")
+      assertThrows[UnsupportedOperationException] {
+        Files.createSymbolicLink(targetDir, sourceDir, new FilePermissions("rwxrwxrwx"))
+      }
+    }
+
+    "unsupported attributes" in {
+      unsupportedInitialAttributes.foreach { key =>
+        val sourceDir = Files.createTempDirectory("source")
+        val targetDir = Files.createTempDirectory("source").resolve("tmp-symlink")
+        assertThrows[UnsupportedOperationException] {
+          Files.createSymbolicLink(targetDir, sourceDir, new ConstantFileAttributes(key))
+        }
+      }
     }
   }
 
-  "createTempDirectory(Path, String, FileAttribute[_])" in {
-    val base    = Files.createTempDirectory("more")
-    val tempDir = Files.createTempDirectory(base, "foobar")
-    assert("/more[^/]+/foobar[^/]+$".r.findFirstIn(tempDir.toString).isDefined)
-    assert(Files.exists(tempDir))
-    assert(Files.isDirectory(tempDir))
-    assert(Files.getPosixFilePermissions(tempDir) === PosixFilePermissions.fromString("rwx------"))
+  "createTempDirectory(Path, String, FileAttribute[_])" - {
+    "no attributes" in {
+      val base    = Files.createTempDirectory("more")
+      val tempDir = Files.createTempDirectory(base, "foobar")
+      assert("/more[^/]+/foobar[^/]+$".r.findFirstIn(tempDir.toString).isDefined)
+      assert(Files.exists(tempDir))
+      assert(Files.isDirectory(tempDir))
+      assert(
+        Files.getPosixFilePermissions(tempDir) === PosixFilePermissions.fromString("rwx------")
+      )
+    }
 
-    // TODO: attrs
+    "permissions" in {
+      val base = Files.createTempDirectory("more")
+      val created =
+        Files.createTempDirectory(base, "createDirectory", new FilePermissions("rwxrwxrwx"))
+      assert(
+        Files.getPosixFilePermissions(created) === PosixFilePermissions.fromString("rwxr-xr-x")
+      )
+      assert(Files.isDirectory(created))
+    }
+
+    "unsupported attributes" in {
+      val base = Files.createTempDirectory("more")
+      unsupportedInitialAttributes.foreach { key =>
+        assertThrows[UnsupportedOperationException] {
+          Files.createTempDirectory(base, "x", new ConstantFileAttributes(key))
+        }
+      }
+    }
   }
 
-  "createTempDirectory(String, FileAttribute[_])" in {
-    val tempDir = Files.createTempDirectory("foobar")
-    assert(tempDir.toString.contains("/foobar"))
-    assert(Files.exists(tempDir))
-    assert(Files.isDirectory(tempDir))
-    assert(Files.getPosixFilePermissions(tempDir) === PosixFilePermissions.fromString("rwx------"))
+  "createTempDirectory(String, FileAttribute[_])" - {
+    "no attributes" in {
+      val tempDir = Files.createTempDirectory("foobar")
+      assert(tempDir.toString.contains("/foobar"))
+      assert(Files.exists(tempDir))
+      assert(Files.isDirectory(tempDir))
+      assert(
+        Files.getPosixFilePermissions(tempDir) === PosixFilePermissions.fromString("rwx------")
+      )
+    }
 
-    // TODO: attrs
+    "permissions" in {
+      val created = Files.createTempDirectory("createDirectory", new FilePermissions("rwxrwxrwx"))
+      assert(
+        Files.getPosixFilePermissions(created) === PosixFilePermissions.fromString("rwxr-xr-x")
+      )
+      assert(Files.isDirectory(created))
+    }
+
+    "unsupported attributes" in {
+      unsupportedInitialAttributes.foreach { key =>
+        assertThrows[UnsupportedOperationException] {
+          Files.createTempDirectory("x", new ConstantFileAttributes(key))
+        }
+      }
+    }
   }
 
-  "createTempFile(Path, String, String, FileAttribute[_])" in {
-    val base    = Files.createTempDirectory("more")
-    val tmpFile = Files.createTempFile(base, "foobar", ".txt")
-    assert("/more[^/]+/foobar[^/]+\\.txt$".r.findFirstIn(tmpFile.toString).isDefined)
-    assert(Files.exists(tmpFile))
-    assert(Files.isRegularFile(tmpFile))
-    assert(Files.getPosixFilePermissions(tmpFile) === PosixFilePermissions.fromString("rw-------"))
+  "createTempFile(Path, String, String, FileAttribute[_])" - {
+    "no attributes" in {
+      val base    = Files.createTempDirectory("more")
+      val tmpFile = Files.createTempFile(base, "foobar", ".txt")
+      assert("/more[^/]+/foobar[^/]+\\.txt$".r.findFirstIn(tmpFile.toString).isDefined)
+      assert(Files.exists(tmpFile))
+      assert(Files.isRegularFile(tmpFile))
+      assert(
+        Files.getPosixFilePermissions(tmpFile) === PosixFilePermissions.fromString("rw-------")
+      )
+    }
 
-    val tmpFile2 = Files.createTempFile(
-      base,
-      "foobar",
-      ".md",
-      PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwxrwxrwx"))
-    )
-    assert(Files.exists(tmpFile2))
-    assert(Files.isRegularFile(tmpFile2))
-    assert(Files.getPosixFilePermissions(tmpFile2) === PosixFilePermissions.fromString("rwxr-xr-x"))
+    "permissions" in {
+      val base     = Files.createTempDirectory("more")
+      val tmpFile2 = Files.createTempFile(base, "foobar", ".md", new FilePermissions("rwxrwxrwx"))
+      assert(Files.exists(tmpFile2))
+      assert(Files.isRegularFile(tmpFile2))
+      assert(
+        Files.getPosixFilePermissions(tmpFile2) === PosixFilePermissions.fromString("rwxr-xr-x")
+      )
+    }
+
+    "unsupported attributes" in {
+      val base = Files.createTempDirectory("more")
+      unsupportedInitialAttributes.foreach { key =>
+        assertThrows[UnsupportedOperationException] {
+          Files.createTempFile(base, "x", "y", new ConstantFileAttributes(key))
+        }
+      }
+    }
   }
 
-  "createTempFile(String, String, FileAttribute[_])" in {
-    val tmpFile = Files.createTempFile("foobar", ".md")
-    assert("/foobar[^/]+\\.md$".r.findFirstIn(tmpFile.toString).isDefined)
-    assert(Files.exists(tmpFile))
-    assert(Files.isRegularFile(tmpFile))
-    assert(Files.getPosixFilePermissions(tmpFile) === PosixFilePermissions.fromString("rw-------"))
+  "createTempFile(String, String, FileAttribute[_])" - {
+    "no attributes" in {
+      val tmpFile = Files.createTempFile("foobar", ".md")
+      assert("/foobar[^/]+\\.md$".r.findFirstIn(tmpFile.toString).isDefined)
+      assert(Files.exists(tmpFile))
+      assert(Files.isRegularFile(tmpFile))
+      assert(
+        Files.getPosixFilePermissions(tmpFile) === PosixFilePermissions.fromString("rw-------")
+      )
+    }
 
-    val tmpFile2 = Files.createTempFile(
-      "foobar",
-      ".md",
-      PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwxrwxrwx"))
-    )
-    assert(Files.exists(tmpFile2))
-    assert(Files.isRegularFile(tmpFile2))
-    assert(Files.getPosixFilePermissions(tmpFile2) === PosixFilePermissions.fromString("rwxr-xr-x"))
+    "permissions" in {
+      val tmpFile2 = Files.createTempFile("foobar", ".md", new FilePermissions("rwxrwxrwx"))
+      assert(Files.exists(tmpFile2))
+      assert(Files.isRegularFile(tmpFile2))
+      assert(
+        Files.getPosixFilePermissions(tmpFile2) === PosixFilePermissions.fromString("rwxr-xr-x")
+      )
+    }
+
+    "unsupported attributes" in {
+      val base = Files.createTempDirectory("more")
+      unsupportedInitialAttributes.foreach { key =>
+        assertThrows[UnsupportedOperationException] {
+          Files.createTempFile("x", "y", new ConstantFileAttributes(key))
+        }
+      }
+    }
   }
 
   "delete(Path)" in {
@@ -373,16 +690,16 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     assert(!Files.exists(noSuchFileInDir))
 
     assert(Files.exists(fileInSymlink))
-    assert(Files.exists(fileInSymlink, LinkOption.NOFOLLOW_LINKS))
+    assert(Files.exists(fileInSymlink, NOFOLLOW_LINKS))
 
     assert(Files.exists(fileInSymlink))
-    assert(Files.exists(fileInSymlink, LinkOption.NOFOLLOW_LINKS))
+    assert(Files.exists(fileInSymlink, NOFOLLOW_LINKS))
 
     assert(!Files.exists(fileInDeletedSymlink))
-    assert(!Files.exists(fileInDeletedSymlink, LinkOption.NOFOLLOW_LINKS))
+    assert(!Files.exists(fileInDeletedSymlink, NOFOLLOW_LINKS))
 
     assert(!Files.exists(deletedSymlinkFile))
-    assert(Files.exists(deletedSymlinkFile, LinkOption.NOFOLLOW_LINKS))
+    assert(Files.exists(deletedSymlinkFile, NOFOLLOW_LINKS))
   }
 
   "find(Path, Int, BiPredicate[Path, BasicFileAttributes], FileVisitOption*)" ignore {
@@ -408,9 +725,17 @@ class FilesTest extends AnyFreeSpec with TestSupport {
         assert(Files.getAttribute(file, s"${prefix}isSymbolicLink") === false)
         assert(Files.getAttribute(file, s"${prefix}fileKey") !== null)
       }
+
+      assert(Files.getAttribute(file, "posix:permissions").isInstanceOf[java.util.Set[_]])
     }
 
     "invalid attribute" in {
+      assertThrows[IllegalArgumentException] {
+        Files.getAttribute(file, "permissions")
+      }
+      assertThrows[IllegalArgumentException] {
+        Files.getAttribute(file, "basic:permissions")
+      }
       assertThrows[UnsupportedOperationException] {
         Files.getAttribute(file, "unknown:lastModifiedTime")
       }
@@ -418,63 +743,101 @@ class FilesTest extends AnyFreeSpec with TestSupport {
         Files.getAttribute(file, "basic:typo")
       }
     }
-    // todo: linkoption
+
+    "linkOption" in {
+      assert(Files.getAttribute(fileInSymlink, "isRegularFile") === true)
+      assert(Files.getAttribute(fileInSymlink, "isRegularFile", NOFOLLOW_LINKS) === true)
+      assert(Files.getAttribute(symlinkText, "isRegularFile") === true)
+      assert(Files.getAttribute(symlinkText, "isRegularFile", NOFOLLOW_LINKS) === true)
+
+      assert(Files.getAttribute(directorySymlink, "isDirectory") === true)
+      assert(Files.getAttribute(directorySymlink, "isDirectory", NOFOLLOW_LINKS) === false)
+      assert(Files.getAttribute(directorySymlink, "isSymbolicLink") === false)
+      assert(Files.getAttribute(directorySymlink, "isSymbolicLink", NOFOLLOW_LINKS) === true)
+    }
   }
 
-  "getFileAttributeView[V <: FileAttributeView](Path, Class[V], LinkOption*)" in {
-    val tmpDir = Files.createTempFile("tmp", ".txt")
+  "getFileAttributeView[V <: FileAttributeView](Path, Class[V], LinkOption*)" - {
+    val posix = classOf[PosixFileAttributeView]
 
-    val view: PosixFileAttributeView =
-      Files.getFileAttributeView(tmpDir, classOf[PosixFileAttributeView])
-    assert(view.name() === "posix")
+    "default options" in {
+      val tmpDir = Files.createTempFile("tmp", ".txt")
 
-    val oldAttr = view.readAttributes()
-    assert(oldAttr.permissions() === PosixFilePermissions.fromString("rw-------"))
+      val view: PosixFileAttributeView =
+        Files.getFileAttributeView(tmpDir, posix)
+      assert(view.name() === "posix")
 
-    // oldAttr never affected by setter
-    view.setPermissions(PosixFilePermissions.fromString("rwxr-xr-x"))
-    assert(oldAttr.permissions() === PosixFilePermissions.fromString("rw-------"))
+      val oldAttr = view.readAttributes()
+      assert(oldAttr.permissions() === PosixFilePermissions.fromString("rw-------"))
 
-    val newAttr = view.readAttributes()
-    assert(newAttr.permissions() === PosixFilePermissions.fromString("rwxr-xr-x"))
+      // oldAttr never affected by setter
+      view.setPermissions(PosixFilePermissions.fromString("rwxr-xr-x"))
+      assert(oldAttr.permissions() === PosixFilePermissions.fromString("rw-------"))
 
-    val noSuchFileView = Files.getFileAttributeView(noSuchFile, classOf[PosixFileAttributeView])
-    assert(noSuchFileView.name() === "posix")
-    assertThrows[IOException] {
-      noSuchFileView.readAttributes()
+      val newAttr = view.readAttributes()
+      assert(newAttr.permissions() === PosixFilePermissions.fromString("rwxr-xr-x"))
+
+      val noSuchFileView = Files.getFileAttributeView(noSuchFile, posix)
+      assert(noSuchFileView.name() === "posix")
+      assertThrows[IOException] {
+        noSuchFileView.readAttributes()
+      }
+
+      // creation time can not be changed on JDK
+      view.setTimes(null, null, FileTime.from(1, DAYS))
+      assert(oldAttr.creationTime() !== FileTime.from(1, DAYS))
+      assert(view.readAttributes().lastModifiedTime() !== FileTime.from(3, DAYS))
+      assert(view.readAttributes().lastAccessTime() !== FileTime.from(2, DAYS))
+      assert(view.readAttributes().creationTime() !== FileTime.from(1, DAYS))
+
+      view.setTimes(null, FileTime.from(2, DAYS), null)
+      assert(oldAttr.lastAccessTime() !== FileTime.from(2, DAYS))
+      assert(view.readAttributes().lastModifiedTime() !== FileTime.from(3, DAYS))
+      assert(view.readAttributes().lastAccessTime() === FileTime.from(2, DAYS))
+      assert(view.readAttributes().creationTime() !== FileTime.from(1, DAYS))
+
+      view.setTimes(FileTime.from(3, DAYS), null, null)
+      assert(oldAttr.lastModifiedTime() !== FileTime.from(3, DAYS))
+      assert(view.readAttributes().lastModifiedTime() === FileTime.from(3, DAYS))
+      assert(view.readAttributes().lastAccessTime() === FileTime.from(2, DAYS))
+      assert(view.readAttributes().creationTime() !== FileTime.from(1, DAYS))
+
+      view.setTimes(FileTime.from(4, DAYS), FileTime.from(5, DAYS), FileTime.from(6, DAYS))
+      assert(oldAttr.lastModifiedTime() !== FileTime.from(4, DAYS))
+      assert(view.readAttributes().lastModifiedTime() === FileTime.from(4, DAYS))
+      assert(view.readAttributes().lastAccessTime() === FileTime.from(5, DAYS))
+      assert(view.readAttributes().creationTime() !== FileTime.from(6, DAYS))
     }
-
-    // creation time can not be changed on JDK
-    view.setTimes(null, null, FileTime.from(1, DAYS))
-    assert(oldAttr.creationTime() !== FileTime.from(1, DAYS))
-    assert(view.readAttributes().lastModifiedTime() !== FileTime.from(3, DAYS))
-    assert(view.readAttributes().lastAccessTime() !== FileTime.from(2, DAYS))
-    assert(view.readAttributes().creationTime() !== FileTime.from(1, DAYS))
-
-    view.setTimes(null, FileTime.from(2, DAYS), null)
-    assert(oldAttr.lastAccessTime() !== FileTime.from(2, DAYS))
-    assert(view.readAttributes().lastModifiedTime() !== FileTime.from(3, DAYS))
-    assert(view.readAttributes().lastAccessTime() === FileTime.from(2, DAYS))
-    assert(view.readAttributes().creationTime() !== FileTime.from(1, DAYS))
-
-    view.setTimes(FileTime.from(3, DAYS), null, null)
-    assert(oldAttr.lastModifiedTime() !== FileTime.from(3, DAYS))
-    assert(view.readAttributes().lastModifiedTime() === FileTime.from(3, DAYS))
-    assert(view.readAttributes().lastAccessTime() === FileTime.from(2, DAYS))
-    assert(view.readAttributes().creationTime() !== FileTime.from(1, DAYS))
-
-    view.setTimes(FileTime.from(4, DAYS), FileTime.from(5, DAYS), FileTime.from(6, DAYS))
-    assert(oldAttr.lastModifiedTime() !== FileTime.from(4, DAYS))
-    assert(view.readAttributes().lastModifiedTime() === FileTime.from(4, DAYS))
-    assert(view.readAttributes().lastAccessTime() === FileTime.from(5, DAYS))
-    assert(view.readAttributes().creationTime() !== FileTime.from(6, DAYS))
-
     // TODO: node.js can not support these
     // view.getOwner()
     // newAttr.group()
     // newAttr.owner()
 
-    // todo: linkoption
+    "linkoption" in {
+      assert(Files.getFileAttributeView(fileInSymlink, posix).readAttributes().isRegularFile)
+      assert(
+        Files
+          .getFileAttributeView(fileInSymlink, posix, NOFOLLOW_LINKS)
+          .readAttributes()
+          .isRegularFile
+      )
+      assert(Files.getFileAttributeView(symlinkText, posix).readAttributes().isRegularFile)
+      assert(
+        Files
+          .getFileAttributeView(symlinkText, posix, NOFOLLOW_LINKS)
+          .readAttributes()
+          .isRegularFile
+      )
+
+      val symlinkAttrs = Files.getFileAttributeView(directorySymlink, posix).readAttributes()
+      assert(symlinkAttrs.isDirectory)
+      assert(!symlinkAttrs.isSymbolicLink)
+      val symlinkNofollowAttrs = Files
+        .getFileAttributeView(directorySymlink, posix, NOFOLLOW_LINKS)
+        .readAttributes()
+      assert(!symlinkNofollowAttrs.isDirectory)
+      assert(symlinkNofollowAttrs.isSymbolicLink)
+    }
   }
 
   "getFileStore(Path)" ignore {
@@ -525,12 +888,11 @@ class FilesTest extends AnyFreeSpec with TestSupport {
   }
 
   "isDirectory(Path, LinkOption*)" in {
-    val option = LinkOption.NOFOLLOW_LINKS
-    assert(Files.isDirectory(directory, option))
-    assert(Files.isDirectory(directorySource, option))
-    assert(!Files.isDirectory(directorySymlink, option))
+    assert(Files.isDirectory(directory, NOFOLLOW_LINKS))
+    assert(Files.isDirectory(directorySource, NOFOLLOW_LINKS))
+    assert(!Files.isDirectory(directorySymlink, NOFOLLOW_LINKS))
 
-    assert(!Files.isDirectory(regularText, option))
+    assert(!Files.isDirectory(regularText, NOFOLLOW_LINKS))
   }
 
   "isExecutable(Path)" in {
@@ -561,18 +923,18 @@ class FilesTest extends AnyFreeSpec with TestSupport {
   "isRegularFile(Path, LinkOption*)" in {
     assert(!Files.isRegularFile(directorySource))
     assert(Files.isRegularFile(fileInSource))
-    assert(!Files.isRegularFile(directorySymlink, LinkOption.NOFOLLOW_LINKS))
-    assert(Files.isRegularFile(fileInSource, LinkOption.NOFOLLOW_LINKS))
+    assert(!Files.isRegularFile(directorySymlink, NOFOLLOW_LINKS))
+    assert(Files.isRegularFile(fileInSource, NOFOLLOW_LINKS))
 
     assert(!Files.isRegularFile(directorySymlink))
-    assert(!Files.isRegularFile(directorySymlink, LinkOption.NOFOLLOW_LINKS))
+    assert(!Files.isRegularFile(directorySymlink, NOFOLLOW_LINKS))
     assert(Files.isRegularFile(fileInSymlink))
-    assert(Files.isRegularFile(fileInSymlink, LinkOption.NOFOLLOW_LINKS))
+    assert(Files.isRegularFile(fileInSymlink, NOFOLLOW_LINKS))
 
     assert(Files.isRegularFile(regularText))
-    assert(Files.isRegularFile(regularText, LinkOption.NOFOLLOW_LINKS))
+    assert(Files.isRegularFile(regularText, NOFOLLOW_LINKS))
     assert(Files.isRegularFile(symlinkText))
-    assert(Files.isRegularFile(symlinkText, LinkOption.NOFOLLOW_LINKS))
+    assert(Files.isRegularFile(symlinkText, NOFOLLOW_LINKS))
 
     assert(!Files.isRegularFile(noSuchFile))
   }
@@ -797,16 +1159,16 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     assert(Files.notExists(noSuchFileInDir))
 
     assert(!Files.notExists(fileInSymlink))
-    assert(!Files.notExists(fileInSymlink, LinkOption.NOFOLLOW_LINKS))
+    assert(!Files.notExists(fileInSymlink, NOFOLLOW_LINKS))
 
     assert(!Files.notExists(fileInSymlink))
-    assert(!Files.notExists(fileInSymlink, LinkOption.NOFOLLOW_LINKS))
+    assert(!Files.notExists(fileInSymlink, NOFOLLOW_LINKS))
 
     assert(Files.notExists(fileInDeletedSymlink))
-    assert(Files.notExists(fileInDeletedSymlink, LinkOption.NOFOLLOW_LINKS))
+    assert(Files.notExists(fileInDeletedSymlink, NOFOLLOW_LINKS))
 
     assert(Files.notExists(deletedSymlinkFile))
-    assert(!Files.notExists(deletedSymlinkFile, LinkOption.NOFOLLOW_LINKS))
+    assert(!Files.notExists(deletedSymlinkFile, NOFOLLOW_LINKS))
   }
 
   "probeContentType(Path)" in {
@@ -881,7 +1243,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     val symAttr: BasicFileAttributes = Files.readAttributes(
       directorySymlink,
       classOf[BasicFileAttributes],
-      LinkOption.NOFOLLOW_LINKS
+      NOFOLLOW_LINKS
     )
     assert(!symAttr.isDirectory)
     assert(!symAttr.isOther)
@@ -904,7 +1266,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
 
     // files
     Seq(fileInSource, fileInHidden, fileInSymlink).foreach { file =>
-      Seq(Seq.empty[LinkOption], Seq(LinkOption.NOFOLLOW_LINKS)).foreach { options =>
+      Seq(Seq.empty[LinkOption], Seq(NOFOLLOW_LINKS)).foreach { options =>
         val fileAttr: BasicFileAttributes =
           Files.readAttributes(file, classOf[BasicFileAttributes], options: _*)
         assert(!fileAttr.isDirectory)
@@ -930,7 +1292,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
   }
 
   "readAttributes(Path, String, LinkOption*)" in {
-    // unavailabel attrs
+    // unavailable attrs
     assertThrows[IllegalArgumentException] {
       Files.readAttributes(directory, "").asScala
     }
@@ -962,7 +1324,10 @@ class FilesTest extends AnyFreeSpec with TestSupport {
         assert(dirAttr("creationTime").asInstanceOf[FileTime].toMillis > 0L)
         assert(dirAttr("lastAccessTime").asInstanceOf[FileTime].toMillis > 0L)
         assert(dirAttr("lastModifiedTime").asInstanceOf[FileTime].toMillis > 0L)
+        assert(dirAttr.get("permissions") === None)
       }
+
+      assert(Files.readAttributes(dir, "posix:permissions").asScala.apply("permissions") !== null)
 
       Seq("isDirectory", "basic:isDirectory").foreach { attrs =>
         val dirAttr = Files.readAttributes(dir, attrs).asScala
@@ -980,13 +1345,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     }
 
     // symbolic link with NOFOLLOW_LINK
-    val symAttr = Files
-      .readAttributes(
-        directorySymlink,
-        "*",
-        LinkOption.NOFOLLOW_LINKS
-      )
-      .asScala
+    val symAttr = Files.readAttributes(directorySymlink, "*", NOFOLLOW_LINKS).asScala
     assert(symAttr("isDirectory") === false)
 
     // non-exist
@@ -1030,6 +1389,11 @@ class FilesTest extends AnyFreeSpec with TestSupport {
       assert(Files.getLastModifiedTime(file) === FileTime.from(22, DAYS))
       Files.setAttribute(file, "basic:lastModifiedTime", FileTime.from(33, DAYS))
       assert(Files.getLastModifiedTime(file) === FileTime.from(33, DAYS))
+      Files.setAttribute(file, "basic:lastModifiedTime", FileTime.fromMillis(1615679182864L))
+      assert(
+        Files.getLastModifiedTime(file) === FileTime.fromMillis(1615679182000L),
+        "precision loss"
+      )
 
       Files.setAttribute(file, "lastAccessTime", FileTime.from(11, DAYS))
       assert(Files.getAttribute(file, "lastAccessTime") === FileTime.from(11, DAYS))
@@ -1037,6 +1401,17 @@ class FilesTest extends AnyFreeSpec with TestSupport {
       assert(Files.getAttribute(file, "posix:lastAccessTime") === FileTime.from(22, DAYS))
       Files.setAttribute(file, "basic:lastAccessTime", FileTime.from(33, DAYS))
       assert(Files.getAttribute(file, "basic:lastAccessTime") === FileTime.from(33, DAYS))
+      Files.setAttribute(file, "basic:lastModifiedTime", FileTime.fromMillis(1615679182864L))
+      assert(
+        Files.getAttribute(file, "basic:lastModifiedTime") === FileTime.fromMillis(1615679182000L),
+        "precision loss"
+      )
+
+      Files.setAttribute(file, "posix:permissions", PosixFilePermissions.fromString("rwxrwxrwx"))
+      assert(
+        Files.getAttribute(file, "posix:permissions") === PosixFilePermissions
+          .fromString("rwxrwxrwx")
+      )
     }
 
     "creationTime is recognized, but no effect" in {
@@ -1068,6 +1443,9 @@ class FilesTest extends AnyFreeSpec with TestSupport {
       assertThrows[IllegalArgumentException] {
         Files.setAttribute(file, "fileKey", "fobar")
       }
+      assertThrows[IllegalArgumentException] {
+        Files.setAttribute(file, "permissions", true)
+      }
     }
 
     "invalid attribute" in {
@@ -1087,20 +1465,36 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     // todo: linkoption
   }
 
-  "setLastModifiedTime(Path, FileTime)" in {
-    val file = Files.createTempFile("lastmodified", ".txt")
+  "setLastModifiedTime(Path, FileTime)" - {
+    "can work with an existing file" in {
+      val file = Files.createTempFile("lastmodified", ".txt")
 
-    assert(Files.setLastModifiedTime(file, FileTime.from(100, DAYS)) === file)
-    assert(Files.getLastModifiedTime(file) === FileTime.from(100, DAYS))
+      assert(Files.setLastModifiedTime(file, FileTime.from(100, DAYS)) === file)
+      assert(Files.getLastModifiedTime(file) === FileTime.from(100, DAYS))
 
-    assert(Files.setLastModifiedTime(file, FileTime.from(200, DAYS)) === file)
-    assert(Files.getLastModifiedTime(file) === FileTime.from(200, DAYS))
-
-    assertThrows[NullPointerException] {
-      Files.setLastModifiedTime(file, null)
+      assert(Files.setLastModifiedTime(file, FileTime.from(200, DAYS)) === file)
+      assert(Files.getLastModifiedTime(file) === FileTime.from(200, DAYS))
     }
-    assertThrows[IOException] {
-      Files.setLastModifiedTime(noSuchFile, FileTime.from(200, DAYS))
+    "can work with an existing directory" in {
+      val file = Files.createTempDirectory("lastmodified")
+
+      assert(Files.setLastModifiedTime(file, FileTime.from(100, DAYS)) === file)
+      assert(Files.getLastModifiedTime(file) === FileTime.from(100, DAYS))
+
+      assert(Files.setLastModifiedTime(file, FileTime.from(200, DAYS)) === file)
+      assert(Files.getLastModifiedTime(file) === FileTime.from(200, DAYS))
+    }
+    "reject null time" in {
+      assume(isScalaJS || isJDK11AndLater, "Java 8 does not throw NPE")
+      val file = Files.createTempFile("lastmodified", ".txt")
+      assertThrows[NullPointerException] {
+        Files.setLastModifiedTime(file, null)
+      }
+    }
+    "reject non-existent file" in {
+      assertThrows[IOException] {
+        Files.setLastModifiedTime(noSuchFile, FileTime.from(200, DAYS))
+      }
     }
   }
 
@@ -1144,105 +1538,631 @@ class FilesTest extends AnyFreeSpec with TestSupport {
       val root = Files.createTempDirectory("top")
       val dirA = Files.createDirectory(root.resolve("dirA"))
       val dirB = Files.createDirectory(dirA.resolve("dirB"))
-      val dirC = Files.createDirectory(dirB.resolve("dirC"))
-      val dirD = Files.createDirectory(dirC.resolve("dirD"))
       val dir1 = Files.createDirectory(root.resolve("dir1"))
       val dir2 = Files.createDirectory(dir1.resolve("dir2"))
-      val dir3 = Files.createDirectory(dir2.resolve("dir3"))
-      val dir4 = Files.createDirectory(dir3.resolve("dir4"))
 
-      val collector = new FileAndDirCollector()
+      val collector = new BaseCountingPathCollector()
       assert(Files.walkFileTree(root, collector) === root)
-      assert(collector.countPreVisitDirectory() === 9)
+      assert(collector.countPreVisitDirectory() === 5)
       assert(collector.countVisitFile() === 0)
       assert(collector.countVisitFileFailed() === 0)
-      assert(collector.countPostVisitDirectory() === 9)
+      assert(collector.countPostVisitDirectory() === 5)
 
-      val alphabetThenNumber = List(root, dirA, dirB, dirC, dirD, dir1, dir2, dir3, dir4)
-      val numberThenAlphabet = List(root, dir1, dir2, dir3, dir4, dirA, dirB, dirC, dirD)
-      val result             = collector.collectFiles()
-      assert(result === alphabetThenNumber || result === numberThenAlphabet)
+      val alphaThenNum = List(root, dirA, dirB, dirB, dirA, dir1, dir2, dir2, dir1, root)
+      val numThenAlpha = List(root, dir1, dir2, dir2, dir1, dirA, dirB, dirB, dirA, root)
+      assert(collector.visited === alphaThenNum || collector.visited === numThenAlpha)
     }
 
-    "terminate when preVisitDirectory return TERMINATE" in {
-      val root       = Files.createTempDirectory("top")
-      val dirA       = Files.createDirectory(root.resolve("dirA"))
-      val dirB       = Files.createDirectory(dirA.resolve("dirB"))
-      val dirC       = Files.createDirectory(dirB.resolve("dirC"))
-      val terminateD = Files.createFile(dirC.resolve("terminate"))
-      val dir1       = Files.createDirectory(root.resolve("dir1"))
-      val dir2       = Files.createDirectory(dir1.resolve("dir2"))
-      val dir3       = Files.createDirectory(dir2.resolve("dir3"))
-      val terminate4 = Files.createFile(dir3.resolve("terminate"))
+    "TERMINATE" - {
+      "terminate when preVisitDirectory return TERMINATE" in {
+        val root = Files.createTempDirectory("top")
+        val dirA = Files.createDirectory(root.resolve("dirA"))
+        val dirB = Files.createDirectory(dirA.resolve("terminate"))
 
-      val collector = new TerminateAtFileCollector()
-      assert(Files.walkFileTree(root, collector) === root)
-      assert(collector.countPreVisitDirectory() === 4)
-      assert(collector.countVisitFile() === 1)
-      assert(collector.countVisitFileFailed() === 0)
-      assert(collector.countPostVisitDirectory() === 0)
+        val collector = new BaseCountingPathCollector {
+          override def preVisitDirectoryImpl(
+              dir: Path,
+              attrs: BasicFileAttributes
+          ): FileVisitResult = {
+            if (dir == dirB) {
+              FileVisitResult.TERMINATE
+            } else {
+              FileVisitResult.CONTINUE
+            }
+          }
+        }
+        assert(Files.walkFileTree(root, collector) === root)
+        assert(collector.countPreVisitDirectory() === 3)
+        assert(collector.countVisitFile() === 0)
+        assert(collector.countVisitFileFailed() === 0)
+        assert(collector.countPostVisitDirectory() === 0)
+        assert(collector.visited === List(root, dirA, dirB))
+      }
 
-      val alphabetThenNumber = List(root, dirA, dirB, dirC)
-      val numberThenAlphabet = List(root, dir1, dir2, dir3)
-      val result             = collector.collectFiles()
-      assert(result === alphabetThenNumber || result === numberThenAlphabet)
+      "terminate when visitFile return TERMINATE" in {
+        val root  = Files.createTempDirectory("top")
+        val dirA  = Files.createDirectory(root.resolve("dirA"))
+        val dirB  = Files.createDirectory(dirA.resolve("dirB"))
+        val fileC = Files.createFile(dirB.resolve(".hidden"))
+        val fileD = Files.createFile(dirB.resolve("terminate"))
+
+        val collector = new BaseCountingPathCollector {
+          override protected def visitFileImpl(
+              file: Path,
+              attrs: BasicFileAttributes
+          ): FileVisitResult = {
+            if (file == fileD) {
+              FileVisitResult.TERMINATE
+            } else {
+              FileVisitResult.CONTINUE
+            }
+          }
+        }
+        assert(Files.walkFileTree(root, collector) === root)
+        assert(collector.countPreVisitDirectory() === 3)
+        assert(collector.countVisitFile() === 2)
+        assert(collector.countVisitFileFailed() === 0)
+        assert(collector.countPostVisitDirectory() === 0)
+        assert(collector.visited === List(root, dirA, dirB, fileC, fileD))
+      }
+
+      "terminate when visitFileFailed return TERMINATE" ignore {
+        // This method is invoked if the file's attributes could not be read,
+        // the file is a directory that could not be opened, and other reasons.
+      }
+
+      "terminate when postVisitDirectory return TERMINATE" in {
+        val root = Files.createTempDirectory("top")
+        val dirA = Files.createDirectory(root.resolve("dirA"))
+        val dirB = Files.createDirectory(dirA.resolve("terminate"))
+
+        val collector = new BaseCountingPathCollector {
+          override protected def postVisitDirectoryImpl(
+              dir: Path,
+              exc: IOException
+          ): FileVisitResult = {
+            if (dir == dirB) {
+              FileVisitResult.TERMINATE
+            } else {
+              FileVisitResult.CONTINUE
+            }
+          }
+        }
+        assert(Files.walkFileTree(root, collector) === root)
+        assert(collector.countPreVisitDirectory() === 3)
+        assert(collector.countVisitFile() === 0)
+        assert(collector.countVisitFileFailed() === 0)
+        assert(collector.countPostVisitDirectory() === 1)
+        assert(collector.visited === List(root, dirA, dirB, dirB))
+      }
     }
 
-    // todo: file SKIP_SUBTREE
-    // todo: file SKIP_SIBLINGS
-    // todo: dir TERMINATE
-    // todo: dir SKIP_SUBTREE
-    // todo: dir SKIP_SIBLINGS
-  }
-  "walkFileTree(Path, JavaSet[FileVisitOption], maxDepth:Int, FileVisitor[_ >: Path])" ignore {}
+    "SKIP_SUBTREE" - {
+      "skip sub tree when preVisitDirectory return SKIP_SUBTREE" in {
+        val root  = Files.createTempDirectory("top")
+        val dirA  = Files.createDirectory(root.resolve(".dirA"))
+        val fileB = Files.createFile(dirA.resolve("fileB"))
+        val dir1  = Files.createDirectory(root.resolve("dir1"))
+        val file2 = Files.createFile(dir1.resolve("file2"))
 
-  "write(Path, Array[Byte], OpenOption*)" in {
-    val tmpFile = Files.createTempFile("foo", ".txt")
-    assert(Files.size(tmpFile) === 0)
-    val written = Files.write(tmpFile, Array[Byte](97, 98, 99))
-    assert(written === tmpFile)
-    assert(Files.readAllLines(written).asScala.toSeq === Seq("abc"))
-    Files.write(tmpFile, Array[Byte](100, 101, 102))
-    assert(Files.size(tmpFile) === 3)
-    // Overwrite, not append
-    assert(Files.readAllLines(written).asScala.toSeq === Seq("def"))
+        val collector = new BaseCountingPathCollector {
+          override protected def preVisitDirectoryImpl(
+              dir: Path,
+              attrs: BasicFileAttributes
+          ): FileVisitResult = {
+            if (dir == dirA) {
+              FileVisitResult.SKIP_SUBTREE
+            } else {
+              FileVisitResult.CONTINUE
+            }
+          }
+        }
+        assert(Files.walkFileTree(root, collector) === root)
+        assert(collector.countPreVisitDirectory() === 3)
+        assert(collector.countVisitFile() === 1)
+        assert(collector.countVisitFileFailed() === 0)
+        assert(collector.countPostVisitDirectory() === 2)
+        assert(collector.visited === List(root, dirA, dir1, file2, dir1, root))
+      }
 
-    Files.delete(tmpFile)
-    // Create if not exists
-    Files.write(tmpFile, Array[Byte](97, 98, 99))
+      "SKIP_SUBTREE on postVisitDirectory is identical to CONTINUE" in {
+        val root  = Files.createTempDirectory("top")
+        val dirA  = Files.createDirectory(root.resolve(".dirA"))
+        val fileB = Files.createFile(dirA.resolve("fileB"))
+        val dir1  = Files.createDirectory(root.resolve("dir1"))
+        val file2 = Files.createFile(dir1.resolve("file2"))
 
-    assertThrows[IOException] {
-      Files.write(directory, Array[Byte](97, 98, 99))
+        Seq(
+          new BaseCountingPathCollector(),
+          new BaseCountingPathCollector {
+            override protected def postVisitDirectoryImpl(
+                dir: Path,
+                exc: IOException
+            ): FileVisitResult =
+              if (dir == dirA) {
+                FileVisitResult.SKIP_SUBTREE
+              } else {
+                FileVisitResult.CONTINUE
+              }
+          }
+        ).foreach { collector =>
+          assert(Files.walkFileTree(root, collector) === root)
+          assert(collector.countPreVisitDirectory() === 3)
+          assert(collector.countVisitFile() === 2)
+          assert(collector.countVisitFileFailed() === 0)
+          assert(collector.countPostVisitDirectory() === 3)
+          assert(collector.visited === List(root, dirA, fileB, dirA, dir1, file2, dir1, root))
+        }
+      }
+
+      "SKIP_SUBTREE on visitFile is identical to CONTINUE" in {
+        val root    = Files.createTempDirectory("top")
+        val dirA    = Files.createDirectory(root.resolve(".dirA"))
+        val fileB   = Files.createFile(dirA.resolve("fileB"))
+        val fileBBB = Files.createFile(dirA.resolve("fileBBB"))
+        val dir1    = Files.createDirectory(root.resolve("dir1"))
+        val file2   = Files.createFile(dir1.resolve("file2"))
+
+        Seq(
+          new BaseCountingPathCollector(),
+          new BaseCountingPathCollector {
+            override protected def visitFileImpl(
+                file: Path,
+                attrs: BasicFileAttributes
+            ): FileVisitResult =
+              if (file == fileB) {
+                FileVisitResult.SKIP_SUBTREE
+              } else {
+                FileVisitResult.CONTINUE
+              }
+          }
+        ).foreach { collector =>
+          assert(Files.walkFileTree(root, collector) === root)
+          assert(collector.countPreVisitDirectory() === 3)
+          assert(collector.countVisitFile() === 3)
+          assert(collector.countVisitFileFailed() === 0)
+          assert(collector.countPostVisitDirectory() === 3)
+          assert(
+            collector.visited === List(root, dirA, fileB, fileBBB, dirA, dir1, file2, dir1, root)
+          )
+        }
+      }
+    }
+
+    "SKIP_SIBLINGS" - {
+      "skip siblings when preVisitDirectory return SKIP_SUBTREE" in {
+        val root  = Files.createTempDirectory("top")
+        val dirA  = Files.createDirectory(root.resolve(".dirA"))
+        val fileB = Files.createFile(dirA.resolve("fileB"))
+        val dir1  = Files.createDirectory(root.resolve("dir1"))
+        val file2 = Files.createFile(dir1.resolve("file2"))
+
+        val collector = new BaseCountingPathCollector {
+          override protected def preVisitDirectoryImpl(
+              dir: Path,
+              attrs: BasicFileAttributes
+          ): FileVisitResult = {
+            if (dir == dirA) {
+              FileVisitResult.SKIP_SIBLINGS
+            } else {
+              FileVisitResult.CONTINUE
+            }
+          }
+        }
+        assert(Files.walkFileTree(root, collector) === root)
+        assert(collector.countPreVisitDirectory() === 2)
+        assert(collector.countVisitFile() === 0)
+        assert(collector.countVisitFileFailed() === 0)
+        assert(collector.countPostVisitDirectory() === 1)
+        assert(collector.visited === List(root, dirA, /* fileB, dirA, *dir1, file2, dir1, */ root))
+      }
+
+      "SKIP_SUBTREE on postVisitDirectory is identical to CONTINUE" in {
+        val root  = Files.createTempDirectory("top")
+        val dirA  = Files.createDirectory(root.resolve(".dirA"))
+        val fileB = Files.createFile(dirA.resolve("fileB"))
+        val dir1  = Files.createDirectory(root.resolve("dir1"))
+        val file2 = Files.createFile(dir1.resolve("file2"))
+
+        Seq(
+          new BaseCountingPathCollector(),
+          new BaseCountingPathCollector {
+            override protected def postVisitDirectoryImpl(
+                dir: Path,
+                exc: IOException
+            ): FileVisitResult =
+              if (dir == dirA) {
+                FileVisitResult.SKIP_SIBLINGS
+              } else {
+                FileVisitResult.CONTINUE
+              }
+          }
+        ).foreach { collector =>
+          assert(Files.walkFileTree(root, collector) === root)
+          assert(collector.countPreVisitDirectory() === 3)
+          assert(collector.countVisitFile() === 2)
+          assert(collector.countVisitFileFailed() === 0)
+          assert(collector.countPostVisitDirectory() === 3)
+          assert(collector.visited === List(root, dirA, fileB, dirA, dir1, file2, dir1, root))
+        }
+      }
+
+      "skip siblings when visitFile return SKIP_SIBLINGS" in {
+        val root    = Files.createTempDirectory("top")
+        val dirA    = Files.createDirectory(root.resolve(".dirA"))
+        val fileB   = Files.createFile(dirA.resolve("fileB"))
+        val fileBBB = Files.createFile(dirA.resolve("fileBBB"))
+
+        val collector = new BaseCountingPathCollector {
+          override protected def visitFileImpl(
+              file: Path,
+              attrs: BasicFileAttributes
+          ): FileVisitResult =
+            if (file == fileB) {
+              FileVisitResult.SKIP_SIBLINGS
+            } else {
+              FileVisitResult.CONTINUE
+            }
+        }
+        assert(Files.walkFileTree(root, collector) === root)
+        assert(collector.countPreVisitDirectory() === 2)
+        assert(collector.countVisitFile() === 1)
+        assert(collector.countVisitFileFailed() === 0)
+        assert(collector.countPostVisitDirectory() === 2)
+        assert(collector.visited === List(root, dirA, fileB, dirA, root))
+      }
     }
   }
-  "write(Path, JavaIterable[_ <: CharSequence], Charset, OpenOption*)" in {
-    val tmpFile = Files.createTempFile("foo", ".txt")
-    assert(Files.size(tmpFile) === 0)
+  "walkFileTree(Path, JavaSet[FileVisitOption], maxDepth:Int, FileVisitor[_ >: Path])" - {
+    "depth" - {
+      "file" in {
+        val root  = Files.createTempDirectory("top")
+        val file1 = Files.createFile(root.resolve("file"))
 
-    val utf16le = utf16leCharset
-    val written = Files.write(tmpFile, Seq("abc").asJava, utf16le)
-    assert(written === tmpFile)
-    assert(Files.readAllLines(written, utf16le).asScala.toSeq === Seq("abc"))
-    assert(Files.size(tmpFile) === 8)
+        val collector0 = new BaseCountingPathCollector()
+        assert(Files.walkFileTree(root, Set.empty[FileVisitOption].asJava, 0, collector0) === root)
+        assert(collector0.countPreVisitDirectory() === 0)
+        assert(
+          collector0.countVisitFile() === 1,
+          "directory at final depth should be treated as file"
+        )
+        assert(collector0.countVisitFileFailed() === 0)
+        assert(collector0.countPostVisitDirectory() === 0)
+        assert(collector0.visited === List(root))
+
+        val collector1 = new BaseCountingPathCollector()
+        assert(Files.walkFileTree(root, Set.empty[FileVisitOption].asJava, 1, collector1) === root)
+        assert(collector1.countPreVisitDirectory() === 1)
+        assert(collector1.countVisitFile() === 1)
+        assert(collector1.countVisitFileFailed() === 0)
+        assert(collector1.countPostVisitDirectory() === 1)
+        assert(collector1.visited === List(root, file1, root))
+
+        val collector2 = new BaseCountingPathCollector()
+        assert(Files.walkFileTree(root, Set.empty[FileVisitOption].asJava, 2, collector2) === root)
+        assert(collector2.countPreVisitDirectory() === 1)
+        assert(collector2.countVisitFile() === 1)
+        assert(collector2.countVisitFileFailed() === 0)
+        assert(collector2.countPostVisitDirectory() === 1)
+        assert(collector2.visited === List(root, file1, root))
+      }
+
+      "directory at final depth is treated as file" in {
+        val root = Files.createTempDirectory("top")
+        val dir1 = Files.createDirectory(root.resolve("dir1"))
+        val dir2 = Files.createDirectory(dir1.resolve("dir2"))
+        val dir3 = Files.createDirectory(dir2.resolve("dir3"))
+
+        val collector0 = new BaseCountingPathCollector()
+        assert(Files.walkFileTree(root, Set.empty[FileVisitOption].asJava, 0, collector0) === root)
+        assert(collector0.countPreVisitDirectory() === 0)
+        assert(
+          collector0.countVisitFile() === 1,
+          "directory at final depth should be treated as file"
+        )
+        assert(collector0.countVisitFileFailed() === 0)
+        assert(collector0.countPostVisitDirectory() === 0)
+        assert(collector0.visited === List(root))
+
+        val collector1 = new BaseCountingPathCollector()
+        assert(Files.walkFileTree(root, Set.empty[FileVisitOption].asJava, 1, collector1) === root)
+        assert(collector1.countPreVisitDirectory() === 1)
+        assert(
+          collector1.countVisitFile() === 1,
+          "directory at final depth should be treated as file"
+        )
+        assert(collector1.countVisitFileFailed() === 0)
+        assert(collector1.countPostVisitDirectory() === 1)
+        assert(collector1.visited === List(root, dir1, root))
+
+        val collector2 = new BaseCountingPathCollector()
+        assert(Files.walkFileTree(root, Set.empty[FileVisitOption].asJava, 2, collector2) === root)
+        assert(collector2.countPreVisitDirectory() === 2)
+        assert(
+          collector2.countVisitFile() === 1,
+          "directory at final depth should be treated as file"
+        )
+        assert(collector2.countVisitFileFailed() === 0)
+        assert(collector2.countPostVisitDirectory() === 2)
+        assert(collector2.visited === List(root, dir1, dir2, dir1, root))
+
+        val collector3 = new BaseCountingPathCollector()
+        assert(Files.walkFileTree(root, Set.empty[FileVisitOption].asJava, 3, collector3) === root)
+        assert(collector3.countPreVisitDirectory() === 3)
+        assert(
+          collector3.countVisitFile() === 1,
+          "directory at final depth should be treated as file"
+        )
+        assert(collector3.countVisitFileFailed() === 0)
+        assert(collector3.countPostVisitDirectory() === 3)
+        assert(collector3.visited === List(root, dir1, dir2, dir3, dir2, dir1, root))
+
+        val collector4 = new BaseCountingPathCollector()
+        assert(Files.walkFileTree(root, Set.empty[FileVisitOption].asJava, 4, collector4) === root)
+        assert(collector4.countPreVisitDirectory() === 4)
+        assert(
+          collector4.countVisitFile() === 0,
+          "directory at final depth should be treated as file"
+        )
+        assert(collector4.countVisitFileFailed() === 0)
+        assert(collector4.countPostVisitDirectory() === 4)
+        assert(collector4.visited === List(root, dir1, dir2, dir3, dir3, dir2, dir1, root))
+      }
+    }
+
+    "LinkOptions" - {
+      "links not followed by default" in {
+        val noFollow = Set.empty[FileVisitOption].asJava
+
+        val col0 = new BaseCountingPathCollector()
+        assert(Files.walkFileTree(directorySymlink, noFollow, 0, col0) === directorySymlink)
+        assert(col0.countPreVisitDirectory() === 0)
+        assert(col0.countVisitFile() === 1)
+        assert(col0.countVisitFileFailed() === 0)
+        assert(col0.countPostVisitDirectory() === 0)
+        assert(col0.visited === List(directorySymlink))
+
+        val col1 = new BaseCountingPathCollector()
+        assert(Files.walkFileTree(directorySymlink, noFollow, 1, col1) === directorySymlink)
+        assert(col1.countPreVisitDirectory() === 0)
+        assert(col1.countVisitFile() === 1)
+        assert(col1.countVisitFileFailed() === 0)
+        assert(col1.countPostVisitDirectory() === 0)
+        assert(col1.visited === List(directorySymlink))
+      }
+
+      "follow links" in {
+        val follow = Set(FileVisitOption.FOLLOW_LINKS).asJava
+
+        val col0 = new BaseCountingPathCollector()
+        assert(Files.walkFileTree(directorySymlink, follow, 0, col0) === directorySymlink)
+        assert(col0.countPreVisitDirectory() === 0)
+        assert(col0.countVisitFile() === 1)
+        assert(col0.countVisitFileFailed() === 0)
+        assert(col0.countPostVisitDirectory() === 0)
+        assert(col0.visited === List(directorySymlink))
+
+        val col1 = new BaseCountingPathCollector()
+        assert(Files.walkFileTree(directorySymlink, follow, 1, col1) === directorySymlink)
+        assert(col1.countPreVisitDirectory() === 1)
+        assert(col1.countVisitFile() === 1)
+        assert(col1.countVisitFileFailed() === 0)
+        assert(col1.countPostVisitDirectory() === 1)
+        assert(col1.visited === List(directorySymlink, fileInSymlink, directorySymlink))
+        assert(col1.visited !== List(directorySymlink, fileInSource, directorySymlink))
+      }
+    }
   }
-  "write(Path, JavaIterable[_ <: CharSequence], OpenOption*)" in {
-    val tmpFile = Files.createTempFile("foo", ".txt")
-    assert(Files.size(tmpFile) === 0)
-    val written = Files.write(tmpFile, Seq("abc").asJava)
-    assert(written === tmpFile)
-    assert(Files.readAllLines(written).asScala.toSeq === Seq("abc"))
-    assert(Files.size(tmpFile) === 4)
-    Files.write(tmpFile, Seq("a", "b", "c").asJava)
-    assert(Files.size(tmpFile) === 6)
-    // Overwrite, not append
-    assert(Files.readAllLines(written).asScala.toSeq === Seq("a", "b", "c"))
 
-    Files.delete(tmpFile)
-    // Create if not exists
-    Files.write(tmpFile, Seq("abc").asJava)
+  "write(Path, Array[Byte], OpenOption*)" - {
+    "no option" in {
+      val tmpFile = Files.createTempFile("foo", ".txt")
+      assert(Files.size(tmpFile) === 0)
+      val written = Files.write(tmpFile, Array[Byte](97, 98, 99))
+      assert(written === tmpFile)
+      assert(Files.readAllLines(written).asScala.toSeq === Seq("abc"))
+      Files.write(tmpFile, Array[Byte](100, 101, 102))
+      assert(Files.size(tmpFile) === 3)
+      // Overwrite, not append
+      assert(Files.readAllLines(written).asScala.toSeq === Seq("def"))
 
-    assertThrows[IOException] {
-      Files.write(directory, Seq("abc").asJava)
+      Files.delete(tmpFile)
+      // Create if not exists
+      Files.write(tmpFile, Array[Byte](97, 98, 99))
+
+//      assertThrows[IOException] {
+//        Files.write(directory, Array[Byte](97, 98, 99))
+//      }
+    }
+
+    "options" - {
+      "NOFOLLOW_LINKS" ignore {}
+
+      "StandardOpenOption.READ" in {
+        val tmpFile = Files.createTempFile("1", "")
+        assertThrows[IllegalArgumentException] {
+          Files.write(tmpFile, Array.empty[Byte], StandardOpenOption.READ)
+        }
+      }
+
+      "StandardOpenOption.WRITE" in {
+        val exists = Files.createTempFile("2", "")
+        Files.write(exists, Array[Byte](97, 98, 99), StandardOpenOption.WRITE)
+        assert(Files.readAllLines(exists).asScala === List("abc"))
+        Files.write(exists, Array[Byte](100, 101, 102), StandardOpenOption.WRITE)
+        assert(Files.readAllLines(exists).asScala === List("def"))
+
+        val nonExists = Files.createTempDirectory("dir").resolve("file")
+        assertThrows[NoSuchFileException] {
+          Files.write(nonExists, Array[Byte](97, 98, 99), StandardOpenOption.WRITE)
+        }
+      }
+
+      "StandardOpenOption.APPEND" in {
+        val tmp = Files.createTempFile("2", "")
+        Files.write(tmp, Array[Byte](97, 98, 99), StandardOpenOption.APPEND)
+        assert(Files.readAllLines(tmp).asScala === List("abc"))
+        Files.write(tmp, Array[Byte](100, 101, 102), StandardOpenOption.APPEND)
+        assert(Files.readAllLines(tmp).asScala === List("abcdef"))
+
+        val nonExists = Files.createTempDirectory("dir").resolve("file")
+        assertThrows[NoSuchFileException] {
+          Files.write(nonExists, Array[Byte](97, 98, 99), StandardOpenOption.APPEND)
+        }
+      }
+
+      "StandardOpenOption.TRUNCATE_EXISTING" in {
+        val tmp = Files.createTempFile("2", "")
+        Files.write(tmp, Array[Byte](97, 98, 99), StandardOpenOption.TRUNCATE_EXISTING)
+        assert(Files.readAllLines(tmp).asScala === List("abc"))
+        Files.write(tmp, Array[Byte](100, 101, 102), StandardOpenOption.TRUNCATE_EXISTING)
+        assert(Files.readAllLines(tmp).asScala === List("def"))
+
+        val nonExists = Files.createTempDirectory("dir").resolve("file")
+        assertThrows[NoSuchFileException] {
+          Files.write(nonExists, Array[Byte](97, 98, 99), StandardOpenOption.TRUNCATE_EXISTING)
+        }
+      }
+
+      "StandardOpenOption.CREATE" in {
+        val exists = Files.createTempFile("2", "")
+        Files.write(exists, Array[Byte](97, 98, 99), StandardOpenOption.CREATE)
+        assert(Files.readAllLines(exists).asScala === List("abc"))
+        Files.write(exists, Array[Byte](100, 101, 102), StandardOpenOption.CREATE)
+        assert(Files.readAllLines(exists).asScala === List("def"))
+
+        val nonExists = Files.createTempDirectory("dir").resolve("file")
+        Files.write(nonExists, Array[Byte](97, 98, 99), StandardOpenOption.CREATE)
+        assert(Files.readAllLines(nonExists).asScala === List("abc"))
+
+        // This option is ignored if the CREATE_NEW option is also set
+        assertThrows[FileAlreadyExistsException] {
+          Files.write(
+            nonExists,
+            Array[Byte](97, 98, 99),
+            StandardOpenOption.CREATE,
+            StandardOpenOption.CREATE_NEW
+          )
+        }
+      }
+
+      "StandardOpenOption.CREATE_NEW" in {
+        val tmpDir    = Files.createTempDirectory("dir")
+        val nonExists = tmpDir.resolve("file")
+        Files.write(nonExists, Array[Byte](97, 98, 99), StandardOpenOption.CREATE_NEW)
+        assert(Files.readAllLines(nonExists).asScala === List("abc"))
+
+        val exists = Files.createTempFile("2", "")
+        assertThrows[FileAlreadyExistsException] {
+          Files.write(exists, Array.empty[Byte], StandardOpenOption.CREATE_NEW)
+        }
+      }
+
+      "StandardOpenOption.DELETE_ON_CLOSE" in {
+        val exists = Files.createTempFile("2", "")
+        Files.write(exists, Array[Byte](97, 98, 99), StandardOpenOption.DELETE_ON_CLOSE)
+        Files.notExists(exists)
+
+        val nonExists = Files.createTempDirectory("dir").resolve("file")
+        assertThrows[NoSuchFileException] {
+          Files.write(nonExists, Array[Byte](97, 98, 99), StandardOpenOption.DELETE_ON_CLOSE)
+        }
+      }
+
+      "StandardOpenOption.SPARSE" ignore {
+        // MacOS HFS+ dos not support sparse file
+      }
+
+      "StandardOpenOption.SYNC" in {
+        // same as write
+        val exists = Files.createTempFile("2", "")
+        Files.write(exists, Array[Byte](97, 98, 99), StandardOpenOption.SYNC)
+        assert(Files.readAllLines(exists).asScala === List("abc"))
+        Files.write(exists, Array[Byte](100, 101, 102), StandardOpenOption.SYNC)
+        assert(Files.readAllLines(exists).asScala === List("def"))
+
+        val nonExists = Files.createTempDirectory("dir").resolve("file")
+        assertThrows[NoSuchFileException] {
+          Files.write(nonExists, Array[Byte](97, 98, 99), StandardOpenOption.SYNC)
+        }
+
+        // todo: specific for sync
+      }
+
+      "StandardOpenOption.DSYNC" in {
+        // same as write
+        val exists = Files.createTempFile("2", "")
+        Files.write(exists, Array[Byte](97, 98, 99), StandardOpenOption.DSYNC)
+        assert(Files.readAllLines(exists).asScala === List("abc"))
+        Files.write(exists, Array[Byte](100, 101, 102), StandardOpenOption.DSYNC)
+        assert(Files.readAllLines(exists).asScala === List("def"))
+
+        val nonExists = Files.createTempDirectory("dir").resolve("file")
+        assertThrows[NoSuchFileException] {
+          Files.write(nonExists, Array[Byte](97, 98, 99), StandardOpenOption.DSYNC)
+        }
+        // todo: specific for sync
+      }
+    }
+  }
+  "write(Path, JavaIterable[_ <: CharSequence], Charset, OpenOption*)" - {
+    "default options" in {
+      val tmpFile = Files.createTempFile("foo", ".txt")
+      assert(Files.size(tmpFile) === 0)
+
+      val written = Files.write(tmpFile, Seq("abc").asJava, utf16leCharset)
+      assert(written === tmpFile)
+      assert(Files.readAllLines(written, utf16leCharset).asScala.toSeq === Seq("abc"))
+      assert(Files.size(tmpFile) === 8)
+    }
+
+    "StandardOpenOption.APPEND" in {
+      val tmp = Files.createTempFile("2", "")
+      assert(Files.write(tmp, Seq("abc").asJava, utf16leCharset, StandardOpenOption.APPEND) === tmp)
+      assert(Files.readAllLines(tmp, utf16leCharset).asScala === List("abc"))
+      assert(Files.write(tmp, Seq("def").asJava, utf16leCharset, StandardOpenOption.APPEND) === tmp)
+      assert(Files.readAllLines(tmp, utf16leCharset).asScala === List("abc", "def"))
+
+      val nonExists = Files.createTempDirectory("dir").resolve("file")
+      assertThrows[NoSuchFileException] {
+        Files.write(nonExists, Seq("a").asJava, utf16leCharset, StandardOpenOption.APPEND)
+      }
+    }
+  }
+
+  "write(Path, JavaIterable[_ <: CharSequence], OpenOption*)" - {
+    "default options" in {
+      val tmpFile = Files.createTempFile("foo", ".txt")
+      assert(Files.size(tmpFile) === 0)
+      val written = Files.write(tmpFile, Seq("abc").asJava)
+      assert(written === tmpFile)
+      assert(Files.readAllLines(written).asScala.toSeq === Seq("abc"))
+      assert(Files.size(tmpFile) === 4)
+      Files.write(tmpFile, Seq("a", "b", "c").asJava)
+      assert(Files.size(tmpFile) === 6)
+      // Overwrite, not append
+      assert(Files.readAllLines(written).asScala.toSeq === Seq("a", "b", "c"))
+
+      Files.delete(tmpFile)
+      // Create if not exists
+      Files.write(tmpFile, Seq("abc").asJava)
+
+      assertThrows[IOException] {
+        Files.write(directory, Seq("abc").asJava)
+      }
+    }
+
+    "StandardOpenOption.APPEND" in {
+      val tmp = Files.createTempFile("2", "")
+      assert(Files.write(tmp, Seq("abc").asJava, StandardOpenOption.APPEND) === tmp)
+      assert(Files.readAllLines(tmp).asScala === List("abc"))
+      assert(Files.write(tmp, Seq("def").asJava, StandardOpenOption.APPEND) === tmp)
+      assert(Files.readAllLines(tmp).asScala === List("abc", "def"))
+
+      val nonExists = Files.createTempDirectory("dir").resolve("file")
+      assertThrows[NoSuchFileException] {
+        Files.write(nonExists, Seq("a").asJava, StandardOpenOption.APPEND)
+      }
     }
   }
 
@@ -1254,75 +2174,76 @@ class FilesTest extends AnyFreeSpec with TestSupport {
   }
 }
 
-trait InvocationCounter {
-  private var visitFile: Int           = 0
-  final def incrementVisitFile(): Unit = visitFile += 1
-  final def countVisitFile(): Int      = visitFile
+class BaseCountingPathCollector extends FileVisitor[Path] {
+  val visited: ListBuffer[Path] = ListBuffer.empty
 
-  private var visitFileFailed: Int           = 0
-  final def incrementVisitFileFailed(): Unit = visitFileFailed += 1
-  final def countVisitFileFailed(): Int      = visitFileFailed
+  private var visitFile: Int      = 0
+  final def countVisitFile(): Int = visitFile
 
-  private var preVisitDirectory: Int           = 0
-  final def incrementPreVisitDirectory(): Unit = preVisitDirectory += 1
-  final def countPreVisitDirectory(): Int      = preVisitDirectory
+  private var visitFileFailed: Int      = 0
+  final def countVisitFileFailed(): Int = visitFileFailed
 
-  private var postVisitDirectory: Int           = 0
-  final def incrementPostVisitDirectory(): Unit = postVisitDirectory += 1
-  final def countPostVisitDirectory(): Int      = postVisitDirectory
+  private var preVisitDirectory: Int      = 0
+  final def countPreVisitDirectory(): Int = preVisitDirectory
+
+  private var postVisitDirectory: Int      = 0
+  final def countPostVisitDirectory(): Int = postVisitDirectory
+
+  final override def preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult = {
+    try {
+      visited.addOne(dir)
+      preVisitDirectoryImpl(dir, attrs)
+    } finally {
+      preVisitDirectory += 1
+    }
+  }
+
+  protected def preVisitDirectoryImpl(dir: Path, attrs: BasicFileAttributes): FileVisitResult =
+    FileVisitResult.CONTINUE
+
+  final override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
+    try {
+      visited.addOne(file)
+      visitFileImpl(file, attrs)
+    } finally {
+      visitFile += 1
+    }
+  }
+
+  protected def visitFileImpl(file: Path, attrs: BasicFileAttributes): FileVisitResult =
+    FileVisitResult.CONTINUE
+
+  final override def visitFileFailed(file: Path, exc: IOException): FileVisitResult = {
+    try {
+      visited.addOne(file)
+      FileVisitResult.CONTINUE
+    } finally {
+      visitFileFailed += 1
+    }
+  }
+
+  protected def visitFileFailedImpl(file: Path, exc: IOException): FileVisitResult =
+    FileVisitResult.CONTINUE
+
+  final override def postVisitDirectory(dir: Path, exc: IOException): FileVisitResult = {
+    try {
+      visited.addOne(dir)
+      postVisitDirectoryImpl(dir, exc)
+    } finally {
+      postVisitDirectory += 1
+    }
+  }
+
+  protected def postVisitDirectoryImpl(dir: Path, exc: IOException): FileVisitResult =
+    FileVisitResult.CONTINUE
 }
 
-class FileAndDirCollector extends SimpleFileVisitor[Path] with InvocationCounter {
-  private val buffer: ListBuffer[Path] = ListBuffer.empty
-
-  override def preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult = {
-    incrementPreVisitDirectory()
-    buffer.addOne(dir)
-    FileVisitResult.CONTINUE
-  }
-
-  override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
-    incrementVisitFile()
-    buffer.addOne(file)
-    FileVisitResult.CONTINUE
-  }
-
-  override def visitFileFailed(file: Path, exc: IOException): FileVisitResult = {
-    incrementVisitFileFailed()
-    super.visitFileFailed(file, exc)
-  }
-
-  override def postVisitDirectory(dir: Path, exc: IOException): FileVisitResult = {
-    incrementPostVisitDirectory()
-    super.postVisitDirectory(dir, exc)
-  }
-
-  def collectFiles(): Seq[Path] = buffer.toSeq
+class ConstantFileAttributes(val name: String) extends FileAttribute[Boolean] {
+  override def value(): Boolean = true
 }
 
-private class TerminateAtFileCollector extends SimpleFileVisitor[Path] with InvocationCounter {
-  private val buffer: ListBuffer[Path] = ListBuffer.empty
+class FilePermissions(perms: String) extends FileAttribute[JavaSet[PosixFilePermission]] {
+  override def name(): String = "posix:permissions"
 
-  override def preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult = {
-    incrementPreVisitDirectory()
-    buffer.addOne(dir)
-    FileVisitResult.CONTINUE
-  }
-
-  override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
-    incrementVisitFile()
-    FileVisitResult.TERMINATE
-  }
-
-  override def visitFileFailed(file: Path, exc: IOException): FileVisitResult = {
-    incrementVisitFileFailed()
-    super.visitFileFailed(file, exc)
-  }
-
-  override def postVisitDirectory(dir: Path, exc: IOException): FileVisitResult = {
-    incrementPostVisitDirectory()
-    super.postVisitDirectory(dir, exc)
-  }
-
-  def collectFiles(): Seq[Path] = buffer.toSeq
+  override def value(): JavaSet[PosixFilePermission] = PosixFilePermissions.fromString(perms)
 }

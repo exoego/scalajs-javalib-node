@@ -10,9 +10,10 @@ import java.io.{
 }
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.freespec.AnyFreeSpec
+import support.TestSupport
 
-class FileDescriptorTest extends AnyFreeSpec with BeforeAndAfterEach {
-  private val platformId = "JDK" + System.getProperty("java.vm.version").replace('.', '-')
+class FileDescriptorTest extends AnyFreeSpec with BeforeAndAfterEach with TestSupport {
+  private val platformId = getNewPlatformFile("JDK", "")
 
   private[io] var fos: FileOutputStream    = _
   private[io] var os: BufferedOutputStream = _
@@ -24,6 +25,9 @@ class FileDescriptorTest extends AnyFreeSpec with BeforeAndAfterEach {
       try closable.close()
       catch { case _: Exception => }
     }
+    if (f != null) {
+      f.delete()
+    }
   }
 
   "Constructor" in {
@@ -33,7 +37,6 @@ class FileDescriptorTest extends AnyFreeSpec with BeforeAndAfterEach {
 
   "sync" in {
     f = new File(System.getProperty("user.dir"), "fd" + platformId + ".tst")
-    f.delete
     fos = new FileOutputStream(f.getPath)
     fos.write("Test String".getBytes)
     fis = new FileInputStream(f.getPath)
@@ -55,7 +58,6 @@ class FileDescriptorTest extends AnyFreeSpec with BeforeAndAfterEach {
 
   "valid" in {
     f = new File(System.getProperty("user.dir"), "fd.tst")
-    f.delete
     fos = new FileOutputStream(f.getPath)
     os = new BufferedOutputStream(fos, 4096)
     val fd = fos.getFD

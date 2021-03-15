@@ -8,7 +8,7 @@ import java.lang.{Iterable => JavaIterable}
 import java.util.{List => JavaList, Map => JavaMap, Set => JavaSet}
 import java.util.function.BiPredicate
 import java.util.stream.{Stream => JavaStream}
-import io.scalajs.nodejs.{fs, os, path}
+import io.scalajs.nodejs.{FileDescriptor, fs, os, path}
 
 import java.util
 import scala.annotation.varargs
@@ -20,8 +20,7 @@ import scala.util.Random
 
 object Files {
   @varargs def copy(in: InputStream, target: Path, options: CopyOption*): Long = {
-    // TODO: options
-    if (Files.exists(target)) {
+    if (Files.exists(target) && !options.contains(StandardCopyOption.REPLACE_EXISTING)) {
       throw new FileAlreadyExistsException(target.toString)
     }
 
@@ -65,39 +64,77 @@ object Files {
   }
 
   @varargs def copy(source: Path, target: Path, options: CopyOption*): Path = {
-    if (Files.exists(target)) {
+    @inline def innerCopy(): Unit = {
+      if (Files.isDirectory(source)) {
+        Files.createDirectories(target)
+      } else {
+        fs.Fs.copyFileSync(source.toString, target.toString, 0)
+        val sourcePermissions = getPosixFilePermissions(source)
+        if (options.contains(StandardCopyOption.COPY_ATTRIBUTES)) {
+          setPosixFilePermissions(target, sourcePermissions)
+          setLastModifiedTime(target, getLastModifiedTime(source))
+        } else {
+          val securedPermissions = (sourcePermissions.asScala.toSet diff Set(
+            PosixFilePermission.GROUP_WRITE,
+            PosixFilePermission.OTHERS_WRITE
+          )).asJava
+          setPosixFilePermissions(target, securedPermissions)
+        }
+      }
+    }
+
+    if (options.contains(StandardCopyOption.ATOMIC_MOVE)) {
+      throw new UnsupportedOperationException("StandardCopyOption.ATOMIC_MOVE")
+    } else if (Files.exists(target)) {
       if (Files.isSameFile(source, target)) {
         // do nothing
+      } else if (options.contains(StandardCopyOption.REPLACE_EXISTING)) {
+        Files.delete(target)
+        innerCopy()
       } else {
         throw new FileAlreadyExistsException(target.toString)
       }
     } else if (Files.notExists(source)) {
       throw new NoSuchFileException(source.toString)
-    } else if (Files.isDirectory(source)) {
-      Files.createDirectories(target)
     } else {
-      fs.Fs.copyFileSync(source.toString, target.toString, 0)
+      innerCopy()
     }
-    // TODO options
     target
   }
 
   @varargs def createDirectories(dir: Path, attrs: FileAttribute[_]*): Path = {
+    validateInitialFileAttributes(attrs)
     val dirStr = dir.toString
-    fs.Fs.mkdirSync(dirStr, fs.MkdirOptions(recursive = true))
-    // TODO: attrs
+    createDirectoryImpl(dirStr, attrs, recursive = true)
     dir
   }
 
+  private def createDirectoryImpl(
+      dir: String,
+      attrs: Seq[FileAttribute[_]],
+      recursive: Boolean
+  ): Unit =
+    fs.Fs.mkdirSync(
+      dir,
+      fs.MkdirOptions(
+        recursive = recursive,
+        mode = toNodejsFileMode(
+          attrs,
+          fs.Fs.constants.S_IRUSR | fs.Fs.constants.S_IWUSR | fs.Fs.constants.S_IXUSR |
+            fs.Fs.constants.S_IRGRP | fs.Fs.constants.S_IXGRP |
+            fs.Fs.constants.S_IROTH | fs.Fs.constants.S_IXOTH
+        )
+      )
+    )
+
   @varargs def createDirectory(dir: Path, attrs: FileAttribute[_]*): Path = {
+    validateInitialFileAttributes(attrs)
     val dirStr = dir.toString
     if (Files.exists(dir)) {
       throw new FileAlreadyExistsException(dirStr)
     }
-
     try {
-      fs.Fs.mkdirSync(dirStr)
-      // TODO: attrs
+      createDirectoryImpl(dirStr, attrs, recursive = false)
     } catch {
       case _: Throwable => throw new NoSuchFileException(dirStr)
     }
@@ -105,13 +142,17 @@ object Files {
   }
 
   @varargs def createFile(path: Path, attrs: FileAttribute[_]*): Path = {
-    // TODO: attrs
+    validateInitialFileAttributes(attrs)
     try {
       fs.Fs.writeFileSync(
         path.toString,
         "",
         fs.FileAppendOptions(
-          flag = "wx"
+          flag = "wx",
+          mode = toNodejsFileMode(
+            attrs,
+            fs.Fs.constants.S_IRUSR | fs.Fs.constants.S_IWUSR | fs.Fs.constants.S_IRGRP | fs.Fs.constants.S_IROTH
+          )
         )
       )
     } catch {
@@ -142,28 +183,42 @@ object Files {
     if (Files.exists(link)) {
       throw new FileAlreadyExistsException(newPath)
     }
+    if (attrs.nonEmpty) {
+      throw new UnsupportedOperationException(
+        s"`${attrs.head.name()}` not supported as initial attribute"
+      )
+    }
     val existingPath = target.toString
     fs.Fs.symlinkSync(existingPath, newPath)
-    // TODO: attrs
     link
   }
 
   @varargs def createTempDirectory(dir: Path, prefix: String, attrs: FileAttribute[_]*): Path = {
-    createTempDirectoryInternal(dir.toString, prefix, attrs: _*)
+    createTempDirectoryInternal(dir.toString, prefix, attrs)
   }
 
   @varargs def createTempDirectory(prefix: String, attrs: FileAttribute[_]*): Path = {
-    createTempDirectoryInternal(defaultTempDir(), prefix, attrs: _*)
+    createTempDirectoryInternal(defaultTempDir(), prefix, attrs)
   }
 
   private def createTempDirectoryInternal(
       dir: String,
       prefix: String,
-      attrs: FileAttribute[_]*
+      attrs: Seq[FileAttribute[_]]
   ): Path = {
-    val joined     = path.Path.join(dir, prefix)
-    val created    = fs.Fs.mkdtempSync(joined)
-    val normalized = path.Path.resolve(created)
+    validateInitialFileAttributes(attrs)
+    val joined = path.Path.join(dir, getRandomId(prefix, ""))
+    val mode = toNodejsFileMode(
+      attrs,
+      fs.Fs.constants.S_IRUSR | fs.Fs.constants.S_IWUSR | fs.Fs.constants.S_IXUSR
+    )
+    fs.Fs.mkdirSync(
+      joined,
+      fs.MkdirOptions(
+        mode = mode
+      )
+    )
+    val normalized = path.Path.resolve(joined)
     Paths.get(normalized)
   }
 
@@ -172,23 +227,27 @@ object Files {
       prefix: String,
       suffix: String,
       attrs: FileAttribute[_]*
-  ): Path = createTempFileInternal(dir.toString, prefix, suffix, attrs: _*)
+  ): Path = createTempFileInternal(dir.toString, prefix, suffix, attrs)
 
   @varargs def createTempFile(prefix: String, suffix: String, attrs: FileAttribute[_]*): Path =
-    createTempFileInternal(defaultTempDir(), prefix, suffix, attrs: _*)
+    createTempFileInternal(defaultTempDir(), prefix, suffix, attrs)
 
-  private def createTempFileInternal(
-      dir: String,
-      prefix: String,
-      suffix: String,
-      attrs: FileAttribute[_]*
-  ): Path = {
-    val random   = Random.between(1000000000000000000L, Long.MaxValue)
-    val suffix2  = if (suffix == null) ".tmp" else suffix
-    val fileName = s"${prefix}${random}${suffix2}"
-    val joined   = path.Path.join(dir, fileName)
+  private def getRandomId(prefix: String, suffix: String): String = {
+    val random  = Random.between(1000000000000000000L, Long.MaxValue)
+    val suffix2 = if (suffix == null) ".tmp" else suffix
+    s"${prefix}${random}${suffix2}"
+  }
 
-    val fileMode: Int = attrs.collectFirst {
+  private def validateInitialFileAttributes(attrs: Seq[FileAttribute[_]]): Unit = {
+    attrs.find(_.name() != "posix:permissions").foreach { attr =>
+      throw new UnsupportedOperationException(
+        s"`${attr.name()}` not supported as initial attribute"
+      )
+    }
+  }
+
+  private def toNodejsFileMode(attrs: Seq[FileAttribute[_]], default: Int): Int = {
+    attrs.collectFirst {
       case attr if attr.name() == "posix:permissions" =>
         attr.value().asInstanceOf[JavaSet[PosixFilePermission]]
     } match {
@@ -208,8 +267,20 @@ object Files {
         // if (permissions.contains(PosixFilePermission.OTHERS_WRITE)) mode |= fs.Fs.constants.S_IWOTH
         mode
       case None =>
-        fs.Fs.constants.S_IRUSR | fs.Fs.constants.S_IWUSR
+        default
     }
+  }
+
+  private def createTempFileInternal(
+      dir: String,
+      prefix: String,
+      suffix: String,
+      attrs: Seq[FileAttribute[_]]
+  ): Path = {
+    validateInitialFileAttributes(attrs)
+    val fileName = getRandomId(prefix, suffix)
+    val joined   = path.Path.join(dir, fileName)
+    val fileMode = toNodejsFileMode(attrs, fs.Fs.constants.S_IRUSR | fs.Fs.constants.S_IWUSR)
 
     fs.Fs.writeFileSync(
       joined,
@@ -258,21 +329,21 @@ object Files {
     )
 
   @varargs def getAttribute(path: Path, attribute: String, options: LinkOption*): AnyRef = {
-    attributeFormatCheck(attribute)
-    // TODO: posix
-    val attrs         = readAttributes(path, classOf[BasicFileAttributes], options: _*)
+    val typeName      = attributeFormatCheck(attribute)
+    val attrs         = readAttributes(path, classOf[PosixFileAttributes], options: _*)
     val attributeName = attribute.substring(attribute.indexOf(':') + 1)
     (attributeName match {
-      case "isDirectory"      => attrs.isDirectory
-      case "isOther"          => attrs.isOther
-      case "isRegularFile"    => attrs.isRegularFile
-      case "isSymbolicLink"   => attrs.isSymbolicLink
-      case "size"             => attrs.size
-      case "fileKey"          => attrs.fileKey
-      case "creationTime"     => attrs.creationTime
-      case "lastAccessTime"   => attrs.lastAccessTime
-      case "lastModifiedTime" => attrs.lastModifiedTime
-      case _                  => throw new IllegalArgumentException(s"`${attribute}` not recognized")
+      case "isDirectory"                        => attrs.isDirectory()
+      case "isOther"                            => attrs.isOther()
+      case "isRegularFile"                      => attrs.isRegularFile()
+      case "isSymbolicLink"                     => attrs.isSymbolicLink()
+      case "size"                               => attrs.size()
+      case "fileKey"                            => attrs.fileKey()
+      case "creationTime"                       => attrs.creationTime()
+      case "lastAccessTime"                     => attrs.lastAccessTime()
+      case "lastModifiedTime"                   => attrs.lastModifiedTime()
+      case "permissions" if typeName == "posix" => attrs.permissions()
+      case _                                    => throw new IllegalArgumentException(s"`${attribute}` not recognized")
     }).asInstanceOf[AnyRef]
   }
 
@@ -506,14 +577,16 @@ object Files {
     "lastAccessTime",
     "lastModifiedTime"
   )
+  private lazy val posixFileAttributesKeys = basicFileAttributesKeys ++ Set("permissions")
 
-  private def attributeFormatCheck(attributes: String): Unit = {
+  private def attributeFormatCheck(attributes: String): String = {
+    val typeName = attributes.slice(0, attributes.indexOf(':'))
     if (attributes.contains(":") && !attributes.startsWith("basic:") && !attributes.startsWith(
           "posix:"
         )) {
-      val unsupportedType = attributes.substring(0, attributes.indexOf(":"))
-      throw new UnsupportedOperationException(s"View '${unsupportedType}' not available")
+      throw new UnsupportedOperationException(s"View '${typeName}' not available")
     }
+    typeName
   }
 
   @varargs def readAttributes(
@@ -521,13 +594,16 @@ object Files {
       attributes: String,
       options: LinkOption*
   ): JavaMap[String, Any] = {
-    attributeFormatCheck(attributes)
-
-    // TODO: posix
-    val attrs = readAttributes(path, classOf[BasicFileAttributes], options: _*)
+    val typeName = attributeFormatCheck(attributes)
+    val (attrs, attrKeys) = typeName match {
+      case "" | "basic" =>
+        (readAttributes(path, classOf[BasicFileAttributes], options: _*), basicFileAttributesKeys)
+      case "posix" =>
+        (readAttributes(path, classOf[PosixFileAttributes], options: _*), posixFileAttributesKeys)
+    }
     val keys = {
       val keySet  = attributes.substring(attributes.indexOf(':') + 1).split(",").toSet
-      val keyDiff = keySet.diff(basicFileAttributesKeys) - "*"
+      val keyDiff = keySet.diff(attrKeys) - "*"
       if (keyDiff.nonEmpty) {
         throw new IllegalArgumentException(s"Unknown attributes `${keyDiff.mkString(",")}`")
       } else if (keySet.contains("*")) {
@@ -537,15 +613,17 @@ object Files {
       }
     }
     val mapBuilder = mutable.Map[String, Any]()
-    if (keys("isDirectory")) mapBuilder.put("isDirectory", attrs.isDirectory)
-    if (keys("isOther")) mapBuilder.put("isOther", attrs.isOther)
-    if (keys("isRegularFile")) mapBuilder.put("isRegularFile", attrs.isRegularFile)
-    if (keys("isSymbolicLink")) mapBuilder.put("isSymbolicLink", attrs.isSymbolicLink)
-    if (keys("size")) mapBuilder.put("size", attrs.size)
-    if (keys("fileKey")) mapBuilder.put("fileKey", attrs.fileKey)
-    if (keys("creationTime")) mapBuilder.put("creationTime", attrs.creationTime)
-    if (keys("lastAccessTime")) mapBuilder.put("lastAccessTime", attrs.lastAccessTime)
-    if (keys("lastModifiedTime")) mapBuilder.put("lastModifiedTime", attrs.lastModifiedTime)
+    if (keys("isDirectory")) mapBuilder.put("isDirectory", attrs.isDirectory())
+    if (keys("isOther")) mapBuilder.put("isOther", attrs.isOther())
+    if (keys("isRegularFile")) mapBuilder.put("isRegularFile", attrs.isRegularFile())
+    if (keys("isSymbolicLink")) mapBuilder.put("isSymbolicLink", attrs.isSymbolicLink())
+    if (keys("size")) mapBuilder.put("size", attrs.size())
+    if (keys("fileKey")) mapBuilder.put("fileKey", attrs.fileKey())
+    if (keys("creationTime")) mapBuilder.put("creationTime", attrs.creationTime())
+    if (keys("lastAccessTime")) mapBuilder.put("lastAccessTime", attrs.lastAccessTime())
+    if (keys("lastModifiedTime")) mapBuilder.put("lastModifiedTime", attrs.lastModifiedTime())
+    if (keys("permissions"))
+      mapBuilder.put("permissions", attrs.asInstanceOf[PosixFileAttributes].permissions())
     mapBuilder.asJava
   }
 
@@ -563,7 +641,7 @@ object Files {
       value: AnyRef,
       options: LinkOption*
   ): Path = {
-    attributeFormatCheck(attribute)
+    val typeName = attributeFormatCheck(attribute)
 
     val attributeName = attribute.substring(attribute.indexOf(':') + 1)
     def transformValue[V](setter: V => Unit)(implicit classtag: ClassTag[V]): Unit = value match {
@@ -583,17 +661,11 @@ object Files {
           }
         }
       case "lastModifiedTime" =>
-        transformValue { time: FileTime =>
-          transformStatsOrThrow(path, options) { stats =>
-            fs.Fs.utimesSync(
-              path.toString,
-              atime = stats.atime,
-              mtime = (time.toMillis() / 1000).toString
-            )
-          }
-        }
+        setLastModifiedTime(path, value.asInstanceOf[FileTime])
       case "creationTime" =>
       // do nothing
+      case "permissions" if typeName == "posix" =>
+        Files.setPosixFilePermissions(path, value.asInstanceOf[java.util.Set[PosixFilePermission]])
       case _ => throw new IllegalArgumentException(s"`${attribute}` not recognized")
     }
     path
@@ -666,7 +738,9 @@ object Files {
       throw new IllegalArgumentException
     }
 
-    val linkOptions = if (options.contains(FileVisitOption.FOLLOW_LINKS)) {
+    val followLinks = options.contains(FileVisitOption.FOLLOW_LINKS)
+
+    val linkOptions = if (followLinks) {
       Seq.empty
     } else {
       Seq(LinkOption.NOFOLLOW_LINKS)
@@ -675,12 +749,23 @@ object Files {
     def readAttr(path: Path): BasicFileAttributes =
       Files.readAttributes(path, classOf[BasicFileAttributes], linkOptions: _*)
 
-    def visit(start: Path): FileVisitResult = {
-      if (isSymbolicLink(start) || isRegularFile(start)) {
+    def visit(start: Path, depth: Int): FileVisitResult = {
+      if (isRegularFile(start)) {
         visitFile(start)
+      } else if (isSymbolicLink(start)) {
+        if (depth > 0 && followLinks) {
+          visitDirectory(start, depth)
+        } else {
+          visitFile(start)
+        }
       } else if (isDirectory(start)) {
-        visitDirectory(start)
+        if (depth > 0) {
+          visitDirectory(start, depth)
+        } else {
+          visitFile(start)
+        }
       } else {
+        // TODO: non-regular file
         CONTINUE
       }
     }
@@ -690,8 +775,6 @@ object Files {
         visitor.visitFile(start, readAttr(start))
       } catch {
         case ioe: IOException =>
-          println(start)
-          println(ioe)
           visitor.visitFileFailed(start, ioe)
       }
       result match {
@@ -700,75 +783,116 @@ object Files {
       }
     }
 
-    def visitDirectory(start: Path): FileVisitResult = {
+    def visitDirectory(start: Path, depth: Int): FileVisitResult = {
       visitor.preVisitDirectory(start, readAttr(start)) match {
-        case TERMINATE =>
-          TERMINATE
-        case SKIP_SUBTREE =>
-          visitor.postVisitDirectory(start, null)
-          CONTINUE
-        case SKIP_SIBLINGS =>
-          SKIP_SIBLINGS
+        case TERMINATE     => TERMINATE
+        case SKIP_SUBTREE  => CONTINUE
+        case SKIP_SIBLINGS => SKIP_SIBLINGS
         case CONTINUE =>
           val startString = start.toString
           val startPath   = Paths.get(startString)
           var active      = true
           for (entryName <- fs.Fs.readdirSync(startString) if active) {
             val nioPath = startPath.resolve(entryName)
-            visit(nioPath) match {
+            visit(nioPath, depth - 1) match {
               case TERMINATE               => return TERMINATE
               case SKIP_SIBLINGS           => active = false
               case SKIP_SUBTREE | CONTINUE =>
             }
           }
-          visitor.postVisitDirectory(start, null)
+          visitor.postVisitDirectory(start, null) match {
+            case SKIP_SIBLINGS => CONTINUE
+            case otherwise     => otherwise
+          }
       }
     }
 
-    visit(start)
+    visit(start, maxDepth)
     start
   }
 
   @varargs def write(path: Path, bytes: Array[Byte], options: OpenOption*): Path = {
-    if (Files.isDirectory(path)) {
-      throw new IOException(s"$path is a directory")
-    }
-    val fd       = fs.Fs.openSync(path.toString, "w")
+    val validatedOptions = validateWriteOptions(path, options)
+    val nodejsFlags =
+      if (validatedOptions.contains(StandardOpenOption.APPEND)) {
+        "a"
+      } else {
+        "w"
+      }
+    val fd       = openFileErrorHandling(path, nodejsFlags)
     val jsBuffer = js.typedarray.byteArray2Int8Array(bytes)
-    // TODO: options
     fs.Fs.writeSync(fd, jsBuffer)
     path
   }
+  private def openFileErrorHandling(path: Path, flags: String): FileDescriptor =
+    try {
+      fs.Fs.openSync(path.toString, flags)
+    } catch {
+      case jse: js.JavaScriptException if jse.getMessage().contains("EISDIR") =>
+        throw new IOException(s"${path} is a directory")
+    }
+
   @varargs def write(
       path: Path,
       lines: JavaIterable[_ <: CharSequence],
       cs: Charset,
       options: OpenOption*
   ): Path = {
-    writeInternal(path, lines, cs.displayName(), options: _*)
+    writeInternal(path, lines, cs.displayName(), options)
   }
   @varargs def write(
       path: Path,
       lines: JavaIterable[_ <: CharSequence],
       options: OpenOption*
   ): Path = {
-    writeInternal(path, lines, "utf8", options: _*)
+    writeInternal(path, lines, "utf8", options)
   }
+  private def validateWriteOptions(path: Path, rawOptions: Seq[OpenOption]): Set[OpenOption] = {
+    val options: Set[OpenOption] = if (rawOptions.isEmpty) {
+      Set(
+        StandardOpenOption.CREATE,
+        StandardOpenOption.TRUNCATE_EXISTING,
+        StandardOpenOption.WRITE
+      )
+    } else if (rawOptions.contains(StandardOpenOption.READ)) {
+      throw new IllegalArgumentException()
+    } else {
+      rawOptions.toSet
+    }
+
+    if (Files.exists(path)) {
+      if (options.contains(StandardOpenOption.CREATE_NEW)) {
+        throw new FileAlreadyExistsException(path.toString)
+      }
+    } else {
+      if (!options.contains(StandardOpenOption.CREATE) && !options.contains(
+            StandardOpenOption.CREATE_NEW
+          )) {
+        throw new NoSuchFileException(path.toString)
+      }
+    }
+
+    options
+  }
+
   private def writeInternal(
       path: Path,
       lines: JavaIterable[_ <: CharSequence],
       encoding: String,
-      options: OpenOption*
+      rawOptions: Seq[OpenOption]
   ): Path = {
-    if (Files.isDirectory(path)) {
-      throw new IOException(s"$path is a directory")
-    }
-    val fd       = fs.Fs.openSync(path.toString, "w")
-    val jsBuffer = lines.asScala.mkString(start = "", sep = os.OS.EOL, end = os.OS.EOL)
-    // TODO: options
+    val validatedOptions = validateWriteOptions(path, rawOptions)
+    val nodejsFlags =
+      if (validatedOptions.contains(StandardOpenOption.APPEND)) {
+        "a"
+      } else {
+        "w"
+      }
+    val fd         = openFileErrorHandling(path, nodejsFlags)
+    val dataString = lines.asScala.mkString(start = "", sep = os.OS.EOL, end = os.OS.EOL)
     fs.Fs.writeFileSync(
       fd,
-      jsBuffer,
+      dataString,
       fs.FileAppendOptions(
         encoding = encoding
       )
