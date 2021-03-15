@@ -355,10 +355,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
         assertThrows[UnsupportedOperationException] {
           Files.createDirectories(
             tmpDir.resolve("x").resolve("y").resolve("z"),
-            new FileAttribute[Boolean] {
-              override def name(): String   = key
-              override def value(): Boolean = true
-            }
+            new ConstantFileAttributes(key)
           )
         }
       }
@@ -408,13 +405,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
       val tmpDir = Files.createTempDirectory("createDirectory")
       unsupportedInitialAttributes.foreach { key =>
         assertThrows[UnsupportedOperationException] {
-          Files.createDirectory(
-            tmpDir.resolve("x"),
-            new FileAttribute[Boolean] {
-              override def name(): String   = key
-              override def value(): Boolean = true
-            }
-          )
+          Files.createDirectory(tmpDir.resolve("x"), new ConstantFileAttributes(key))
         }
       }
     }
@@ -455,13 +446,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
       val tmpDir = Files.createTempDirectory("createDirectory")
       unsupportedInitialAttributes.foreach { key =>
         assertThrows[UnsupportedOperationException] {
-          Files.createFile(
-            tmpDir.resolve("x"),
-            new FileAttribute[Boolean] {
-              override def name(): String   = key
-              override def value(): Boolean = true
-            }
-          )
+          Files.createFile(tmpDir.resolve("x"), new ConstantFileAttributes(key))
         }
       }
     }
@@ -2198,4 +2183,8 @@ class BaseCountingPathCollector extends FileVisitor[Path] {
 
   protected def postVisitDirectoryImpl(dir: Path, exc: IOException): FileVisitResult =
     FileVisitResult.CONTINUE
+}
+
+class ConstantFileAttributes(val name: String) extends FileAttribute[Boolean] {
+  override def value(): Boolean = true
 }
