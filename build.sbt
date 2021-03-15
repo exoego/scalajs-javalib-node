@@ -5,6 +5,7 @@ val selfPackageName = "scalajs-javalib-node"
 val scala212Ver     = "2.12.13"
 val scala213Ver     = "2.13.4"
 val selfVersion     = "0.1-SNAPSHOT"
+val scalatestVer    = "3.2.6"
 
 lazy val commonSettings = Seq(
   parallelExecution in Test := false,
@@ -27,7 +28,7 @@ lazy val commonSettings = Seq(
   ),
   libraryDependencies ++= Seq(
     "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.1",
-    "org.scalatest" %%% "scalatest-freespec" % "3.2.2" % "test"
+    "org.scalatest" %%% "scalatest-freespec" % scalatestVer % "test"
   )
 )
 lazy val commonJsSettings = Seq(
