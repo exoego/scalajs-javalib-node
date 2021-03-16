@@ -27,6 +27,7 @@ class PathTest extends AnyFreeSpec {
     assert(Path("a").iterator().asScala.toSeq === Seq("a").map(Path(_)))
     assert(Path("/a/b/c").iterator().asScala.toSeq === Seq("a", "b", "c").map(Path(_)))
     assert(Path("a/b/c").iterator().asScala.toSeq === Seq("a", "b", "c").map(Path(_)))
+    assert(Path("a/b/c/").iterator().asScala.toSeq === Seq("a", "b", "c").map(Path(_)))
     assert(Path("a/b/../c").iterator().asScala.toSeq === Seq("a", "b", "..", "c").map(Path(_)))
     assert(Path("a/b/./c").iterator().asScala.toSeq === Seq("a", "b", ".", "c").map(Path(_)))
   }
@@ -67,6 +68,22 @@ class PathTest extends AnyFreeSpec {
   "subPath(begin,end)" ignore {}
   "toAbsolutePath()" ignore {}
   "toRealPath(options)" ignore {}
-  "toString()" ignore {}
+  "toString()" in {
+    assert(Path("").toString === "")
+    assert(Path("/").toString === "/")
+    assert(Path("/////").toString === "/")
+    assert(Path("a").toString === "a")
+    assert(Path("a/").toString === "a")
+    assert(Path("a/").toString === "a")
+    assert(Path("a/b").toString === "a/b")
+    assert(Path("a///////b").toString === "a/b")
+    assert(Path("a///////b///////").toString === "a/b")
+    assert(Path("/////a///////b///////").toString === "/a/b")
+
+    assert(Path("/////a", "///////b///////").toString === "/a/b")
+    assert(Path("/////a", "///////b///////", "///").toString === "/a/b")
+
+    assert(Path("a/b/c/../d").toString === "a/b/c/../d")
+  }
   "toURI()" ignore {}
 }
