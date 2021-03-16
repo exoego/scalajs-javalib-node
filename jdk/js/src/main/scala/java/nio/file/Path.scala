@@ -5,9 +5,12 @@ import java.net.URI
 import java.nio.file
 
 import io.scalajs.nodejs.path.{Path => NodeJsPath}
+import scala.jdk.CollectionConverters._
 
-trait Path extends Comparable[Path] {
+trait Path extends Comparable[Path] with java.lang.Iterable[Path] {
   def compareTo(path: Path): Int
+
+  def iterator(): java.util.Iterator[Path]
 
   def toFile(): File
 
@@ -157,6 +160,21 @@ private[java] object PathHelper {
         case path: PathImpl => this.rawPath == path.rawPath
 //        case path: Path => this.toFile() == path.toFile()
         case _ => false
+      }
+    }
+
+    override def iterator(): java.util.Iterator[Path] = {
+      val po = NodeJsPath.parse(rawPath)
+      if (po.dir == po.root && po.name.contains("") && rawPath != "") {
+        // root
+        java.util.Collections.emptyIterator()
+      } else {
+        rawPath
+          .dropWhile(_ == File.separatorChar)
+          .split(File.separatorChar)
+          .iterator
+          .map(Paths.get(_))
+          .asJava
       }
     }
   }
