@@ -6,7 +6,8 @@ import java.nio.file
 
 import io.scalajs.nodejs.path.{Path => NodeJsPath}
 
-trait Path {
+trait Path extends Comparable[Path] {
+  def compareTo(path: Path): Int
 
   def toFile(): File
 
@@ -59,9 +60,6 @@ trait Path {
       kinds: Array[WatchEvent.Kind[_]],
       modifiers: WatchEvent.Modifier*
   ): WatchKey = ???
-
-  def compareTo(path: Path): Int = ???
-
 }
 
 private[java] object PathHelper {
@@ -76,6 +74,13 @@ private[java] object PathHelper {
   }
 
   private final class PathImpl(val rawPath: String) extends Path {
+    override def compareTo(path: Path): Int =
+      if (this == path) {
+        0
+      } else {
+        this.toString.compareTo(path.toString)
+      }
+
     override def toFile(): File = new File(rawPath)
 
     override def getFileSystem: FileSystem = throw new UnsupportedOperationException
@@ -142,9 +147,6 @@ private[java] object PathHelper {
         kinds: Array[WatchEvent.Kind[_]],
         modifiers: WatchEvent.Modifier*
     ): WatchKey = {
-      throw new UnsupportedOperationException
-    }
-    override def compareTo(path: Path): Int = {
       throw new UnsupportedOperationException
     }
 

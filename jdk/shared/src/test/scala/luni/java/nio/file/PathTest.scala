@@ -5,7 +5,17 @@ import org.scalatest.freespec.AnyFreeSpec
 import java.nio.file.Paths
 
 class PathTest extends AnyFreeSpec {
-  "compareTo(Path)" ignore {}
+  "compareTo(Path)" in {
+    assert(Paths.get("a").compareTo(Paths.get("a")) === 0)
+    assert(Paths.get("a/b").compareTo(Paths.get("a", "b")) === 0)
+
+    assert(Paths.get("a").compareTo(Paths.get("b")) < 0)
+    assert(Paths.get("./a").compareTo(Paths.get("a")) < 0)
+    assert(Paths.get("/a").compareTo(Paths.get("a")) < 0)
+
+    assert(Paths.get("b").compareTo(Paths.get("a")) > 0)
+    assert(Paths.get("a/b").compareTo(Paths.get("a")) > 0)
+  }
   "endsWith(Path)" ignore {}
   "equals(Path)" ignore {}
   "getFileName()" in {
