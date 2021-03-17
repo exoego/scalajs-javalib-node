@@ -110,7 +110,23 @@ class PathTest extends AnyFreeSpec {
     assert(Path("").getNameCount === 1)
     assert(Path("./").getNameCount === 1)
   }
-  "getParent()" ignore {}
+
+  "getParent()" in {
+    val table = Table(
+      ("base", "parent"),
+      (Path(""), null),
+      (Path("a"), null),
+      (Path("/a"), Path("/")),
+      (Path("a/b"), Path("a")),
+      (Path("x/a/b"), Path("x/a")),
+      (Path("x/../b"), Path("x/..")),
+      (Path("/a/b/c/"), Path("/a/b"))
+    )
+    forAll(table) { (base: Path, parent: Path) =>
+      assert(base.getParent === parent)
+    }
+  }
+
   "getRoot()" ignore {}
   "hashCode()" ignore {}
   "isAbsolute()" ignore {}
