@@ -26,15 +26,15 @@ trait Path extends Comparable[Path] with java.lang.Iterable[Path] {
 
   def getNameCount: Int
 
-  def getName(i: Int): Path = ???
+  def getName(i: Int): Path
 
   def subpath(i: Int, i1: Int): Path = ???
 
-  def startsWith(path: Path): Boolean   = ???
+  def startsWith(path: Path): Boolean
   def startsWith(path: String): Boolean = startsWith(Paths.get(path))
 
-  def endsWith(path: Path): Boolean   = ???
-  def endsWith(path: String): Boolean = startsWith(Paths.get(path))
+  def endsWith(path: Path): Boolean
+  def endsWith(path: String): Boolean = endsWith(Paths.get(path))
 
   def normalize(): Path = ???
 
@@ -102,31 +102,66 @@ private[java] object PathHelper {
         .map(parent => new PathImpl(parent))
         .getOrElse(null)
     }
+
     override def getNameCount: Int = {
       val po = NodeJsPath.parse(rawPath)
       if (po.dir == po.root && po.name.contains("") && rawPath != "") {
         //  root
         0
+      } else if (po.name.contains("")) {
+        1
       } else {
-        rawPath.count(_ == File.separatorChar) + 1
+        rawPath.split(File.separatorChar).count(_.nonEmpty)
       }
     }
+
     override def getName(i: Int): Path = {
-      throw new UnsupportedOperationException
+      if (i < 0) {
+        throw new IllegalArgumentException("'i' should be 0 or positive")
+      }
+      val names = rawPath.dropWhile(_ == File.separatorChar).split(File.separatorChar)
+      if (names.lengthIs > i) {
+        Paths.get(names(i))
+      } else {
+        throw new IllegalArgumentException(s"${rawPath}: invalid 'i' <${i}>")
+      }
     }
+
     override def subpath(i: Int, i1: Int): Path = {
       throw new UnsupportedOperationException
     }
-    override def startsWith(path: Path): Boolean = ???
-    override def startsWith(path: String): Boolean = {
-      NodeJsPath.parse(rawPath).name.exists(_.startsWith(path))
+
+    override def startsWith(path: Path): Boolean = {
+      val thisCount     = this.getNameCount
+      val pathCount     = path.getNameCount
+      val isRoot        = thisCount == 0
+      val pathIsRoot    = pathCount == 0
+      val otherIsLonger = thisCount - pathCount < 0
+      if (otherIsLonger || isRoot != pathIsRoot || isAbsolute != path.isAbsolute) {
+        false
+      } else {
+        (0 until pathCount).forall { i =>
+          this.getName(i) == path.getName(i)
+        }
+      }
     }
+
     override def endsWith(path: Path): Boolean = {
-      throw new UnsupportedOperationException
+      val thisCount = this.getNameCount
+      val pathCount = path.getNameCount
+      val diffCount = thisCount - pathCount
+
+      val isRoot     = thisCount == 0
+      val pathIsRoot = pathCount == 0
+      if (diffCount < 0 || isRoot != pathIsRoot) {
+        false
+      } else {
+        ((pathCount - 1) to 0 by -1).forall { i =>
+          this.getName(i + diffCount) == path.getName(i)
+        }
+      }
     }
-    override def endsWith(path: String): Boolean = {
-      NodeJsPath.parse(rawPath).name.exists(_.endsWith(path))
-    }
+
     override def normalize(): Path = {
       throw new UnsupportedOperationException
     }

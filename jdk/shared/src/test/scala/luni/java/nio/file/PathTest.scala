@@ -1,8 +1,9 @@
 package luni.java.nio.file
 
 import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.prop.TableDrivenPropertyChecks._
 
-import java.nio.file.{Path, Paths}
+import java.nio.file._
 import scala.jdk.CollectionConverters._
 
 class PathTest extends AnyFreeSpec {
@@ -32,7 +33,40 @@ class PathTest extends AnyFreeSpec {
     assert(Path("a/b/./c").iterator().asScala.toSeq === Seq("a", "b", ".", "c").map(Path(_)))
   }
 
-  "endsWith(Path)" ignore {}
+  "endsWith(Path | String)" in {
+    val trueCombination = Table(
+      ("left", "right"),
+      (Path("/"), "/"),
+      (Path("a"), "a"),
+      (Path("a/b"), "b"),
+      (Path("a/b/c"), "c"),
+      (Path("a/b/c"), "b/c"),
+      (Path("a/b/c"), "a/b/c"),
+      (Path("/a/b/c/"), "c"),
+      (Path("/a/b/../c/"), "b/../c")
+    )
+    forAll(trueCombination) { (left: Path, right: String) =>
+      assert(left.endsWith(Path(right)))
+      assert(left.endsWith(right))
+    }
+
+    val falseCombinations = Table(
+      ("left", "right"),
+      (Path("a"), "b"),
+      (Path("a/b"), "a/x"),
+      (Path("a/b"), "x/b"),
+      (Path("a/b"), "x/a/b"),
+      (Path("a/b/c"), "b"),
+      (Path("a/b/c"), "a/b"),
+      (Path("/a/b/c/"), "/"),
+      (Path("/"), "/a")
+    )
+    forAll(falseCombinations) { (left: Path, right: String) =>
+      assert(left.endsWith(Path(right)) === false)
+      assert(left.endsWith(right) === false)
+    }
+  }
+
   "equals(Path)" ignore {}
   "getFileName()" in {
     assert(Path("foo.md").getFileName === Path("foo.md"))
@@ -43,7 +77,20 @@ class PathTest extends AnyFreeSpec {
     assert(Path("").getFileName === Path(""))
   }
   "getFileSystem()" ignore {}
-  "getName(index)" ignore {}
+  "getName(index)" in {
+    assert(Path("").getName(0) === Path(""))
+    assert(Path("a").getName(0) === Path("a"))
+    assert(Path("a/b").getName(0) === Path("a"))
+    assert(Path("a/b").getName(1) === Path("b"))
+    assert(Path("/a/b").getName(0) === Path("a"))
+    assert(Path("/a/b").getName(1) === Path("b"))
+    assertThrows[IllegalArgumentException] {
+      Path("a/b").getName(2)
+    }
+    assertThrows[IllegalArgumentException] {
+      Path("a/b").getName(-1)
+    }
+  }
   "getNameCount()" in {
     assert(Path("/").getNameCount === 0)
     assert(Path("///").getNameCount === 0)
@@ -53,6 +100,13 @@ class PathTest extends AnyFreeSpec {
     assert(Path("bar/foo.md").getNameCount === 2)
     assert(Path("bar/../foo.md").getNameCount === 3)
     assert(Path("bar/../").getNameCount === 2)
+    assert(Path("/a").getNameCount === 1)
+    assert(Path("/a/").getNameCount === 1)
+    assert(Path("a/").getNameCount === 1)
+    assert(Path("/a/b/c/").getNameCount === 3)
+    assert(Path("a/b/c/").getNameCount === 3)
+    assert(Path("a/b/c").getNameCount === 3)
+
     assert(Path("").getNameCount === 1)
     assert(Path("./").getNameCount === 1)
   }
@@ -64,7 +118,41 @@ class PathTest extends AnyFreeSpec {
   "register()" ignore {}
   "relativize(Path)" ignore {}
   "resolve(Path)" ignore {}
-  "startsWith(Path)" ignore {}
+
+  "startsWith(Path | String)" in {
+    val trueCombination = Table(
+      ("left", "right"),
+      (Path("/"), "/"),
+      (Path("a"), "a"),
+      (Path("a/b"), "a"),
+      (Path("a/b/c"), "a/b"),
+      (Path("a/b/c"), "a/b/c"),
+      (Path("/a/b/c/"), "/a"),
+      (Path("/a/b/../c/"), "/a/b/.."),
+      (Path("/a/b/../c/"), "/a/b/../c")
+    )
+    forAll(trueCombination) { (left: Path, right: String) =>
+      assert(left.startsWith(Path(right)))
+      assert(left.startsWith(right))
+    }
+
+    val falseCombinations = Table(
+      ("left", "right"),
+      (Path("a"), "b"),
+      (Path("a/b"), "a/b/x"),
+      (Path("a/b"), "a/x"),
+      (Path("a/b"), "x/b"),
+      (Path("a/b/c"), "b"),
+      (Path("a/b/c"), "b/c"),
+      (Path("/a/b/c/"), "a"),
+      (Path("/"), "/a")
+    )
+    forAll(falseCombinations) { (left: Path, right: String) =>
+      assert(left.startsWith(Path(right)) === false)
+      assert(left.startsWith(right) === false)
+    }
+  }
+
   "subPath(begin,end)" ignore {}
   "toAbsolutePath()" ignore {}
   "toRealPath(options)" ignore {}
