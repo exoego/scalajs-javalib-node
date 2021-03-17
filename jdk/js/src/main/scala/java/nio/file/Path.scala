@@ -77,6 +77,8 @@ private[java] object PathHelper {
   }
 
   private final class PathImpl(val rawPath: String) extends Path {
+    private val names: Array[String] = rawPath.dropWhile(_ == File.separatorChar).split(File.separatorChar)
+
     override def compareTo(path: Path): Int =
       if (this == path) {
         0
@@ -104,14 +106,10 @@ private[java] object PathHelper {
     }
 
     override def getNameCount: Int = {
-      val po = NodeJsPath.parse(rawPath)
-      if (po.dir == po.root && po.name.contains("") && rawPath != "") {
-        //  root
+      if (rawPath == "/") {
         0
-      } else if (po.name.contains("")) {
-        1
       } else {
-        rawPath.split(File.separatorChar).count(_.nonEmpty)
+        names.length
       }
     }
 
@@ -119,7 +117,6 @@ private[java] object PathHelper {
       if (i < 0) {
         throw new IllegalArgumentException("'i' should be 0 or positive")
       }
-      val names = rawPath.dropWhile(_ == File.separatorChar).split(File.separatorChar)
       if (names.lengthIs > i) {
         Paths.get(names(i))
       } else {
@@ -199,14 +196,10 @@ private[java] object PathHelper {
     }
 
     override def iterator(): java.util.Iterator[Path] = {
-      val po = NodeJsPath.parse(rawPath)
-      if (po.dir == po.root && po.name.contains("") && rawPath != "") {
-        // root
+      if (rawPath == "/") {
         java.util.Collections.emptyIterator()
       } else {
-        rawPath
-          .dropWhile(_ == File.separatorChar)
-          .split(File.separatorChar)
+        names
           .iterator
           .map(Paths.get(_))
           .asJava
