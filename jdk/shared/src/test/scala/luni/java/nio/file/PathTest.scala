@@ -137,7 +137,29 @@ class PathTest extends AnyFreeSpec {
   }
 
   "hashCode()" ignore {}
-  "isAbsolute()" ignore {}
+
+  "isAbsolute()" in {
+    val absolutePaths = Table(
+      "path",
+      "/",
+      "/a/b/c",
+      "/a/../c",
+      "/a/../."
+    )
+    forAll(absolutePaths) { path: String =>
+      assert(Path(path).isAbsolute)
+    }
+
+    val notAbsolutPaths = Table(
+      "path",
+      "a/b/c",
+      "a/../."
+    )
+    forAll(notAbsolutPaths) { path: String =>
+      assert(Path(path).isAbsolute === false)
+    }
+  }
+
   "normalize()" ignore {}
   "register()" ignore {}
   "relativize(Path)" ignore {}
