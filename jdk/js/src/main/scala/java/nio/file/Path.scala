@@ -93,7 +93,7 @@ private[java] object PathHelper {
 
     override def isAbsolute: Boolean = NodeJsPath.isAbsolute(rawPath)
 
-    override def getRoot: Path = throw new UnsupportedOperationException
+    override def getRoot: Path = if (rawPath.startsWith("/")) Paths.get("/") else null
 
     override def getFileName: Path = new PathImpl(NodeJsPath.basename(rawPath))
 

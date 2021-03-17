@@ -128,7 +128,14 @@ class PathTest extends AnyFreeSpec {
     }
   }
 
-  "getRoot()" ignore {}
+  "getRoot()" in {
+    assert(Path("").getRoot === null)
+    assert(Path("a").getRoot === null)
+    assert(Path("a/b/../c").getRoot === null)
+    assert(Path("/a/b/../c").getRoot === Path("/"))
+    assert(Path("/").getRoot === Path("/"))
+  }
+
   "hashCode()" ignore {}
   "isAbsolute()" ignore {}
   "normalize()" ignore {}
