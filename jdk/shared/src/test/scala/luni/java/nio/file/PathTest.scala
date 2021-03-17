@@ -170,7 +170,52 @@ class PathTest extends AnyFreeSpec {
     }
   }
 
-  "subPath(begin,end)" ignore {}
+  "subath(begin,end)" - {
+    "successful path" in {
+      assert(Path("a/b/c").subpath(0, 1) === Path("a"))
+      assert(Path("a/b/c").subpath(0, 2) === Path("a/b"))
+      assert(Path("a/b/c").subpath(0, 3) === Path("a/b/c"))
+      assert(Path("a/b/c").subpath(1, 2) === Path("b"))
+      assert(Path("a/b/c").subpath(1, 3) === Path("b/c"))
+      assert(Path("a/b/c").subpath(2, 3) === Path("c"))
+
+      assert(Path("/a/b/c").subpath(0, 1) === Path("a"))
+      assert(Path("/a/b/c").subpath(0, 2) === Path("a/b"))
+      assert(Path("/a/b/c").subpath(0, 3) === Path("a/b/c"))
+      assert(Path("/a/b/c").subpath(1, 2) === Path("b"))
+      assert(Path("/a/b/c").subpath(1, 3) === Path("b/c"))
+      assert(Path("/a/b/c").subpath(2, 3) === Path("c"))
+
+      assert(Path("a/b/../c").subpath(0, 3) === Path("a/b/.."))
+      assert(Path("a/b/../c").subpath(1, 4) === Path("b/../c"))
+      assert(Path("a/b/.").subpath(0, 2) === Path("a/b"))
+      assert(Path("a/b/.").subpath(1, 3) === Path("b/."))
+    }
+
+    "invalid beginIndex" in {
+      assertThrows[IllegalArgumentException] {
+        Path("a/b/c").subpath(-1, 0)
+      }
+      assertThrows[IllegalArgumentException] {
+        Path("a/b/c").subpath(3, 3)
+      }
+      assertThrows[IllegalArgumentException] {
+        Path("a/b/c").subpath(4, 4)
+      }
+    }
+
+    "invalid endIndex" in {
+      assertThrows[IllegalArgumentException] {
+        Path("a/b/c").subpath(0, -2)
+      }
+      assertThrows[IllegalArgumentException] {
+        Path("a/b/c").subpath(0, 0)
+      }
+      assertThrows[IllegalArgumentException] {
+        Path("a/b/c").subpath(0, 4)
+      }
+    }
+  }
   "toAbsolutePath()" ignore {}
   "toRealPath(options)" ignore {}
   "toString()" in {

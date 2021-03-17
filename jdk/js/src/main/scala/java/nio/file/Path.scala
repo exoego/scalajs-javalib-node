@@ -26,9 +26,9 @@ trait Path extends Comparable[Path] with java.lang.Iterable[Path] {
 
   def getNameCount: Int
 
-  def getName(i: Int): Path
+  def getName(index: Int): Path
 
-  def subpath(i: Int, i1: Int): Path = ???
+  def subpath(beginIndex: Int, endIndex: Int): Path = ???
 
   def startsWith(path: Path): Boolean
   def startsWith(path: String): Boolean = startsWith(Paths.get(path))
@@ -77,7 +77,8 @@ private[java] object PathHelper {
   }
 
   private final class PathImpl(val rawPath: String) extends Path {
-    private val names: Array[String] = rawPath.dropWhile(_ == File.separatorChar).split(File.separatorChar)
+    private val names: Array[String] =
+      rawPath.dropWhile(_ == File.separatorChar).split(File.separatorChar)
 
     override def compareTo(path: Path): Int =
       if (this == path) {
@@ -113,19 +114,33 @@ private[java] object PathHelper {
       }
     }
 
-    override def getName(i: Int): Path = {
-      if (i < 0) {
+    override def getName(index: Int): Path = {
+      if (index < 0) {
         throw new IllegalArgumentException("'i' should be 0 or positive")
       }
-      if (names.lengthIs > i) {
-        Paths.get(names(i))
+      if (names.lengthIs > index) {
+        Paths.get(names(index))
       } else {
-        throw new IllegalArgumentException(s"${rawPath}: invalid 'i' <${i}>")
+        throw new IllegalArgumentException(s"${rawPath}: invalid 'i' <${index}>")
       }
     }
 
-    override def subpath(i: Int, i1: Int): Path = {
-      throw new UnsupportedOperationException
+    override def subpath(beginIndex: Int, endIndex: Int): Path = {
+      if (beginIndex < 0) {
+        throw new IllegalArgumentException("beginIndex should be equal to or greater than 0")
+      }
+      if (beginIndex >= getNameCount) {
+        throw new IllegalArgumentException("beginIndex should be less than the number of element")
+      }
+      if (endIndex <= beginIndex) {
+        throw new IllegalArgumentException("endIndex should be greater than beginIndex")
+      }
+      if (endIndex > getNameCount) {
+        throw new IllegalArgumentException(
+          "endIndex should be equal to or less than the number of element"
+        )
+      }
+      Paths.get(names.slice(beginIndex, endIndex).mkString(File.separator))
     }
 
     override def startsWith(path: Path): Boolean = {
@@ -199,8 +214,7 @@ private[java] object PathHelper {
       if (rawPath == "/") {
         java.util.Collections.emptyIterator()
       } else {
-        names
-          .iterator
+        names.iterator
           .map(Paths.get(_))
           .asJava
       }
