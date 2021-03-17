@@ -118,7 +118,8 @@ class PathTest extends AnyFreeSpec {
       (Path("a"), null),
       (Path("/a"), Path("/")),
       (Path("a/b"), Path("a")),
-      (Path("x/a/b"), Path("x/a")),
+      (Path("a/b"), Path("a")),
+      (Path("x/a/."), Path("x/a")),
       (Path("x/../b"), Path("x/..")),
       (Path("/a/b/c/"), Path("/a/b"))
     )
