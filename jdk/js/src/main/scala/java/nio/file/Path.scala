@@ -36,7 +36,7 @@ trait Path extends Comparable[Path] with java.lang.Iterable[Path] {
   def endsWith(path: Path): Boolean
   def endsWith(path: String): Boolean = endsWith(Paths.get(path))
 
-  def normalize(): Path = ???
+  def normalize(): Path
 
   def resolve(other: Path): Path   = ???
   def resolve(other: String): Path = Paths.get(this.toString, other)
@@ -175,8 +175,12 @@ private[java] object PathHelper {
     }
 
     override def normalize(): Path = {
-      throw new UnsupportedOperationException
+      NodeJsPath.normalize(rawPath) match {
+        case "."       => new PathImpl("")
+        case otherwise => new PathImpl(otherwise)
+      }
     }
+
     override def resolve(path: Path): Path = {
       new PathImpl(NodeJsPath.resolve(rawPath, path.getFileName.toString))
     }

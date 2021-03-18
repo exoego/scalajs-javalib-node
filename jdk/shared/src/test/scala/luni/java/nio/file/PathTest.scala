@@ -160,7 +160,33 @@ class PathTest extends AnyFreeSpec {
     }
   }
 
-  "normalize()" ignore {}
+  "normalize()" in {
+    val table = Table(
+      ("source", "expected"),
+      ("", ""),
+      (".", ""),
+      ("./", ""),
+      ("a/../", ""),
+      ("../..", "../.."),
+      ("..", ".."),
+      ("/", "/"),
+      ("a", "a"),
+      ("./a", "a"),
+      ("a/../../", ".."),
+      ("a/b/../", "a"),
+      ("a/b/../.", "a"),
+      ("a/b/../c/../", "a"),
+      ("a/b/c/../../", "a"),
+      ("a/b/c/../", "a/b"),
+      ("/a/b/c/../", "/a/b"),
+      ("/a/b/c/../../", "/a")
+    )
+    forAll(table) { (source: String, expected: String) =>
+      val normalized = Path(source).normalize()
+      assert(normalized == Path(expected) && normalized.toString == expected)
+    }
+  }
+
   "register()" ignore {}
   "relativize(Path)" ignore {}
   "resolve(Path)" ignore {}
