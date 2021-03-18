@@ -38,8 +38,8 @@ trait Path extends Comparable[Path] with java.lang.Iterable[Path] {
 
   def normalize(): Path
 
-  def resolve(other: Path): Path   = ???
-  def resolve(other: String): Path = Paths.get(this.toString, other)
+  def resolve(other: Path): Path
+  def resolve(other: String): Path = resolve(Paths.get(other))
 
   def resolveSibling(other: Path): Path = {
     if (other == null) throw new NullPointerException
@@ -181,9 +181,18 @@ private[java] object PathHelper {
       }
     }
 
-    override def resolve(path: Path): Path = {
-      new PathImpl(NodeJsPath.resolve(rawPath, path.getFileName.toString))
+    override def resolve(other: Path): Path = {
+      if (other.isAbsolute) {
+        other
+      } else if (other.toString == "") {
+        this
+      } else if (rawPath == "") {
+        other
+      } else {
+        new PathImpl(s"${rawPath}${File.separatorChar}${other.toString}")
+      }
     }
+
     override def relativize(path: Path): Path = {
       throw new UnsupportedOperationException
     }
@@ -191,6 +200,7 @@ private[java] object PathHelper {
       throw new UnsupportedOperationException
     }
     override def toAbsolutePath: Path = {
+      // TODO: use NodeJsPath.resolve
       throw new UnsupportedOperationException
     }
     override def toRealPath(linkOptions: LinkOption*): Path = {

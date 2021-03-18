@@ -189,7 +189,79 @@ class PathTest extends AnyFreeSpec {
 
   "register()" ignore {}
   "relativize(Path)" ignore {}
-  "resolve(Path)" ignore {}
+
+  "resolve(Path)" - {
+    "If the other parameter is an absolute path then this method trivially returns other" in {
+      val table = Table(
+        ("source", "other", "expected"),
+        ("", "/", "/"),
+        ("a", "/", "/"),
+        ("a/b/c", "/", "/"),
+        ("a/../b", "/", "/"),
+        ("./", "/", "/"),
+        ("./a/b", "/", "/"),
+        ("/a/b/c", "/", "/"),
+        ("a", "/x/y", "/x/y"),
+        ("a/b/c", "/x/y", "/x/y"),
+        ("a/../b", "/x/y", "/x/y"),
+        ("./", "/x/y", "/x/y"),
+        ("./a/b", "/x/y/..", "/x/y/.."),
+        ("/a/b/c", "/x/y/..", "/x/y/..")
+      )
+      forAll(table) { (source: String, other: String, expected: String) =>
+        val resolvedWithPath = Path(source).resolve(Path(other))
+        assert(resolvedWithPath == Path(expected) && resolvedWithPath.toString == expected)
+
+        val resolvedWithString = Path(source).resolve(other)
+        assert(resolvedWithString == Path(expected) && resolvedWithString.toString == expected)
+      }
+    }
+
+    "If other is an empty path then this method trivially returns this path" in {
+      val table = Table(
+        ("source", "expected"),
+        ("./", "."),
+        ("./a/b", "./a/b"),
+        ("/a/b/c", "/a/b/c"),
+        ("a", "a"),
+        ("a/../b", "a/../b"),
+        ("a/b/c", "a/b/c")
+      )
+      forAll(table) { (source: String, expected: String) =>
+        val resolvedWithPath = Path(source).resolve(Path(""))
+        assert(resolvedWithPath == Path(expected) && resolvedWithPath.toString == expected)
+
+        val resolvedWithString = Path(source).resolve("")
+        assert(resolvedWithString == Path(expected) && resolvedWithString.toString == expected)
+      }
+    }
+
+    "Otherwise this method considers this path to be a directory and resolves the given path against this path" - {
+      "If the given path does not have a root component, this method joins the given path to this path and returns a resulting path that ends with the given path." in {
+        val table = Table(
+          ("source", "other", "expected"),
+          ("", "x/y", "x/y"),
+          ("a/b", "x/y", "a/b/x/y"),
+          ("a/b", "../y", "a/b/../y"),
+          ("a/b/..", "../y", "a/b/../../y"),
+          ("/a/b", "x/y", "/a/b/x/y"),
+          ("/a/b", "../y", "/a/b/../y"),
+          ("/a/b/..", "../y", "/a/b/../../y")
+        )
+        forAll(table) { (source: String, other: String, expected: String) =>
+          val resolvedWithPath = Path(source).resolve(Path(other))
+          assert(resolvedWithPath == Path(expected) && resolvedWithPath.toString == expected)
+
+          val resolvedWithString = Path(source).resolve(other)
+          assert(resolvedWithString == Path(expected) && resolvedWithString.toString == expected)
+        }
+      }
+
+      "Where the given path has a root component, resolution is highly implementation dependent and therefore unspecified." ignore {
+        // ???
+      }
+    }
+  }
 
   "startsWith(Path | String)" in {
     val trueCombination = Table(
