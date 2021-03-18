@@ -50,7 +50,7 @@ trait Path extends Comparable[Path] with java.lang.Iterable[Path] {
   }
   def resolveSibling(other: String): Path = this.resolveSibling(Paths.get(other))
 
-  def relativize(path: Path): Path = ???
+  def relativize(other: Path): Path
 
   def toUri: URI = ???
 
@@ -193,9 +193,18 @@ private[java] object PathHelper {
       }
     }
 
-    override def relativize(path: Path): Path = {
-      throw new UnsupportedOperationException
+    override def relativize(other: Path): Path = {
+      if (this.isAbsolute != other.isAbsolute) {
+        throw new IllegalArgumentException(
+          "A relative path cannot be constructed if only one of the paths have a root component"
+        )
+      }
+      // Avoid .. or . resolution in Node.js's relative
+      val escaped = names.map(s => if (s == ".." || s == ".") "_" else s).mkString(File.separator)
+      val o       = if (isAbsolute) s"${File.separator}${escaped}" else escaped
+      new PathImpl(NodeJsPath.relative(o, other.toString))
     }
+
     override def toUri: URI = {
       throw new UnsupportedOperationException
     }

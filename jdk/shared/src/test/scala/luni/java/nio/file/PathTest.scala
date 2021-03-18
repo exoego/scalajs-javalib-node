@@ -188,7 +188,44 @@ class PathTest extends AnyFreeSpec {
   }
 
   "register()" ignore {}
-  "relativize(Path)" ignore {}
+
+  "relativize(Path)" - {
+    "Construct a relative path" in {
+      val table = Table(
+        ("from", "to", "relative"),
+        ("a/b", "a/b", ""),
+        ("a/b", "a/b/c/d", "c/d"),
+        ("/a/b", "/a", ".."),
+        ("/a/b", "/a/b", ""),
+        ("/a/b", "/a/b/c/d", "c/d"),
+        ("/a/b/c", "/a", "../.."),
+        ("/a/b/c/.", "/a", "../../.."),
+        ("/a/b/c/..", "/a", "../../.."),
+        ("/a/b/c/../d", "/a", "../../../..")
+      )
+      forAll(table) { (from: String, to: String, relative: String) =>
+        assert(Path(from).relativize(Path(to)) === Path(relative))
+
+        // when both path is normalized, relativize is a reverse of resolve
+        val p = Path(from).normalize()
+        val q = Path(to).normalize()
+        assert(p.resolve(p.relativize(q)).normalize() === q)
+      }
+    }
+
+    "A relative path cannot be constructed if only one of the paths have a root component" in {
+      assertThrows[IllegalArgumentException] {
+        Path("/a").relativize(Path("a/b"))
+      }
+      assertThrows[IllegalArgumentException] {
+        Path("a").relativize(Path("/a/b"))
+      }
+    }
+
+    "When symbolic links are supported, then whether the resulting path, when resolved against this path, yields a path that can be used to locate the same file as other is implementation dependent. For example, if this path is /a/b and the given path is /a/x then the resulting relative path may be ../x. If b is a symbolic link then is implementation dependent if a/b/../x would locate the same file as /a/x." ignore {
+      // todo
+    }
+  }
 
   "resolve(Path)" - {
     "If the other parameter is an absolute path then this method trivially returns other" in {
