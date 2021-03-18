@@ -16,7 +16,7 @@ trait Path extends Comparable[Path] with java.lang.Iterable[Path] {
 
   def getFileSystem: file.FileSystem = ???
 
-  def isAbsolute: Boolean = ???
+  def isAbsolute: Boolean
 
   def getRoot: Path = ???
 
@@ -54,7 +54,7 @@ trait Path extends Comparable[Path] with java.lang.Iterable[Path] {
 
   def toUri: URI = ???
 
-  def toAbsolutePath: Path = ???
+  def toAbsolutePath: Path
 
   def toRealPath(linkOptions: LinkOption*): Path = ???
 
@@ -199,10 +199,17 @@ private[java] object PathHelper {
     override def toUri: URI = {
       throw new UnsupportedOperationException
     }
+
     override def toAbsolutePath: Path = {
-      // TODO: use NodeJsPath.resolve
-      throw new UnsupportedOperationException
+      if (isAbsolute) {
+        this
+      } else {
+        new PathImpl(
+          io.scalajs.nodejs.process.Process.env.PWD.getOrElse("") + NodeJsPath.sep + rawPath
+        )
+      }
     }
+
     override def toRealPath(linkOptions: LinkOption*): Path = {
       throw new UnsupportedOperationException
     }

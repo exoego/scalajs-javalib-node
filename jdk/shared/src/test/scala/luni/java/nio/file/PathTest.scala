@@ -343,7 +343,23 @@ class PathTest extends AnyFreeSpec {
       }
     }
   }
-  "toAbsolutePath()" ignore {}
+
+  "toAbsolutePath()" in {
+    val pwd = System.getenv("PWD")
+    val table = Table(
+      ("source", "expected"),
+      ("/", "/"),
+      ("/a", "/a"),
+      ("/a/../b", "/a/../b"),
+      ("a", s"${pwd}/a"),
+      ("..", s"${pwd}/.."),
+      (pwd, pwd)
+    )
+    forAll(table) { (source: String, expected: String) =>
+      assert(Path(source).toAbsolutePath === Path(expected))
+    }
+  }
+
   "toRealPath(options)" ignore {}
   "toString()" in {
     assert(Path("").toString === "")
