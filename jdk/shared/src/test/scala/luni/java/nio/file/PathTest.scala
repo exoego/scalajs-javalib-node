@@ -289,10 +289,6 @@ class PathTest extends AnyFreeSpec {
           assert(resolvedWithString == Path(expected) && resolvedWithString.toString == expected)
         }
       }
-
-      "Where the given path has a root component, resolution is highly implementation dependent and therefore unspecified." ignore {
-        // ???
-      }
     }
   }
 
