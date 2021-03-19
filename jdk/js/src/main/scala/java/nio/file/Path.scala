@@ -243,11 +243,13 @@ private[java] object PathHelper {
 
     override def equals(obj: Any): Boolean = {
       obj match {
-        case path: PathImpl => this.rawPath == path.rawPath
-//        case path: Path => this.toFile() == path.toFile()
-        case _ => false
+        case other: PathImpl => this.rawPath == other.rawPath
+        case other: Path     => toString == other.toString && this.getFileSystem == other.getFileSystem
+        case _               => false
       }
     }
+
+    override def hashCode(): Int = rawPath.hashCode
 
     override def iterator(): java.util.Iterator[Path] = {
       if (rawPath == "/") {

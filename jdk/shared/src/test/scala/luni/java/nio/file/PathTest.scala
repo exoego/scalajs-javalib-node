@@ -67,7 +67,22 @@ class PathTest extends AnyFreeSpec {
     }
   }
 
-  "equals(Path)" ignore {}
+  "equals(Path)" - {
+    "same file system" in {
+      assert(Path("a") !== "a")
+      assert(Path("a") !== null)
+      assert(Path("a") === Path("a"))
+      val deleted = Paths.get("jdk/shared/src/test/resources/deleted-symlink/hello.txt")
+      assert(deleted !== Path(""))
+      assert(deleted === deleted)
+
+      assert(Path("a", "b", "c") === Path("a/b/c"))
+      assert(Path("a", "b", "c") !== Path("a/b/c").toAbsolutePath)
+      assert(Path("a", "b", "c") !== Path("/a/b/c"))
+      assert(Path("b", "c") !== Path("a", "b", "c"))
+    }
+  }
+
   "getFileName()" in {
     assert(Path("foo.md").getFileName === Path("foo.md"))
     assert(Path("bar", "foo.md").getFileName === Path("foo.md"))
@@ -136,7 +151,15 @@ class PathTest extends AnyFreeSpec {
     assert(Path("/").getRoot === Path("/"))
   }
 
-  "hashCode()" ignore {}
+  "hashCode()" in {
+    assert(Path("a/b/c").hashCode() === Path("a/b/c").hashCode())
+    assert(Path("a/b/c").hashCode() === Path("a", "b", "c").hashCode())
+    assert(Path("a/b/c/d/e").hashCode() === Path("a/b/c/d/e").hashCode())
+    assert(Path("a/b/c/d/e").hashCode() === Path("a", "b", "c", "d", "e").hashCode())
+
+    assert(Path("a/b/c").hashCode() !== Path("x/b/c").hashCode())
+    assert(Path("a/b/c/d/e").hashCode() !== Path("a/b/X/d/e").hashCode())
+  }
 
   "isAbsolute()" in {
     val absolutePaths = Table(
