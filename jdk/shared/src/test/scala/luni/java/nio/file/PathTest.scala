@@ -221,10 +221,6 @@ class PathTest extends AnyFreeSpec {
         Path("a").relativize(Path("/a/b"))
       }
     }
-
-    "When symbolic links are supported, then whether the resulting path, when resolved against this path, yields a path that can be used to locate the same file as other is implementation dependent. For example, if this path is /a/b and the given path is /a/x then the resulting relative path may be ../x. If b is a symbolic link then is implementation dependent if a/b/../x would locate the same file as /a/x." ignore {
-      // todo
-    }
   }
 
   "resolve(Path)" - {
@@ -397,7 +393,26 @@ class PathTest extends AnyFreeSpec {
     }
   }
 
-  "toRealPath(options)" ignore {}
+  "toRealPath(options)" in {
+    val directorySource  = Paths.get("jdk/shared/src/test/resources/source")
+    val directorySymlink = Paths.get("jdk/shared/src/test/resources/symlink")
+    val fileInSource     = Paths.get("jdk/shared/src/test/resources/source/hello.txt")
+    val fileInSymlink    = Paths.get("jdk/shared/src/test/resources/symlink/hello.txt")
+    val regularText      = Paths.get("jdk/shared/src/test/resources/regular.txt")
+    val symlinkText      = Paths.get("jdk/shared/src/test/resources/symbolic.txt")
+
+    assert(directorySource.toRealPath() === directorySource.toAbsolutePath)
+    assert(directorySymlink.toRealPath() === directorySource.toAbsolutePath)
+
+    assert(fileInSymlink.toRealPath() === fileInSource.toAbsolutePath)
+
+    assert(symlinkText.toRealPath() === symlinkText.toAbsolutePath)
+    assert(regularText.toRealPath() === regularText.toAbsolutePath)
+    assertThrows[NoSuchFileException] {
+      Paths.get("jdk/shared/src/test/resources/deleted-symlink/hello.txt").toRealPath()
+    }
+  }
+
   "toString()" in {
     assert(Path("").toString === "")
     assert(Path("/").toString === "/")

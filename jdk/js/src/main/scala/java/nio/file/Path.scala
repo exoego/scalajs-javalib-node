@@ -3,8 +3,10 @@ package java.nio.file
 import java.io.File
 import java.net.URI
 import java.nio.file
-
 import io.scalajs.nodejs.path.{Path => NodeJsPath}
+import io.scalajs.nodejs.fs.{Fs => NodeJsFs}
+
+import scala.annotation.varargs
 import scala.jdk.CollectionConverters._
 
 trait Path extends Comparable[Path] with java.lang.Iterable[Path] {
@@ -56,7 +58,7 @@ trait Path extends Comparable[Path] with java.lang.Iterable[Path] {
 
   def toAbsolutePath: Path
 
-  def toRealPath(linkOptions: LinkOption*): Path = ???
+  @varargs def toRealPath(linkOptions: LinkOption*): Path
 
   def register(
       watchService: WatchService,
@@ -219,9 +221,16 @@ private[java] object PathHelper {
       }
     }
 
-    override def toRealPath(linkOptions: LinkOption*): Path = {
-      throw new UnsupportedOperationException
+    @varargs override def toRealPath(linkOptions: LinkOption*): Path = {
+      if (linkOptions.contains(LinkOption.NOFOLLOW_LINKS)) {
+        toAbsolutePath
+      } else if (NodeJsFs.existsSync(rawPath)) {
+        new PathImpl(NodeJsFs.realpathSync(rawPath))
+      } else {
+        throw new NoSuchFileException(rawPath)
+      }
     }
+
     override def register(
         watchService: WatchService,
         kinds: Array[WatchEvent.Kind[_]],
