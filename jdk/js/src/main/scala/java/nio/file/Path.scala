@@ -16,21 +16,21 @@ trait Path extends Comparable[Path] with java.lang.Iterable[Path] {
 
   def toFile(): File
 
-  def getFileSystem(): file.FileSystem = ???
+  def getFileSystem(): file.FileSystem
 
   def isAbsolute(): Boolean
 
-  def getRoot(): Path = ???
+  def getRoot(): Path
 
-  def getFileName(): Path = ???
+  def getFileName(): Path
 
-  def getParent(): Path = ???
+  def getParent(): Path
 
   def getNameCount(): Int
 
   def getName(index: Int): Path
 
-  def subpath(beginIndex: Int, endIndex: Int): Path = ???
+  def subpath(beginIndex: Int, endIndex: Int): Path
 
   def startsWith(path: Path): Boolean
   def startsWith(path: String): Boolean = startsWith(Paths.get(path))
@@ -54,7 +54,7 @@ trait Path extends Comparable[Path] with java.lang.Iterable[Path] {
 
   def relativize(other: Path): Path
 
-  def toUri(): URI = ???
+  def toUri(): URI
 
   def toAbsolutePath(): Path
 
@@ -62,9 +62,11 @@ trait Path extends Comparable[Path] with java.lang.Iterable[Path] {
 
   def register(
       watchService: WatchService,
-      kinds: Array[WatchEvent.Kind[_]],
+      events: Array[WatchEvent.Kind[_]],
       modifiers: WatchEvent.Modifier*
-  ): WatchKey = ???
+  ): WatchKey
+  @varargs def register(watchService: WatchService, events: WatchEvent.Kind[_]*): WatchKey =
+    register(watchService, events.toArray)
 }
 
 private[java] object PathHelper {
