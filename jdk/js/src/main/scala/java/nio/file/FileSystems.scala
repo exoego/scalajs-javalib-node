@@ -113,11 +113,10 @@ private[file] object DefaultFileSystem extends FileSystem {
   override def supportedFileAttributeViews(): JavaSet[String] = {
     val os = System.getProperty("os.name", "Linux")
     os match {
-      case "Linux"                  => Set("basic", "posix", "unix", "owner", "dos", "user").asJava
-      case "SunOS"                  => Set("basic", "posix", "unix", "owner", "acl", "user").asJava
-      case "Windows"                => Set("basic", "owner", "dos", "acl", "user").asJava
-      case _ if os.contains("OS X") => Set("basic", "posix", "unix", "owner").asJava
-      case _                        => Set("basic").asJava
+      case "Linux"    => Set("basic", "posix", "unix", "owner", "dos", "user").asJava
+      case "Windows"  => Set("basic", "owner", "dos", "acl", "user").asJava
+      case "Mac OS X" => Set("basic", "posix", "unix", "owner").asJava
+      case _          => Set("basic").asJava
     }
   }
 

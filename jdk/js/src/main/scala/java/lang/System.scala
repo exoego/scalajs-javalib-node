@@ -213,6 +213,11 @@ object System {
       dictSet(result, "file.separator", "/")
       dictSet(result, "path.separator", ":")
       dictSet(result, "line.separator", "\n")
+      dictSet(result, "os.name", io.scalajs.nodejs.process.Process.platform match {
+        case "darwin" => "Mac OS X"
+        case "win32"  => "Windows"
+        case _        => "Linux"
+      })
       result
     }
 
