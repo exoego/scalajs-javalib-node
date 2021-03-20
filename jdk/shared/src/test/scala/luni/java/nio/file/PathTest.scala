@@ -3,6 +3,7 @@ package luni.java.nio.file
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.prop.TableDrivenPropertyChecks._
 
+import java.io.File
 import java.nio.file._
 import scala.jdk.CollectionConverters._
 
@@ -91,7 +92,15 @@ class PathTest extends AnyFreeSpec {
     assert(Path("bar/../").getFileName === Path(".."))
     assert(Path("").getFileName === Path(""))
   }
-  "getFileSystem()" ignore {}
+
+  "getFileSystem()" in {
+    assert(Paths.get("").getFileSystem.isOpen)
+    assert(Paths.get("").getFileSystem.isReadOnly === false)
+    assert(Paths.get("").getFileSystem.getSeparator === File.separator)
+    assert(Paths.get("").getFileSystem.provider() !== null)
+    assert(Paths.get("").getFileSystem.provider().getScheme === "file")
+  }
+
   "getName(index)" in {
     assert(Path("").getName(0) === Path(""))
     assert(Path("a").getName(0) === Path("a"))

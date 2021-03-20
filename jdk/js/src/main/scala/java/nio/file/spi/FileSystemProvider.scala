@@ -1,74 +1,112 @@
 package java.nio.file.spi
 
-import java.util.{Map => JavaMap, Set => JavaSet}
+import java.io.{InputStream, OutputStream}
+import java.util.{List => JavaList, Map => JavaMap, Set => JavaSet}
 import java.net.URI
-import java.nio.channels.SeekableByteChannel
-import java.nio.file.{
-  AccessMode,
-  CopyOption,
-  DirectoryStream,
-  FileStore,
-  FileSystem,
-  LinkOption,
-  OpenOption,
-  Path
-}
+import java.nio.channels.{AsynchronousFileChannel, FileChannel, SeekableByteChannel}
+import java.nio.file._
 import java.nio.file.attribute.{BasicFileAttributes, FileAttribute, FileAttributeView}
+import java.util.concurrent.ExecutorService
+import scala.annotation.varargs
 
-abstract class FileSystemProvider {
+abstract class FileSystemProvider protected () {
 
-  def getScheme(): String
+  @varargs def checkAccess(path: Path, modes: AccessMode*): Unit
 
-  def newFileSystem(uri: URI, map: JavaMap[String, _]): FileSystem
+  @varargs def copy(source: Path, target: Path, options: CopyOption*): Unit
+
+  @varargs def createDirectory(dir: Path, attrs: FileAttribute[_]*): Unit
+
+  def createLink(link: Path, existing: Path): Unit =
+    throw new UnsupportedOperationException("createLink not implemented")
+
+  def createSymbolicLink(path: Path, target: Path, attrs: FileAttribute[_]*): Unit =
+    throw new UnsupportedOperationException("createSymbolicLink not implemented")
+
+  def delete(path: Path): Unit
+
+  def deleteIfExists(path: Path): Boolean = {
+    try {
+      delete(path)
+      true
+    } catch {
+      case _: NoSuchFileException => false
+    }
+  }
+
+  @varargs def getFileAttributeView[V <: FileAttributeView](
+      path: Path,
+      clazz: Class[V],
+      options: LinkOption*
+  ): V
+
+  def getFileStore(path: Path): FileStore
 
   def getFileSystem(uri: URI): FileSystem
 
   def getPath(uri: URI): Path
 
-  def newByteChannel(
-      path: Path,
-      set: JavaSet[_ <: OpenOption],
-      fileAttributes: FileAttribute[_]*
-  ): SeekableByteChannel
-
-  def newDirectoryStream(
-      path: Path,
-      filter: DirectoryStream.Filter[_ >: Path]
-  ): DirectoryStream[Path]
-
-  def createDirectory(path: Path, fileAttributes: FileAttribute[_]*): Unit
-
-  def delete(path: Path): Unit
-
-  def copy(path: Path, path1: Path, copyOptions: CopyOption*): Unit
-
-  def move(path: Path, path1: Path, copyOptions: CopyOption*): Unit
-
-  def isSameFile(path: Path, path1: Path): Boolean
+  def getScheme(): String
 
   def isHidden(path: Path): Boolean
 
-  def getFileStore(path: Path): FileStore
+  def isSameFile(path1: Path, path2: Path): Boolean
 
-  def checkAccess(path: Path, accessModes: AccessMode*): Unit
+  @varargs def move(source: Path, target: Path, options: CopyOption*): Unit
 
-  def getFileAttributeView[V <: FileAttributeView](
+  @varargs def newAsynchronousFileChannel(
       path: Path,
-      aClass: Class[V],
-      linkOptions: LinkOption*
-  ): V
+      options: JavaSet[_ <: OpenOption],
+      executor: ExecutorService,
+      attrs: FileAttribute[_]*
+  ): AsynchronousFileChannel =
+    throw new UnsupportedOperationException("newAsynchronousFileChannel not implemented")
 
-  def readAttributes[A <: BasicFileAttributes](
+  @varargs def newByteChannel(
       path: Path,
-      aClass: Class[A],
-      linkOptions: LinkOption*
+      options: JavaSet[_ <: OpenOption],
+      attrs: FileAttribute[_]*
+  ): SeekableByteChannel
+
+  def newDirectoryStream(
+      dir: Path,
+      filter: DirectoryStream.Filter[_ >: Path]
+  ): DirectoryStream[Path]
+
+  @varargs def newFileChannel(
+      path: Path,
+      options: JavaSet[_ <: OpenOption],
+      attrs: FileAttribute[_]*
+  ): FileChannel = throw new UnsupportedOperationException("newFileChannel not implemented")
+
+  def newFileSystem(uri: URI, env: JavaMap[String, _]): FileSystem
+
+  def newFileSystem(path: Path, env: JavaMap[String, _]): FileSystem =
+    newFileSystem(path.toUri(), env)
+
+  @varargs def newInputStream(path: Path, options: OpenOption*): InputStream
+
+  @varargs def newOutputStream(path: Path, options: OpenOption*): OutputStream
+
+  @varargs def readAttributes[A <: BasicFileAttributes](
+      path: Path,
+      clazz: Class[A],
+      options: LinkOption*
   ): A
 
-  def readAttributes(
+  @varargs def readAttributes(
       path: Path,
-      s: String,
+      attributes: String,
       linkOptions: LinkOption*
   ): JavaMap[String, AnyRef]
 
-  def setAttribute(path: Path, s: String, o: Any, linkOptions: LinkOption*): Unit
+  def readSymbolicLink(link: Path): Path =
+    throw new UnsupportedOperationException("readSymbolicLink not implemented")
+
+  @varargs def setAttribute(path: Path, attribute: String, value: Any, options: LinkOption*): Unit
+}
+
+object FileSystemProvider {
+  def installedProviders(): JavaList[FileSystemProvider] =
+    throw new UnsupportedOperationException("installedProviders not implemented")
 }
