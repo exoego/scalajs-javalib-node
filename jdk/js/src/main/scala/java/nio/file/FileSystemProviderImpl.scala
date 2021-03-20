@@ -42,7 +42,9 @@ private[file] object MacOsXFileSystemProvider extends FileSystemProvider {
 
   override def isSameFile(path: Path, path2: Path): Boolean = ???
 
-  override def isHidden(path: Path): Boolean = ???
+  override def isHidden(path: Path): Boolean = {
+    path.getFileName().toString.startsWith(".")
+  }
 
   override def getFileStore(path: Path): FileStore = ???
 

@@ -157,7 +157,7 @@ object Files {
       )
     } catch {
       case _: Throwable =>
-        if (Files.exists(path.getParent)) {
+        if (Files.exists(path.getParent())) {
           throw new FileAlreadyExistsException(path.toString)
         } else {
           throw new IOException()
@@ -407,10 +407,7 @@ object Files {
   }
 
   def isHidden(path: Path): Boolean = {
-    // unix
-    path.getFileName.toString.startsWith(".")
-
-    // TODO: read attribute on windows
+    path.getFileSystem().provider().isHidden(path)
   }
 
   def isReadable(path: Path): Boolean = {
@@ -500,26 +497,43 @@ object Files {
 
   @varargs def newBufferedWriter(path: Path, options: OpenOption*): BufferedWriter = ???
 
-  @varargs def newByteChannel(path: Path, options: OpenOption*): SeekableByteChannel = ???
+  @varargs def newByteChannel(path: Path, options: OpenOption*): SeekableByteChannel = {
+    path.getFileSystem().provider().newByteChannel(path, options.toSet.asJava)
+  }
 
   @varargs def newByteChannel(
       path: Path,
       options: JavaSet[_ <: OpenOption],
       attrs: FileAttribute[_]*
-  ): SeekableByteChannel = ???
+  ): SeekableByteChannel = {
+    path.getFileSystem().provider().newByteChannel(path, options, attrs: _*)
+  }
 
-  def newDirectoryStream(dir: Path): DirectoryStream[Path] = ???
+  private lazy val alwaysMatcher: DirectoryStream.Filter[Path] = _ => true
+
+  def newDirectoryStream(dir: Path): DirectoryStream[Path] = {
+    dir.getFileSystem().provider().newDirectoryStream(dir, alwaysMatcher)
+  }
 
   def newDirectoryStream(
       dir: Path,
       filter: DirectoryStream.Filter[_ >: Path]
-  ): DirectoryStream[Path] = ???
+  ): DirectoryStream[Path] = {
+    dir.getFileSystem().provider().newDirectoryStream(dir, filter)
+  }
 
-  def newDirectoryStream(dir: Path, glob: String): DirectoryStream[Path] = ???
+  def newDirectoryStream(dir: Path, glob: String): DirectoryStream[Path] = {
+    val globMatcher = dir.getFileSystem().getPathMatcher(s"glob:$glob")
+    newDirectoryStream(dir, (path: Path) => globMatcher.matches(path.getFileName()))
+  }
 
-  @varargs def newInputStream(path: Path, options: OpenOption*): InputStream = ???
+  @varargs def newInputStream(path: Path, options: OpenOption*): InputStream = {
+    path.getFileSystem().provider().newInputStream(path, options: _*)
+  }
 
-  @varargs def newOutputStream(path: Path, options: OpenOption*): OutputStream = ???
+  @varargs def newOutputStream(path: Path, options: OpenOption*): OutputStream = {
+    path.getFileSystem().provider().newOutputStream(path, options: _*)
+  }
 
   @varargs def notExists(path: Path, options: LinkOption*): Boolean = !exists(path, options: _*)
 

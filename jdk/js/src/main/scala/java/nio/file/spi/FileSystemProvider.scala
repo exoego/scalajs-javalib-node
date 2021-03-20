@@ -76,7 +76,7 @@ abstract class FileSystemProvider protected () {
   def newFileSystem(uri: URI, env: JavaMap[String, _]): FileSystem
 
   def newFileSystem(path: Path, env: JavaMap[String, _]): FileSystem =
-    newFileSystem(path.toUri, env)
+    newFileSystem(path.toUri(), env)
 
   @varargs def newInputStream(path: Path, options: OpenOption*): InputStream
 
@@ -97,7 +97,7 @@ abstract class FileSystemProvider protected () {
   def readSymbolicLink(link: Path): Path =
     throw new UnsupportedOperationException("readSymbolicLink not implemented")
 
-  @varargs def setAttribute(path: Path, attruvyte: String, value: Any, options: LinkOption*): Unit
+  @varargs def setAttribute(path: Path, attribute: String, value: Any, options: LinkOption*): Unit
 }
 
 object FileSystemProvider {
