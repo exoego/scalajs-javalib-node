@@ -3,16 +3,22 @@ package java.nio.file
 import java.io.File
 import java.net.URI
 import java.nio.file
+import io.scalajs.nodejs.path.{Path => NodeJsPath}
+import io.scalajs.nodejs.fs.{Fs => NodeJsFs}
 
-trait Path {
+import scala.annotation.varargs
+import scala.jdk.CollectionConverters._
+
+trait Path extends Comparable[Path] with java.lang.Iterable[Path] {
+  def compareTo(path: Path): Int
+
+  def iterator(): java.util.Iterator[Path]
 
   def toFile(): File
 
-  override def toString: String = toFile().getPath()
-
   def getFileSystem: file.FileSystem = ???
 
-  def isAbsolute: Boolean = ???
+  def isAbsolute: Boolean
 
   def getRoot: Path = ???
 
@@ -20,24 +26,23 @@ trait Path {
 
   def getParent: Path = ???
 
-  def getNameCount: Int = ???
+  def getNameCount: Int
 
-  def getName(i: Int): Path = ???
+  def getName(index: Int): Path
 
-  def subpath(i: Int, i1: Int): Path = ???
+  def subpath(beginIndex: Int, endIndex: Int): Path = ???
 
-  def startsWith(path: Path): Boolean   = ???
-  def startsWith(path: String): Boolean = ???
+  def startsWith(path: Path): Boolean
+  def startsWith(path: String): Boolean = startsWith(Paths.get(path))
 
-  def endsWith(path: Path): Boolean   = ???
-  def endsWith(path: String): Boolean = ???
+  def endsWith(path: Path): Boolean
+  def endsWith(path: String): Boolean = endsWith(Paths.get(path))
 
-  def normalize(): Path = ???
+  def normalize(): Path
 
-  def resolve(other: String): Path = {
-    val file = new File(this.toString, other)
-    PathHelper.fromFile(file)
-  }
+  def resolve(other: Path): Path
+  def resolve(other: String): Path = resolve(Paths.get(other))
+
   def resolveSibling(other: Path): Path = {
     if (other == null) throw new NullPointerException
     this.getParent match {
@@ -45,89 +50,187 @@ trait Path {
       case parent => parent.resolve(other)
     }
   }
-  def resolveSibling(other: String): Path = {
-    this.resolveSibling(this.getFileSystem.getPath(other))
-  }
-  def resolve(other: Path): Path = ???
+  def resolveSibling(other: String): Path = this.resolveSibling(Paths.get(other))
 
-  def relativize(path: Path): Path = ???
+  def relativize(other: Path): Path
 
   def toUri: URI = ???
 
-  def toAbsolutePath: Path = ???
+  def toAbsolutePath: Path
 
-  def toRealPath(linkOptions: LinkOption*): Path = ???
+  @varargs def toRealPath(linkOptions: LinkOption*): Path
 
   def register(
       watchService: WatchService,
       kinds: Array[WatchEvent.Kind[_]],
       modifiers: WatchEvent.Modifier*
   ): WatchKey = ???
-
-  def compareTo(path: Path): Int = ???
-
 }
 
 private[java] object PathHelper {
 
-  private final class PathImpl(file: File) extends Path {
-    override def toFile(): File = file
+  private val compactContinuingSeparator = s"${File.separatorChar}+".r
+  private val dropLastSeparator          = s"(.+)${File.separatorChar}$$".r
 
-    override def getFileSystem: FileSystem = {
-      throw new UnsupportedOperationException
-    }
-    override def isAbsolute: Boolean = {
-      throw new UnsupportedOperationException
-    }
-    override def getRoot: Path = {
-      throw new UnsupportedOperationException
-    }
-    override def getFileName: Path = {
-      Paths.get(file.getName())
-    }
+  def fromString(rawPath: String): Path = {
+    val x = compactContinuingSeparator.replaceAllIn(rawPath, File.separator)
+    val y = dropLastSeparator.replaceFirstIn(x, "$1")
+    new PathImpl(y)
+  }
+
+  private final class PathImpl(val rawPath: String) extends Path {
+    private val names: Array[String] =
+      rawPath.dropWhile(_ == File.separatorChar).split(File.separatorChar)
+
+    override def compareTo(path: Path): Int =
+      if (this == path) {
+        0
+      } else {
+        this.toString.compareTo(path.toString)
+      }
+
+    override def toFile(): File = new File(rawPath)
+
+    override def getFileSystem: FileSystem = throw new UnsupportedOperationException
+
+    override def isAbsolute: Boolean = NodeJsPath.isAbsolute(rawPath)
+
+    override def getRoot: Path = if (rawPath.startsWith("/")) Paths.get("/") else null
+
+    override def getFileName: Path = new PathImpl(NodeJsPath.basename(rawPath))
+
     override def getParent: Path = {
-      file.getParentFile() match {
-        case null   => null
-        case parent => parent.toPath()
+      NodeJsPath
+        .parse(rawPath)
+        .dir
+        .filter(_.nonEmpty)
+        .map(parent => new PathImpl(parent))
+        .getOrElse(null)
+    }
+
+    override def getNameCount: Int = {
+      if (rawPath == "/") {
+        0
+      } else {
+        names.length
       }
     }
-    override def getNameCount: Int = {
-      throw new UnsupportedOperationException
+
+    override def getName(index: Int): Path = {
+      if (index < 0) {
+        throw new IllegalArgumentException("'i' should be 0 or positive")
+      }
+      if (names.lengthIs > index) {
+        Paths.get(names(index))
+      } else {
+        throw new IllegalArgumentException(s"${rawPath}: invalid 'i' <${index}>")
+      }
     }
-    override def getName(i: Int): Path = {
-      throw new UnsupportedOperationException
+
+    override def subpath(beginIndex: Int, endIndex: Int): Path = {
+      if (beginIndex < 0) {
+        throw new IllegalArgumentException("beginIndex should be equal to or greater than 0")
+      }
+      if (beginIndex >= getNameCount) {
+        throw new IllegalArgumentException("beginIndex should be less than the number of element")
+      }
+      if (endIndex <= beginIndex) {
+        throw new IllegalArgumentException("endIndex should be greater than beginIndex")
+      }
+      if (endIndex > getNameCount) {
+        throw new IllegalArgumentException(
+          "endIndex should be equal to or less than the number of element"
+        )
+      }
+      Paths.get(names.slice(beginIndex, endIndex).mkString(File.separator))
     }
-    override def subpath(i: Int, i1: Int): Path = {
-      throw new UnsupportedOperationException
+
+    override def startsWith(path: Path): Boolean = {
+      val thisCount     = this.getNameCount
+      val pathCount     = path.getNameCount
+      val isRoot        = thisCount == 0
+      val pathIsRoot    = pathCount == 0
+      val otherIsLonger = thisCount - pathCount < 0
+      if (otherIsLonger || isRoot != pathIsRoot || isAbsolute != path.isAbsolute) {
+        false
+      } else {
+        (0 until pathCount).forall { i =>
+          this.getName(i) == path.getName(i)
+        }
+      }
     }
-    override def startsWith(path: Path): Boolean = ???
-    override def startsWith(path: String): Boolean = {
-      file.getName().startsWith(path)
-    }
+
     override def endsWith(path: Path): Boolean = {
-      throw new UnsupportedOperationException
+      val thisCount = this.getNameCount
+      val pathCount = path.getNameCount
+      val diffCount = thisCount - pathCount
+
+      val isRoot     = thisCount == 0
+      val pathIsRoot = pathCount == 0
+      if (diffCount < 0 || isRoot != pathIsRoot) {
+        false
+      } else {
+        ((pathCount - 1) to 0 by -1).forall { i =>
+          this.getName(i + diffCount) == path.getName(i)
+        }
+      }
     }
-    override def endsWith(path: String): Boolean = {
-      file.getName().endsWith(path)
-    }
+
     override def normalize(): Path = {
-      throw new UnsupportedOperationException
+      NodeJsPath.normalize(rawPath) match {
+        case "."       => new PathImpl("")
+        case otherwise => new PathImpl(otherwise)
+      }
     }
-    override def resolve(path: Path): Path = {
-      new PathImpl(new File(this.toString, path.getFileName.toString))
+
+    override def resolve(other: Path): Path = {
+      if (other.isAbsolute) {
+        other
+      } else if (other.toString == "") {
+        this
+      } else if (rawPath == "") {
+        other
+      } else {
+        new PathImpl(s"${rawPath}${File.separatorChar}${other.toString}")
+      }
     }
-    override def relativize(path: Path): Path = {
-      throw new UnsupportedOperationException
+
+    override def relativize(other: Path): Path = {
+      if (this.isAbsolute != other.isAbsolute) {
+        throw new IllegalArgumentException(
+          "A relative path cannot be constructed if only one of the paths have a root component"
+        )
+      }
+      // Avoid .. or . resolution in Node.js's relative
+      val escaped = names.map(s => if (s == ".." || s == ".") "_" else s).mkString(File.separator)
+      val o       = if (isAbsolute) s"${File.separator}${escaped}" else escaped
+      new PathImpl(NodeJsPath.relative(o, other.toString))
     }
+
     override def toUri: URI = {
       throw new UnsupportedOperationException
     }
+
     override def toAbsolutePath: Path = {
-      throw new UnsupportedOperationException
+      if (isAbsolute) {
+        this
+      } else {
+        new PathImpl(
+          io.scalajs.nodejs.process.Process.env.PWD.getOrElse("") + NodeJsPath.sep + rawPath
+        )
+      }
     }
-    override def toRealPath(linkOptions: LinkOption*): Path = {
-      throw new UnsupportedOperationException
+
+    @varargs override def toRealPath(linkOptions: LinkOption*): Path = {
+      if (linkOptions.contains(LinkOption.NOFOLLOW_LINKS)) {
+        toAbsolutePath
+      } else if (NodeJsFs.existsSync(rawPath)) {
+        new PathImpl(NodeJsFs.realpathSync(rawPath))
+      } else {
+        throw new NoSuchFileException(rawPath)
+      }
     }
+
     override def register(
         watchService: WatchService,
         kinds: Array[WatchEvent.Kind[_]],
@@ -135,18 +238,28 @@ private[java] object PathHelper {
     ): WatchKey = {
       throw new UnsupportedOperationException
     }
-    override def compareTo(path: Path): Int = {
-      throw new UnsupportedOperationException
-    }
+
+    override def toString: String = rawPath
 
     override def equals(obj: Any): Boolean = {
       obj match {
-        case path: Path => this.toFile() == path.toFile()
-        case _          => false
+        case other: PathImpl => this.rawPath == other.rawPath
+        case other: Path     => toString == other.toString && this.getFileSystem == other.getFileSystem
+        case _               => false
+      }
+    }
+
+    override def hashCode(): Int = rawPath.hashCode
+
+    override def iterator(): java.util.Iterator[Path] = {
+      if (rawPath == "/") {
+        java.util.Collections.emptyIterator()
+      } else {
+        names.iterator
+          .map(Paths.get(_))
+          .asJava
       }
     }
   }
-
-  def fromFile(file: File): Path = new PathImpl(file)
 
 }

@@ -408,7 +408,7 @@ object Files {
 
   def isHidden(path: Path): Boolean = {
     // unix
-    path.startsWith(".")
+    path.getFileName.toString.startsWith(".")
 
     // TODO: read attribute on windows
   }

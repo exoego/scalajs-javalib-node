@@ -1,4 +1,4 @@
-package luni.java.nio.files.attributes
+package luni.java.nio.file.attributes
 
 import org.scalatest.freespec.AnyFreeSpec
 

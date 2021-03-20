@@ -168,7 +168,10 @@ class File private (dirname: Option[String], basename: String) extends Comparabl
   }
 
   def toPath(): Path = {
-    PathHelper.fromFile(this)
+    this.dirname match {
+      case Some(parent) => Paths.get(parent, this.basename)
+      case None         => Paths.get(this.basename)
+    }
   }
 
   def exists(): Boolean = {
@@ -353,7 +356,7 @@ class File private (dirname: Option[String], basename: String) extends Comparabl
 
   private def setPermission(flag: io.scalajs.nodejs.FileMode, enable: Boolean): Boolean = {
     try {
-      val current = FileHelper.getPermissionCode(this)
+      val current = FileHelper.getPermissionCode(this.toPath())
       val updated = if (enable) {
         current | flag
       } else {
