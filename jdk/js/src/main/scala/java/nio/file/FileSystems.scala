@@ -5,11 +5,13 @@ import java.util.{Map => JavaMap}
 
 object FileSystems {
 
-  def getDefault(): FileSystem = System.getProperty("os.name") match {
+  private lazy val defaultFileSystem: FileSystem = System.getProperty("os.name") match {
     case "Mac OS X" => MacOsXFileSystem
     case otherwise =>
       throw new UnsupportedOperationException(s"FileSystem for '${otherwise}' is not implemented")
   }
+
+  @inline def getDefault(): FileSystem = defaultFileSystem
 
   def getFileSystem(uri: URI): FileSystem = throw new UnsupportedOperationException("getFileSystem")
 

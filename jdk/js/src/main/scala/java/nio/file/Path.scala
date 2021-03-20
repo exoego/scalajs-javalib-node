@@ -75,12 +75,15 @@ private[java] object PathHelper {
   def fromString(rawPath: String): Path = {
     val x = compactContinuingSeparator.replaceAllIn(rawPath, File.separator)
     val y = dropLastSeparator.replaceFirstIn(x, "$1")
-    new PathImpl(y)
+    new PathImpl(y, FileSystems.getDefault())
   }
 
-  private final class PathImpl(val rawPath: String) extends Path {
+  private final class PathImpl(val rawPath: String, override val getFileSystem: FileSystem)
+      extends Path {
     private val names: Array[String] =
       rawPath.dropWhile(_ == File.separatorChar).split(File.separatorChar)
+
+    private def newInstance(s: String): Path = new PathImpl(s, getFileSystem)
 
     override def compareTo(path: Path): Int =
       if (this == path) {
@@ -91,20 +94,18 @@ private[java] object PathHelper {
 
     override def toFile(): File = new File(rawPath)
 
-    override def getFileSystem: FileSystem = throw new UnsupportedOperationException
-
     override def isAbsolute: Boolean = NodeJsPath.isAbsolute(rawPath)
 
     override def getRoot: Path = if (rawPath.startsWith("/")) Paths.get("/") else null
 
-    override def getFileName: Path = new PathImpl(NodeJsPath.basename(rawPath))
+    override def getFileName: Path = newInstance(NodeJsPath.basename(rawPath))
 
     override def getParent: Path = {
       NodeJsPath
         .parse(rawPath)
         .dir
         .filter(_.nonEmpty)
-        .map(parent => new PathImpl(parent))
+        .map(parent => newInstance(parent))
         .getOrElse(null)
     }
 
@@ -178,8 +179,8 @@ private[java] object PathHelper {
 
     override def normalize(): Path = {
       NodeJsPath.normalize(rawPath) match {
-        case "."       => new PathImpl("")
-        case otherwise => new PathImpl(otherwise)
+        case "."       => newInstance("")
+        case otherwise => newInstance(otherwise)
       }
     }
 
@@ -191,7 +192,7 @@ private[java] object PathHelper {
       } else if (rawPath == "") {
         other
       } else {
-        new PathImpl(s"${rawPath}${File.separatorChar}${other.toString}")
+        newInstance(s"${rawPath}${File.separatorChar}${other.toString}")
       }
     }
 
@@ -204,7 +205,7 @@ private[java] object PathHelper {
       // Avoid .. or . resolution in Node.js's relative
       val escaped = names.map(s => if (s == ".." || s == ".") "_" else s).mkString(File.separator)
       val o       = if (isAbsolute) s"${File.separator}${escaped}" else escaped
-      new PathImpl(NodeJsPath.relative(o, other.toString))
+      newInstance(NodeJsPath.relative(o, other.toString))
     }
 
     override def toUri: URI = {
@@ -215,7 +216,7 @@ private[java] object PathHelper {
       if (isAbsolute) {
         this
       } else {
-        new PathImpl(
+        newInstance(
           io.scalajs.nodejs.process.Process.env.PWD.getOrElse("") + NodeJsPath.sep + rawPath
         )
       }
@@ -225,7 +226,7 @@ private[java] object PathHelper {
       if (linkOptions.contains(LinkOption.NOFOLLOW_LINKS)) {
         toAbsolutePath
       } else if (NodeJsFs.existsSync(rawPath)) {
-        new PathImpl(NodeJsFs.realpathSync(rawPath))
+        newInstance(NodeJsFs.realpathSync(rawPath))
       } else {
         throw new NoSuchFileException(rawPath)
       }
