@@ -13,7 +13,13 @@ object FileSystems {
 
   @inline def getDefault(): FileSystem = defaultFileSystem
 
-  def getFileSystem(uri: URI): FileSystem = throw new UnsupportedOperationException("getFileSystem")
+  def getFileSystem(uri: URI): FileSystem = {
+    if (uri.getScheme == "file") {
+      getDefault()
+    } else {
+      throw new UnsupportedOperationException("getFileSystem")
+    }
+  }
 
   def newFileSystem(uri: URI, env: JavaMap[String, _]): FileSystem =
     throw new UnsupportedOperationException("newFileSystem")
