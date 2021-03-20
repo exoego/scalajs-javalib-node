@@ -8,8 +8,8 @@ import java.nio.file.spi.FileSystemProvider
 import java.util.{Map => JavaMap, Set => JavaSet}
 import scala.annotation.varargs
 
-private[file] object FileSystemProviderImpl extends FileSystemProvider {
-  override def getScheme(): String = ???
+private[file] object MacOsXFileSystemProvider extends FileSystemProvider {
+  override def getScheme(): String = "file"
 
   override def newFileSystem(uri: URI, env: JavaMap[String, _]): FileSystem = ???
 
@@ -32,9 +32,9 @@ private[file] object FileSystemProviderImpl extends FileSystemProvider {
 
   override def delete(path: Path): Unit = ???
 
-  @varargs def newInputStream(path: Path, options: OpenOption*): InputStream = ???
+  @varargs override def newInputStream(path: Path, options: OpenOption*): InputStream = ???
 
-  @varargs def newOutputStream(path: Path, options: OpenOption*): OutputStream = ???
+  @varargs override def newOutputStream(path: Path, options: OpenOption*): OutputStream = ???
 
   override def copy(source: Path, target: Path, options: CopyOption*): Unit = ???
 

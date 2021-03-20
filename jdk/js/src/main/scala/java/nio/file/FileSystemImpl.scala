@@ -8,8 +8,8 @@ import java.util.{Set => JavaSet}
 import scala.annotation.varargs
 import scala.jdk.CollectionConverters._
 
-private[file] object FileSystemImpl extends FileSystem {
-  override def provider(): FileSystemProvider = FileSystemProviderImpl
+private[file] object MacOsXFileSystem extends FileSystem {
+  override def provider(): FileSystemProvider = MacOsXFileSystemProvider
 
   override def close(): Unit = {
     throw new UnsupportedOperationException("Default FileSystem does not support close")

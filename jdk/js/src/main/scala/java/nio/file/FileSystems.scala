@@ -5,7 +5,11 @@ import java.util.{Map => JavaMap}
 
 object FileSystems {
 
-  def getDefault(): FileSystem = FileSystemImpl
+  def getDefault(): FileSystem = System.getProperty("os.name") match {
+    case "Mac OS X" => MacOsXFileSystem
+    case otherwise =>
+      throw new UnsupportedOperationException(s"FileSystem for '${otherwise}' is not implemented")
+  }
 
   def getFileSystem(uri: URI): FileSystem = throw new UnsupportedOperationException("getFileSystem")
 
