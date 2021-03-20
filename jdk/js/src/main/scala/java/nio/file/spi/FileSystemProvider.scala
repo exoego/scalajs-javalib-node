@@ -25,8 +25,14 @@ abstract class FileSystemProvider protected () {
 
   def delete(path: Path): Unit
 
-  def deleteIfExists(path: Path): Boolean =
-    throw new UnsupportedOperationException("deleteIfExists not implemented")
+  def deleteIfExists(path: Path): Boolean = {
+    try {
+      delete(path)
+      true
+    } catch {
+      case _: NoSuchFileException => false
+    }
+  }
 
   @varargs def getFileAttributeView[V <: FileAttributeView](
       path: Path,

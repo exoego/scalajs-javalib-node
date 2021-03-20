@@ -64,92 +64,32 @@ object Files {
   }
 
   @varargs def copy(source: Path, target: Path, options: CopyOption*): Path = {
-    @inline def innerCopy(): Unit = {
-      if (Files.isDirectory(source)) {
-        Files.createDirectories(target)
-      } else {
-        fs.Fs.copyFileSync(source.toString, target.toString, 0)
-        val sourcePermissions = getPosixFilePermissions(source)
-        if (options.contains(StandardCopyOption.COPY_ATTRIBUTES)) {
-          setPosixFilePermissions(target, sourcePermissions)
-          setLastModifiedTime(target, getLastModifiedTime(source))
-        } else {
-          val securedPermissions = (sourcePermissions.asScala.toSet diff Set(
-            PosixFilePermission.GROUP_WRITE,
-            PosixFilePermission.OTHERS_WRITE
-          )).asJava
-          setPosixFilePermissions(target, securedPermissions)
-        }
-      }
-    }
-
-    if (options.contains(StandardCopyOption.ATOMIC_MOVE)) {
-      throw new UnsupportedOperationException("StandardCopyOption.ATOMIC_MOVE")
-    } else if (Files.exists(target)) {
-      if (Files.isSameFile(source, target)) {
-        // do nothing
-      } else if (options.contains(StandardCopyOption.REPLACE_EXISTING)) {
-        Files.delete(target)
-        innerCopy()
-      } else {
-        throw new FileAlreadyExistsException(target.toString)
-      }
-    } else if (Files.notExists(source)) {
-      throw new NoSuchFileException(source.toString)
-    } else {
-      innerCopy()
-    }
+    source.getFileSystem().provider().copy(source, target, options: _*)
     target
   }
 
   @varargs def createDirectories(dir: Path, attrs: FileAttribute[_]*): Path = {
-    validateInitialFileAttributes(attrs)
+    // TODO: do not depend on FileSystemProviderHelper
+    FileSystemProviderHelper.validateInitialFileAttributes(attrs)
     val dirStr = dir.toString
-    createDirectoryImpl(dirStr, attrs, recursive = true)
+    FileSystemProviderHelper.createDirectoryImpl(dirStr, attrs, recursive = true)
     dir
   }
 
-  private def createDirectoryImpl(
-      dir: String,
-      attrs: Seq[FileAttribute[_]],
-      recursive: Boolean
-  ): Unit =
-    fs.Fs.mkdirSync(
-      dir,
-      fs.MkdirOptions(
-        recursive = recursive,
-        mode = toNodejsFileMode(
-          attrs,
-          fs.Fs.constants.S_IRUSR | fs.Fs.constants.S_IWUSR | fs.Fs.constants.S_IXUSR |
-            fs.Fs.constants.S_IRGRP | fs.Fs.constants.S_IXGRP |
-            fs.Fs.constants.S_IROTH | fs.Fs.constants.S_IXOTH
-        )
-      )
-    )
-
   @varargs def createDirectory(dir: Path, attrs: FileAttribute[_]*): Path = {
-    validateInitialFileAttributes(attrs)
-    val dirStr = dir.toString
-    if (Files.exists(dir)) {
-      throw new FileAlreadyExistsException(dirStr)
-    }
-    try {
-      createDirectoryImpl(dirStr, attrs, recursive = false)
-    } catch {
-      case _: Throwable => throw new NoSuchFileException(dirStr)
-    }
+    dir.getFileSystem().provider().createDirectory(dir, attrs: _*)
     dir
   }
 
   @varargs def createFile(path: Path, attrs: FileAttribute[_]*): Path = {
-    validateInitialFileAttributes(attrs)
+    FileSystemProviderHelper.validateInitialFileAttributes(attrs)
     try {
       fs.Fs.writeFileSync(
         path.toString,
         "",
         fs.FileAppendOptions(
           flag = "wx",
-          mode = toNodejsFileMode(
+          mode = FileSystemProviderHelper.toNodejsFileMode(
             attrs,
             fs.Fs.constants.S_IRUSR | fs.Fs.constants.S_IWUSR | fs.Fs.constants.S_IRGRP | fs.Fs.constants.S_IROTH
           )
@@ -206,9 +146,9 @@ object Files {
       prefix: String,
       attrs: Seq[FileAttribute[_]]
   ): Path = {
-    validateInitialFileAttributes(attrs)
+    FileSystemProviderHelper.validateInitialFileAttributes(attrs)
     val joined = path.Path.join(dir, getRandomId(prefix, ""))
-    val mode = toNodejsFileMode(
+    val mode = FileSystemProviderHelper.toNodejsFileMode(
       attrs,
       fs.Fs.constants.S_IRUSR | fs.Fs.constants.S_IWUSR | fs.Fs.constants.S_IXUSR
     )
@@ -238,49 +178,19 @@ object Files {
     s"${prefix}${random}${suffix2}"
   }
 
-  private def validateInitialFileAttributes(attrs: Seq[FileAttribute[_]]): Unit = {
-    attrs.find(_.name() != "posix:permissions").foreach { attr =>
-      throw new UnsupportedOperationException(
-        s"`${attr.name()}` not supported as initial attribute"
-      )
-    }
-  }
-
-  private def toNodejsFileMode(attrs: Seq[FileAttribute[_]], default: Int): Int = {
-    attrs.collectFirst {
-      case attr if attr.name() == "posix:permissions" =>
-        attr.value().asInstanceOf[JavaSet[PosixFilePermission]]
-    } match {
-      case Some(permissions) =>
-        var mode: Int = 0
-        if (permissions.contains(PosixFilePermission.OWNER_READ)) mode |= fs.Fs.constants.S_IRUSR
-        if (permissions.contains(PosixFilePermission.OWNER_WRITE)) mode |= fs.Fs.constants.S_IWUSR
-        if (permissions.contains(PosixFilePermission.OWNER_EXECUTE)) mode |= fs.Fs.constants.S_IXUSR
-        if (permissions.contains(PosixFilePermission.GROUP_READ)) mode |= fs.Fs.constants.S_IRGRP
-        if (permissions.contains(PosixFilePermission.GROUP_EXECUTE)) mode |= fs.Fs.constants.S_IXGRP
-        if (permissions.contains(PosixFilePermission.OTHERS_READ)) mode |= fs.Fs.constants.S_IROTH
-        if (permissions.contains(PosixFilePermission.OTHERS_EXECUTE))
-          mode |= fs.Fs.constants.S_IXOTH
-
-        // JDK does not support the below permissions
-        // if (permissions.contains(PosixFilePermission.GROUP_WRITE)) mode |= fs.Fs.constants.S_IWGRP
-        // if (permissions.contains(PosixFilePermission.OTHERS_WRITE)) mode |= fs.Fs.constants.S_IWOTH
-        mode
-      case None =>
-        default
-    }
-  }
-
   private def createTempFileInternal(
       dir: String,
       prefix: String,
       suffix: String,
       attrs: Seq[FileAttribute[_]]
   ): Path = {
-    validateInitialFileAttributes(attrs)
+    FileSystemProviderHelper.validateInitialFileAttributes(attrs)
     val fileName = getRandomId(prefix, suffix)
     val joined   = path.Path.join(dir, fileName)
-    val fileMode = toNodejsFileMode(attrs, fs.Fs.constants.S_IRUSR | fs.Fs.constants.S_IWUSR)
+    val fileMode = FileSystemProviderHelper.toNodejsFileMode(
+      attrs,
+      fs.Fs.constants.S_IRUSR | fs.Fs.constants.S_IWUSR
+    )
 
     fs.Fs.writeFileSync(
       joined,
@@ -292,31 +202,12 @@ object Files {
     Paths.get(joined)
   }
 
-  def delete(path: Path): Unit = {
-    if (Files.isRegularFile(path) || Files.isSymbolicLink(path)) {
-      fs.Fs.unlinkSync(path.toString)
-    } else if (Files.isDirectory(path)) {
-      try {
-        fs.Fs.rmdirSync(path.toString)
-      } catch {
-        case _: Throwable => throw new DirectoryNotEmptyException(path.toString)
-      }
-    } else if (Files.notExists(path)) {
-      throw new NoSuchFileException(path.toString)
-    }
-  }
+  def delete(path: Path): Unit = path.getFileSystem().provider().delete(path)
 
-  def deleteIfExists(path: Path): Boolean = {
-    if (notExists(path)) {
-      false
-    } else {
-      delete(path)
-      true
-    }
-  }
+  def deleteIfExists(path: Path): Boolean = path.getFileSystem().provider().deleteIfExists(path)
 
   @varargs def exists(path: Path, options: LinkOption*): Boolean =
-    transformStats(path, options)(false)(_ => true)
+    FileSystemProviderHelper.transformStats(path, options)(false)(_ => true)
 
   @varargs def find(
       start: Path,
@@ -329,7 +220,7 @@ object Files {
     )
 
   @varargs def getAttribute(path: Path, attribute: String, options: LinkOption*): AnyRef = {
-    val typeName      = attributeFormatCheck(attribute)
+    val typeName      = FileSystemProviderHelper.attributeFormatCheck(attribute)
     val attrs         = readAttributes(path, classOf[PosixFileAttributes], options: _*)
     val attributeName = attribute.substring(attribute.indexOf(':') + 1)
     (attributeName match {
@@ -351,50 +242,24 @@ object Files {
       path: Path,
       `type`: Class[V],
       options: LinkOption*
-  ): V = {
-    if (`type` != classOf[PosixFileAttributeView]) {
-      null.asInstanceOf[V]
-    } else {
-      new NodeJsPosixFileAttributeView(path, options).asInstanceOf[V]
-    }
-  }
+  ): V = path.getFileSystem().provider().getFileAttributeView(path, `type`, options: _*)
 
-  def getFileStore(path: Path): FileStore = throw new UnsupportedOperationException("getFileStore")
+  def getFileStore(path: Path): FileStore = path.getFileSystem().provider().getFileStore(path)
 
   @varargs def getOwner(path: Path, options: LinkOption*): UserPrincipal =
     throw new UnsupportedOperationException("getOwner")
-
-  private def transformStats[T](path: Path, options: Seq[LinkOption])(
-      fallback: => T
-  )(transformer: fs.Stats => T): T = {
-    try {
-      val stat: fs.Stats =
-        if (options.contains(LinkOption.NOFOLLOW_LINKS)) {
-          fs.Fs.lstatSync(path.toString)
-        } else {
-          fs.Fs.statSync(path.toString)
-        }
-      transformer(stat)
-    } catch {
-      case _: Throwable => fallback
-    }
-  }
-
-  private def transformStatsOrThrow[T](path: Path, options: Seq[LinkOption])(
-      transformer: fs.Stats => T
-  ): T = {
-    transformStats(path, options)(throw new NoSuchFileException(path.toString))(transformer)
-  }
 
   @varargs def getPosixFilePermissions(
       path: Path,
       options: LinkOption*
   ): JavaSet[PosixFilePermission] = {
-    transformStatsOrThrow(path, options)(PosixFilePermissionsHelper.fromJsStats)
+    FileSystemProviderHelper.transformStatsOrThrow(path, options)(
+      PosixFilePermissionsHelper.fromJsStats
+    )
   }
 
   @varargs def isDirectory(path: Path, options: LinkOption*): Boolean = {
-    transformStats(path, options)(false)(_.isDirectory())
+    FileSystemProviderHelper.transformStats(path, options)(false)(_.isDirectory())
   }
 
   def isExecutable(path: Path): Boolean = {
@@ -406,9 +271,7 @@ object Files {
     }
   }
 
-  def isHidden(path: Path): Boolean = {
-    path.getFileSystem().provider().isHidden(path)
-  }
+  def isHidden(path: Path): Boolean = path.getFileSystem().provider().isHidden(path)
 
   def isReadable(path: Path): Boolean = {
     try {
@@ -420,21 +283,11 @@ object Files {
   }
 
   @varargs def isRegularFile(path: Path, options: LinkOption*): Boolean = {
-    transformStats(path, options)(false)(_.isFile())
+    FileSystemProviderHelper.transformStats(path, options)(false)(_.isFile())
   }
 
-  def isSameFile(path: Path, path2: Path): Boolean = {
-    if (path == path2) {
-      true
-    } else {
-      try {
-        fs.Fs.statSync(path.toString).ino == fs.Fs.statSync(path2.toString).ino
-      } catch {
-        case _: Throwable =>
-          throw new NoSuchFileException(path.toString)
-      }
-    }
-  }
+  def isSameFile(path: Path, path2: Path): Boolean =
+    path.getFileSystem().provider().isSameFile(path, path2)
 
   def isSymbolicLink(path: Path): Boolean = {
     try {
@@ -469,22 +322,7 @@ object Files {
     )
 
   @varargs def move(source: Path, target: Path, options: CopyOption*): Path = {
-    if (options.contains(StandardCopyOption.COPY_ATTRIBUTES)) {
-      throw new UnsupportedOperationException()
-    } else if (notExists(source)) {
-      throw new NoSuchFileException(source.toString)
-    } else if (source != target) {
-      if (options.contains(StandardCopyOption.REPLACE_EXISTING)) {
-        try {
-          Files.delete(target)
-        } catch {
-          case _: Throwable => throw new DirectoryNotEmptyException(target.toString)
-        }
-      } else if (exists(target)) {
-        throw new FileAlreadyExistsException(target.toString)
-      }
-      fs.Fs.renameSync(source.toString, target.toString)
-    }
+    source.getFileSystem().provider().move(source, target, options: _*)
     target
   }
 
@@ -570,83 +408,19 @@ object Files {
       `type`: Class[A],
       options: LinkOption*
   ): A = {
-    if (`type` == classOf[BasicFileAttributes] || `type` == classOf[PosixFileAttributes]) {
-      val attrs = transformStatsOrThrow(path, options) { stats =>
-        new NodeJsPosixFileAttributes(stats)
-      }
-      attrs.asInstanceOf[A]
-    } else {
-      throw new UnsupportedOperationException(s"Unsupported class ${`type`}")
-    }
-  }
-
-  private lazy val basicFileAttributesKeys = Set(
-    "isDirectory",
-    "isOther",
-    "isRegularFile",
-    "isSymbolicLink",
-    "size",
-    "fileKey",
-    "creationTime",
-    "lastAccessTime",
-    "lastModifiedTime"
-  )
-  private lazy val posixFileAttributesKeys = basicFileAttributesKeys ++ Set("permissions")
-
-  private def attributeFormatCheck(attributes: String): String = {
-    val typeName = attributes.slice(0, attributes.indexOf(':'))
-    if (attributes.contains(":") && !attributes.startsWith("basic:") && !attributes.startsWith(
-          "posix:"
-        )) {
-      throw new UnsupportedOperationException(s"View '${typeName}' not available")
-    }
-    typeName
+    path.getFileSystem().provider().readAttributes(path, `type`, options: _*)
   }
 
   @varargs def readAttributes(
       path: Path,
       attributes: String,
       options: LinkOption*
-  ): JavaMap[String, Any] = {
-    val typeName = attributeFormatCheck(attributes)
-    val (attrs, attrKeys) = typeName match {
-      case "" | "basic" =>
-        (readAttributes(path, classOf[BasicFileAttributes], options: _*), basicFileAttributesKeys)
-      case "posix" =>
-        (readAttributes(path, classOf[PosixFileAttributes], options: _*), posixFileAttributesKeys)
-    }
-    val keys = {
-      val keySet  = attributes.substring(attributes.indexOf(':') + 1).split(",").toSet
-      val keyDiff = keySet.diff(attrKeys) - "*"
-      if (keyDiff.nonEmpty) {
-        throw new IllegalArgumentException(s"Unknown attributes `${keyDiff.mkString(",")}`")
-      } else if (keySet.contains("*")) {
-        basicFileAttributesKeys
-      } else {
-        keySet
-      }
-    }
-    val mapBuilder = mutable.Map[String, Any]()
-    if (keys("isDirectory")) mapBuilder.put("isDirectory", attrs.isDirectory())
-    if (keys("isOther")) mapBuilder.put("isOther", attrs.isOther())
-    if (keys("isRegularFile")) mapBuilder.put("isRegularFile", attrs.isRegularFile())
-    if (keys("isSymbolicLink")) mapBuilder.put("isSymbolicLink", attrs.isSymbolicLink())
-    if (keys("size")) mapBuilder.put("size", attrs.size())
-    if (keys("fileKey")) mapBuilder.put("fileKey", attrs.fileKey())
-    if (keys("creationTime")) mapBuilder.put("creationTime", attrs.creationTime())
-    if (keys("lastAccessTime")) mapBuilder.put("lastAccessTime", attrs.lastAccessTime())
-    if (keys("lastModifiedTime")) mapBuilder.put("lastModifiedTime", attrs.lastModifiedTime())
-    if (keys("permissions"))
-      mapBuilder.put("permissions", attrs.asInstanceOf[PosixFileAttributes].permissions())
-    mapBuilder.asJava
+  ): JavaMap[String, AnyRef] = {
+    path.getFileSystem().provider().readAttributes(path, attributes, options: _*)
   }
 
   def readSymbolicLink(link: Path): Path = {
-    if (!isSymbolicLink(link)) {
-      throw new NotLinkException(link.toString)
-    }
-    val linkPath = fs.Fs.readlinkSync(link.toString)
-    Paths.get(linkPath)
+    link.getFileSystem().provider().readSymbolicLink(link)
   }
 
   @varargs def setAttribute(
@@ -655,38 +429,12 @@ object Files {
       value: AnyRef,
       options: LinkOption*
   ): Path = {
-    val typeName = attributeFormatCheck(attribute)
-
-    val attributeName = attribute.substring(attribute.indexOf(':') + 1)
-    def transformValue[V](setter: V => Unit)(implicit classtag: ClassTag[V]): Unit = value match {
-      case expected: V => setter(expected)
-      case _           => throw new ClassCastException(s"${value.getClass} cannot be cast to class $classtag")
-    }
-
-    attributeName match {
-      case "lastAccessTime" =>
-        transformValue { time: FileTime =>
-          transformStatsOrThrow(path, options) { stats =>
-            fs.Fs.utimesSync(
-              path.toString,
-              atime = (time.toMillis() / 1000).toString,
-              mtime = stats.mtime
-            )
-          }
-        }
-      case "lastModifiedTime" =>
-        setLastModifiedTime(path, value.asInstanceOf[FileTime])
-      case "creationTime" =>
-      // do nothing
-      case "permissions" if typeName == "posix" =>
-        Files.setPosixFilePermissions(path, value.asInstanceOf[java.util.Set[PosixFilePermission]])
-      case _ => throw new IllegalArgumentException(s"`${attribute}` not recognized")
-    }
+    path.getFileSystem().provider().setAttribute(path, attribute, value, options: _*)
     path
   }
 
   @varargs def getLastModifiedTime(path: Path, options: LinkOption*): FileTime = {
-    transformStatsOrThrow(path, options) { stats =>
+    FileSystemProviderHelper.transformStatsOrThrow(path, options) { stats =>
       FileTime.fromMillis(stats.mtimeMs.toLong)
     }
   }
@@ -695,7 +443,7 @@ object Files {
     if (time == null) {
       throw new NullPointerException()
     }
-    transformStatsOrThrow(path, Seq.empty) { stats =>
+    FileSystemProviderHelper.transformStatsOrThrow(path, Seq.empty) { stats =>
       fs.Fs.utimesSync(
         path.toString,
         atime = stats.atime,
@@ -727,7 +475,9 @@ object Files {
     path
   }
 
-  def size(path: Path): Long = transformStatsOrThrow(path, Seq.empty)(_.size.toLong)
+  def size(path: Path): Long = {
+    FileSystemProviderHelper.transformStatsOrThrow(path, Seq.empty)(_.size.toLong)
+  }
 
   @varargs def walk(start: Path, options: FileVisitOption*): JavaStream[Path] =
     throw new UnsupportedOperationException(
