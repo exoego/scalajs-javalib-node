@@ -230,9 +230,23 @@ class PathTest extends AnyFreeSpec {
         ("/a/b", "/a", ".."),
         ("/a/b", "/a/b", ""),
         ("/a/b", "/a/b/c/d", "c/d"),
-        ("/a/b/c", "/a", "../.."),
-        ("/a/b/c/.", "/a", "../../.."),
+        ("/a/b/c", "/a", "../..")
+      )
+      forAll(table) { (from: String, to: String, relative: String) =>
+        assert(Path(from).relativize(Path(to)) === Path(relative))
+
+        // when both path is normalized, relativize is a reverse of resolve
+        val p = Path(from).normalize()
+        val q = Path(to).normalize()
+        assert(p.resolve(p.relativize(q)).normalize() === q)
+      }
+    }
+
+    "file system dependent" ignore {
+      val table = Table(
+        ("from", "to", "relative"),
         ("/a/b/c/..", "/a", "../../.."),
+        ("/a/b/c/.", "/a", "../../.."),
         ("/a/b/c/../d", "/a", "../../../..")
       )
       forAll(table) { (from: String, to: String, relative: String) =>

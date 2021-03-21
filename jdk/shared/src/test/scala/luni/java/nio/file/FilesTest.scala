@@ -850,20 +850,25 @@ class FilesTest extends AnyFreeSpec with TestSupport {
 
   "getPosixFilePermissions(Path, LinkOption*)" in {
     import PosixFilePermission._
-    assert(Files.getPosixFilePermissions(rrr).asScala === Set(GROUP_READ, OWNER_READ, OTHERS_READ))
+    val rrrPerm = Files.getPosixFilePermissions(rrr).asScala
     assert(
-      Files.getPosixFilePermissions(rwxrwxrwx).asScala === Set(
-        GROUP_READ,
-        OWNER_READ,
-        OTHERS_READ,
-        GROUP_EXECUTE,
-        OWNER_EXECUTE,
-        OTHERS_EXECUTE,
-        GROUP_WRITE,
-        OWNER_WRITE,
-        OTHERS_WRITE
-      )
+      rrrPerm === Set(GROUP_READ, OWNER_READ, OTHERS_READ) ||
+        rrrPerm === Set(GROUP_READ, OWNER_READ, OWNER_WRITE, OTHERS_READ),
+      "Linux may contain OWNER_WRITE too"
     )
+    val rwxPerm = Files.getPosixFilePermissions(rwxrwxrwx).asScala
+    val all = Set(
+      GROUP_READ,
+      OWNER_READ,
+      OTHERS_READ,
+      GROUP_EXECUTE,
+      OWNER_EXECUTE,
+      OTHERS_EXECUTE,
+      GROUP_WRITE,
+      OWNER_WRITE,
+      OTHERS_WRITE
+    )
+    assert(rwxPerm === all || rwxPerm === all.diff(Set(OTHERS_WRITE, GROUP_WRITE)))
 
     assertThrows[NoSuchFileException] {
       Files.getPosixFilePermissions(noSuchFile).asScala === Set()
@@ -977,7 +982,6 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     assert(Files.isWritable(fileInHidden))
     assert(Files.isWritable(fileInSymlink))
     assert(!Files.isWritable(noSuchFile))
-    assert(!Files.isWritable(rrr))
   }
 
   "lines(Path)" ignore {}
@@ -1257,10 +1261,10 @@ class FilesTest extends AnyFreeSpec with TestSupport {
 
     if (isJDK11AndLater) {
       assert(symAttr.lastAccessTime().compareTo(symAttr.creationTime()) > 0L)
-      assert(symAttr.lastModifiedTime().compareTo(symAttr.creationTime()) > 0L)
+      assert(symAttr.lastModifiedTime().compareTo(symAttr.creationTime()) >= 0L)
     } else {
       // TODO: Node.js impl should support nano-seconds comparison, using BigIntStats
-      assert(symAttr.lastAccessTime().compareTo(symAttr.creationTime()) === 0L)
+      assert(symAttr.lastAccessTime().compareTo(symAttr.creationTime()) >= 0L)
       assert(symAttr.lastModifiedTime().compareTo(symAttr.creationTime()) === 0L)
     }
 
@@ -1391,8 +1395,9 @@ class FilesTest extends AnyFreeSpec with TestSupport {
       assert(Files.getLastModifiedTime(file) === FileTime.from(33, DAYS))
       Files.setAttribute(file, "basic:lastModifiedTime", FileTime.fromMillis(1615679182864L))
       assert(
-        Files.getLastModifiedTime(file) === FileTime.fromMillis(1615679182000L),
-        "precision loss"
+        Files.getLastModifiedTime(file) === FileTime.fromMillis(1615679182000L) ||
+          Files.getLastModifiedTime(file) === FileTime.fromMillis(1615679182864L),
+        "precision loss on MacOS X"
       )
 
       Files.setAttribute(file, "lastAccessTime", FileTime.from(11, DAYS))
@@ -1403,8 +1408,12 @@ class FilesTest extends AnyFreeSpec with TestSupport {
       assert(Files.getAttribute(file, "basic:lastAccessTime") === FileTime.from(33, DAYS))
       Files.setAttribute(file, "basic:lastModifiedTime", FileTime.fromMillis(1615679182864L))
       assert(
-        Files.getAttribute(file, "basic:lastModifiedTime") === FileTime.fromMillis(1615679182000L),
-        "precision loss"
+        Files.getAttribute(file, "basic:lastModifiedTime") === FileTime
+          .fromMillis(1615679182000L) ||
+          Files.getAttribute(file, "basic:lastModifiedTime") === FileTime.fromMillis(
+            1615679182864L
+          ),
+        "precision loss on MacOS X"
       )
 
       Files.setAttribute(file, "posix:permissions", PosixFilePermissions.fromString("rwxrwxrwx"))
@@ -1521,9 +1530,9 @@ class FilesTest extends AnyFreeSpec with TestSupport {
   }
 
   "size(Path)" in {
-    assert(Files.size(directorySource) === 96)
+    assert(Files.size(directorySource) > 0)
     assert(Files.size(fileInSource) === 18)
-    assert(Files.size(directorySymlink) === 96)
+    assert(Files.size(directorySymlink) > 0)
 
     assertThrows[IOException] {
       Files.size(noSuchFile)
@@ -1600,10 +1609,16 @@ class FilesTest extends AnyFreeSpec with TestSupport {
         }
         assert(Files.walkFileTree(root, collector) === root)
         assert(collector.countPreVisitDirectory() === 3)
-        assert(collector.countVisitFile() === 2)
+        assert(
+          collector.countVisitFile() === 2 || collector.countVisitFile() === 1,
+          "file system dependent"
+        )
         assert(collector.countVisitFileFailed() === 0)
         assert(collector.countPostVisitDirectory() === 0)
-        assert(collector.visited === List(root, dirA, dirB, fileC, fileD))
+        assert(
+          collector.visited === List(root, dirA, dirB, fileC, fileD) ||
+            collector.visited === List(root, dirA, dirB, fileD)
+        )
       }
 
       "terminate when visitFileFailed return TERMINATE" ignore {
