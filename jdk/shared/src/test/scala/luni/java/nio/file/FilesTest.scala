@@ -1,6 +1,7 @@
 package luni.java.nio.file
 
 import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.prop.TableDrivenPropertyChecks._
 import support.TestSupport
 
 import java.util.{Set => JavaSet}
@@ -182,7 +183,12 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     }
 
     "no effect if same file" in {
-      Seq(Files.createTempFile("file", ".d"), root).foreach { path =>
+      val table = Table(
+        "path",
+        Files.createTempFile("file", ".d"),
+        root
+      )
+      forAll(table) { path: Path =>
         Files.copy(path, path)
       }
     }
@@ -343,8 +349,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
 
     "unsupported attributes" in {
       val tmpDir = Files.createTempDirectory("createDirectory")
-
-      unsupportedInitialAttributes.foreach { key =>
+      forAll(Table("unsupportedAttr", unsupportedInitialAttributes: _*)) { key: String =>
         assertThrows[UnsupportedOperationException] {
           Files.createDirectories(
             tmpDir.resolve("x").resolve("y").resolve("z"),
@@ -388,7 +393,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
 
     "unsupported attributes" in {
       val tmpDir = Files.createTempDirectory("createDirectory")
-      unsupportedInitialAttributes.foreach { key =>
+      forAll(Table("key", unsupportedInitialAttributes: _*)) { key: String =>
         assertThrows[UnsupportedOperationException] {
           Files.createDirectory(tmpDir.resolve("x"), new ConstantFileAttributes(key))
         }
@@ -423,7 +428,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
 
     "unsupported attributes" in {
       val tmpDir = Files.createTempDirectory("createDirectory")
-      unsupportedInitialAttributes.foreach { key =>
+      forAll(Table("unsupportedAttr", unsupportedInitialAttributes: _*)) { key: String =>
         assertThrows[UnsupportedOperationException] {
           Files.createFile(tmpDir.resolve("x"), new ConstantFileAttributes(key))
         }
@@ -479,7 +484,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     }
 
     "unsupported attributes" in {
-      unsupportedInitialAttributes.foreach { key =>
+      forAll(Table("unsupportedAttr", unsupportedInitialAttributes: _*)) { key: String =>
         val sourceDir = Files.createTempDirectory("source")
         val targetDir = Files.createTempDirectory("source").resolve("tmp-symlink")
         assertThrows[UnsupportedOperationException] {
@@ -513,7 +518,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
 
     "unsupported attributes" in {
       val base = Files.createTempDirectory("more")
-      unsupportedInitialAttributes.foreach { key =>
+      forAll(Table("unsupportedAttr", unsupportedInitialAttributes: _*)) { key: String =>
         assertThrows[UnsupportedOperationException] {
           Files.createTempDirectory(base, "x", new ConstantFileAttributes(key))
         }
@@ -541,7 +546,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     }
 
     "unsupported attributes" in {
-      unsupportedInitialAttributes.foreach { key =>
+      forAll(Table("unsupportedAttr", unsupportedInitialAttributes: _*)) { key: String =>
         assertThrows[UnsupportedOperationException] {
           Files.createTempDirectory("x", new ConstantFileAttributes(key))
         }
@@ -573,7 +578,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
 
     "unsupported attributes" in {
       val base = Files.createTempDirectory("more")
-      unsupportedInitialAttributes.foreach { key =>
+      forAll(Table("unsupportedAttr", unsupportedInitialAttributes: _*)) { key: String =>
         assertThrows[UnsupportedOperationException] {
           Files.createTempFile(base, "x", "y", new ConstantFileAttributes(key))
         }
@@ -602,8 +607,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     }
 
     "unsupported attributes" in {
-      val base = Files.createTempDirectory("more")
-      unsupportedInitialAttributes.foreach { key =>
+      forAll(Table("unsupportedAttr", unsupportedInitialAttributes: _*)) { key: String =>
         assertThrows[UnsupportedOperationException] {
           Files.createTempFile("x", "y", new ConstantFileAttributes(key))
         }
@@ -713,7 +717,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     Files.setAttribute(file, "lastAccessTime", FileTime.from(300, DAYS))
 
     "supported attribute" in {
-      Seq("", "basic:", "posix:").foreach { prefix =>
+      forAll(Table("type", "", "basic:", "posix:")) { prefix: String =>
         assert(Files.getAttribute(file, s"${prefix}creationTime") !== FileTime.from(100, DAYS))
         assert(Files.getAttribute(file, s"${prefix}creationTime") !== FileTime.from(100, DAYS))
         assert(Files.getAttribute(file, s"${prefix}lastModifiedTime") === FileTime.from(200, DAYS))
@@ -957,7 +961,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     assert(Files.isSameFile(noSuchFile, noSuchFile))
     assert(Files.isSameFile(noSuchSubDir, noSuchSubDir))
 
-    Seq(noSuchFile, noSuchSubDir).foreach { notExist =>
+    forAll(Table("path", noSuchFile, noSuchSubDir)) { notExist: Path =>
       assertThrows[NoSuchFileException] {
         Files.isSameFile(notExist, directory)
       }
@@ -992,7 +996,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
 
   "move(Path, Path, CopyOption*)" - {
     "same existing path do nothing" in {
-      Seq(fileInSource, directory).foreach { path =>
+      forAll(Table("path", fileInSource, directory)) { path: Path =>
         assert(Files.move(path, path) === path)
         assert(Files.move(path, path, StandardCopyOption.ATOMIC_MOVE) === path)
         assert(Files.move(path, path, StandardCopyOption.REPLACE_EXISTING) === path)
@@ -1004,7 +1008,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     }
 
     "same no existing path throws IO" in {
-      Seq(noSuchFile, noSuchFileInDir).foreach { path =>
+      forAll(Table("path", noSuchFile, noSuchFileInDir)) { path: Path =>
         assertThrows[IOException] {
           Files.move(path, path)
         }
@@ -1228,7 +1232,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
 
   "readAttributes[A <: BasicFileAttributes](Path, Class[A], LinkOption*)" in {
     // directory and symlink without NOFOLLOW_LINK
-    Seq(directorySource, directorySymlink).foreach { dir =>
+    forAll(Table("dir", directorySource, directorySymlink)) { dir: Path =>
       val dirAttr: BasicFileAttributes = Files.readAttributes(dir, classOf[BasicFileAttributes])
       assert(dirAttr.isDirectory)
       assert(!dirAttr.isOther)
@@ -1269,8 +1273,8 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     }
 
     // files
-    Seq(fileInSource, fileInHidden, fileInSymlink).foreach { file =>
-      Seq(Seq.empty[LinkOption], Seq(NOFOLLOW_LINKS)).foreach { options =>
+    forAll(Table("file", fileInSource, fileInHidden, fileInSymlink)) { file: Path =>
+      forAll(Table("option", Seq.empty, Seq(NOFOLLOW_LINKS))) { options: Seq[LinkOption] =>
         val fileAttr: BasicFileAttributes =
           Files.readAttributes(file, classOf[BasicFileAttributes], options: _*)
         assert(!fileAttr.isDirectory)
@@ -1288,7 +1292,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     }
 
     // non-exist
-    Seq(noSuchFile, noSuchFile, fileInDeletedSymlink).foreach { nonExist =>
+    forAll(Table("nonExist", noSuchFile, noSuchFile, fileInDeletedSymlink)) { nonExist: Path =>
       assertThrows[IOException] {
         Files.readAttributes(nonExist, classOf[BasicFileAttributes])
       }
@@ -1316,8 +1320,8 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     }
 
     // directory and symlink without NOFOLLOW_LINK
-    Seq(directorySource, directorySymlink).foreach { dir =>
-      Seq("*", "*,*", "*,size", "basic:*").foreach { attrs =>
+    forAll(Table("dir", directorySource, directorySymlink)) { dir =>
+      forAll(Table("attrs", "*", "*,*", "*,size", "basic:*")) { attrs: String =>
         val dirAttr = Files.readAttributes(dir, attrs).asScala
         assert(dirAttr("isDirectory") === true)
         assert(dirAttr("isOther") === false)
@@ -1333,18 +1337,19 @@ class FilesTest extends AnyFreeSpec with TestSupport {
 
       assert(Files.readAttributes(dir, "posix:permissions").asScala.apply("permissions") !== null)
 
-      Seq("isDirectory", "basic:isDirectory").foreach { attrs =>
+      forAll(Table("isDir", "isDirectory", "basic:isDirectory")) { attrs: String =>
         val dirAttr = Files.readAttributes(dir, attrs).asScala
         assert(dirAttr("isDirectory") === true)
         assert(dirAttr.size === 1)
       }
 
-      Seq("creationTime,size", "basic:size,creationTime", "basic:size,creationTime").foreach {
-        attrs =>
-          val dirAttr = Files.readAttributes(dir, attrs).asScala
-          assert(dirAttr("size").asInstanceOf[Long] > 0L)
-          assert(dirAttr("creationTime").asInstanceOf[FileTime].toMillis > 0L)
-          assert(dirAttr.size === 2)
+      forAll(
+        Table("attrs", "creationTime,size", "basic:size,creationTime", "basic:size,creationTime")
+      ) { attrs: String =>
+        val dirAttr = Files.readAttributes(dir, attrs).asScala
+        assert(dirAttr("size").asInstanceOf[Long] > 0L)
+        assert(dirAttr("creationTime").asInstanceOf[FileTime].toMillis > 0L)
+        assert(dirAttr.size === 2)
       }
     }
 
@@ -1353,7 +1358,7 @@ class FilesTest extends AnyFreeSpec with TestSupport {
     assert(symAttr("isDirectory") === false)
 
     // non-exist
-    Seq(noSuchFile, noSuchFile, fileInDeletedSymlink).foreach { nonExist =>
+    forAll(Table("nonExist", noSuchFile, noSuchFile, fileInDeletedSymlink)) { nonExist: Path =>
       assertThrows[IOException] {
         Files.readAttributes(nonExist, "*")
       }
@@ -1687,20 +1692,23 @@ class FilesTest extends AnyFreeSpec with TestSupport {
         val dir1  = Files.createDirectory(root.resolve("dir1"))
         val file2 = Files.createFile(dir1.resolve("file2"))
 
-        Seq(
-          new BaseCountingPathCollector(),
-          new BaseCountingPathCollector {
-            override protected def postVisitDirectoryImpl(
-                dir: Path,
-                exc: IOException
-            ): FileVisitResult =
-              if (dir == dirA) {
-                FileVisitResult.SKIP_SUBTREE
-              } else {
-                FileVisitResult.CONTINUE
-              }
-          }
-        ).foreach { collector =>
+        forAll(
+          Table(
+            ("name", "impl"),
+            ("basic", new BaseCountingPathCollector()),
+            ("skip", new BaseCountingPathCollector {
+              override protected def postVisitDirectoryImpl(
+                  dir: Path,
+                  exc: IOException
+              ): FileVisitResult =
+                if (dir == dirA) {
+                  FileVisitResult.SKIP_SUBTREE
+                } else {
+                  FileVisitResult.CONTINUE
+                }
+            })
+          )
+        ) { (_: String, collector: BaseCountingPathCollector) =>
           assert(Files.walkFileTree(root, collector) === root)
           assert(collector.countPreVisitDirectory() === 3)
           assert(collector.countVisitFile() === 2)
@@ -1718,20 +1726,23 @@ class FilesTest extends AnyFreeSpec with TestSupport {
         val dir1    = Files.createDirectory(root.resolve("dir1"))
         val file2   = Files.createFile(dir1.resolve("file2"))
 
-        Seq(
-          new BaseCountingPathCollector(),
-          new BaseCountingPathCollector {
-            override protected def visitFileImpl(
-                file: Path,
-                attrs: BasicFileAttributes
-            ): FileVisitResult =
-              if (file == fileB) {
-                FileVisitResult.SKIP_SUBTREE
-              } else {
-                FileVisitResult.CONTINUE
-              }
-          }
-        ).foreach { collector =>
+        forAll(
+          Table(
+            ("name", "impl"),
+            ("basic", new BaseCountingPathCollector()),
+            ("skip", new BaseCountingPathCollector {
+              override protected def visitFileImpl(
+                  file: Path,
+                  attrs: BasicFileAttributes
+              ): FileVisitResult =
+                if (file == fileB) {
+                  FileVisitResult.SKIP_SUBTREE
+                } else {
+                  FileVisitResult.CONTINUE
+                }
+            })
+          )
+        ) { (_: String, collector: BaseCountingPathCollector) =>
           assert(Files.walkFileTree(root, collector) === root)
           assert(collector.countPreVisitDirectory() === 3)
           assert(collector.countVisitFile() === 3)
@@ -1746,11 +1757,9 @@ class FilesTest extends AnyFreeSpec with TestSupport {
 
     "SKIP_SIBLINGS" - {
       "skip siblings when preVisitDirectory return SKIP_SUBTREE" in {
-        val root  = Files.createTempDirectory("top")
-        val dirA  = Files.createDirectory(root.resolve(".dirA"))
-        val fileB = Files.createFile(dirA.resolve("fileB"))
-        val dir1  = Files.createDirectory(root.resolve("dir1"))
-        val file2 = Files.createFile(dir1.resolve("file2"))
+        val root = Files.createTempDirectory("top")
+        val dirA = Files.createDirectory(root.resolve(".dirA"))
+        val dir1 = Files.createDirectory(root.resolve("dir1"))
 
         val collector = new BaseCountingPathCollector {
           override protected def preVisitDirectoryImpl(
@@ -1778,21 +1787,23 @@ class FilesTest extends AnyFreeSpec with TestSupport {
         val fileB = Files.createFile(dirA.resolve("fileB"))
         val dir1  = Files.createDirectory(root.resolve("dir1"))
         val file2 = Files.createFile(dir1.resolve("file2"))
-
-        Seq(
-          new BaseCountingPathCollector(),
-          new BaseCountingPathCollector {
-            override protected def postVisitDirectoryImpl(
-                dir: Path,
-                exc: IOException
-            ): FileVisitResult =
-              if (dir == dirA) {
-                FileVisitResult.SKIP_SIBLINGS
-              } else {
-                FileVisitResult.CONTINUE
-              }
-          }
-        ).foreach { collector =>
+        forAll(
+          Table(
+            ("name", "impl"),
+            ("basic", new BaseCountingPathCollector()),
+            ("skip", new BaseCountingPathCollector {
+              override protected def postVisitDirectoryImpl(
+                  dir: Path,
+                  exc: IOException
+              ): FileVisitResult =
+                if (dir == dirA) {
+                  FileVisitResult.SKIP_SIBLINGS
+                } else {
+                  FileVisitResult.CONTINUE
+                }
+            })
+          )
+        ) { (_: String, collector: BaseCountingPathCollector) =>
           assert(Files.walkFileTree(root, collector) === root)
           assert(collector.countPreVisitDirectory() === 3)
           assert(collector.countVisitFile() === 2)
@@ -1803,10 +1814,9 @@ class FilesTest extends AnyFreeSpec with TestSupport {
       }
 
       "skip siblings when visitFile return SKIP_SIBLINGS" in {
-        val root    = Files.createTempDirectory("top")
-        val dirA    = Files.createDirectory(root.resolve(".dirA"))
-        val fileB   = Files.createFile(dirA.resolve("fileB"))
-        val fileBBB = Files.createFile(dirA.resolve("fileBBB"))
+        val root  = Files.createTempDirectory("top")
+        val dirA  = Files.createDirectory(root.resolve(".dirA"))
+        val fileB = Files.createFile(dirA.resolve("fileB"))
 
         val collector = new BaseCountingPathCollector {
           override protected def visitFileImpl(
