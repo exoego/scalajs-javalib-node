@@ -2,8 +2,7 @@ import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 import sbt._
 
 val selfPackageName = "scalajs-javalib-node"
-val scala212Ver     = "2.12.13"
-val scala213Ver     = "2.13.4"
+val scala213Ver     = "2.13.5"
 val selfVersion     = "0.1-SNAPSHOT"
 val scalatestVer    = "3.2.6"
 
@@ -15,7 +14,7 @@ lazy val commonSettings = Seq(
   homepage := Some(url(s"https://github.com/exoego/${selfPackageName}")),
   licenses := Seq("Apache License 2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0")),
   scalaVersion := scala213Ver,
-  crossScalaVersions := Seq(scala212Ver, scala212Ver),
+  crossScalaVersions := Seq(scala213Ver),
   scalacOptions ++= Seq(
     "-deprecation",
     "-feature",
@@ -28,7 +27,7 @@ lazy val commonSettings = Seq(
   ),
   libraryDependencies ++= Seq(
     "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.1",
-    "org.scalatest" %%% "scalatest-freespec" % scalatestVer % "test"
+    "org.scalatest"          %%% "scalatest-freespec"      % scalatestVer % "test"
   )
 )
 lazy val commonJsSettings = Seq(
