@@ -18,7 +18,9 @@ jobs:
         with:
           node-version: ${{ matrix.nodejs }}
       - run: npm install
-      - name: Run Tests
-        run: sbt ++${{ matrix.scala }} test scalafmtCheckAll scalafmtSbtCheck
+      - name: Run JVM Tests
+        run: sbt ++${{ matrix.scala }} jdkJVM/test
+      - name: Run JS Tests
+        run: sbt ++${{ matrix.scala }} jdkJS/test scalafmtCheckAll scalafmtSbtCheck
         env:
           NODEJS_VERSION: ${{ matrix.nodejs }}
