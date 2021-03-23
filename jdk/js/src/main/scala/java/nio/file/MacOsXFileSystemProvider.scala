@@ -2,7 +2,7 @@ package java.nio.file
 
 import io.scalajs.nodejs.fs
 
-import java.io.{InputStream, OutputStream}
+import java.io.{IOException, InputStream, OutputStream}
 import java.net.URI
 import java.nio.channels.SeekableByteChannel
 import java.nio.file.attribute._
@@ -242,5 +242,30 @@ private[file] object MacOsXFileSystemProvider extends FileSystemProvider {
     }
     val linkPath = fs.Fs.readlinkSync(link.toString)
     Paths.get(linkPath)
+  }
+
+  override def createLink(link: Path, existing: Path): Unit = {
+    if (Files.exists(link)) {
+      throw new FileAlreadyExistsException(link.toString)
+    }
+    try {
+      fs.Fs.linkSync(existing.toString, link.toString)
+    } catch {
+      case e: Throwable => throw new IOException(e.getMessage)
+    }
+  }
+
+  override def createSymbolicLink(link: Path, target: Path, attrs: FileAttribute[_]*): Unit = {
+    val newPath = link.toString
+    if (Files.exists(link)) {
+      throw new FileAlreadyExistsException(newPath)
+    }
+    if (attrs.nonEmpty) {
+      throw new UnsupportedOperationException(
+        s"`${attrs.head.name()}` not supported as initial attribute"
+      )
+    }
+    val existingPath = target.toString
+    fs.Fs.symlinkSync(existingPath, newPath)
   }
 }
