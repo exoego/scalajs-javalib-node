@@ -4,6 +4,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.prop.TableDrivenPropertyChecks._
 
 import java.io.File
+import java.net.URI
 import java.nio.file._
 import scala.jdk.CollectionConverters._
 
@@ -472,5 +473,27 @@ class PathTest extends AnyFreeSpec {
 
     assert(Path("a/b/c/../d").toString === "a/b/c/../d")
   }
-  "toURI()" ignore {}
+
+  "toURI()" in {
+    val path     = Path("foo")
+    val uri: URI = path.toUri
+    assert(uri.getPath === path.toAbsolutePath.toString)
+    assert(uri.getScheme === "file")
+    assert(uri.getAuthority === null)
+    assert(uri.getFragment === null)
+    assert(uri.getHost === null)
+    assert(uri.getPort === -1)
+    assert(uri.getQuery === null)
+    assert(uri.getRawAuthority === null)
+    assert(uri.getRawFragment === null)
+    assert(uri.getRawPath === path.toAbsolutePath.toString)
+    assert(uri.getRawQuery === null)
+    assert(uri.getRawSchemeSpecificPart === "//" + path.toAbsolutePath.toString)
+    assert(uri.getRawUserInfo === null)
+    assert(uri.getSchemeSpecificPart === "//" + path.toAbsolutePath.toString)
+    assert(uri.getUserInfo === null)
+    assert(uri.isAbsolute)
+    assert(uri.isOpaque === false)
+    assert(uri.toASCIIString === "file://" + path.toAbsolutePath.toString)
+  }
 }
