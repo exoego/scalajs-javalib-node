@@ -212,16 +212,17 @@ private[java] object PathHelper {
     }
 
     override def toUri(): URI = {
-      throw new UnsupportedOperationException
+      new URI(s"${getFileSystem.provider().getScheme()}://${toAbsoluteRawPath()}")
     }
+
+    private def toAbsoluteRawPath(): String =
+      io.scalajs.nodejs.process.Process.env.PWD.getOrElse("") + NodeJsPath.sep + rawPath
 
     override def toAbsolutePath(): Path = {
       if (isAbsolute()) {
         this
       } else {
-        newInstance(
-          io.scalajs.nodejs.process.Process.env.PWD.getOrElse("") + NodeJsPath.sep + rawPath
-        )
+        newInstance(toAbsoluteRawPath())
       }
     }
 
