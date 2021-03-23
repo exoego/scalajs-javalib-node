@@ -12,9 +12,7 @@ import io.scalajs.nodejs.{FileDescriptor, fs, os, path}
 
 import java.util
 import scala.annotation.varargs
-import scala.collection.mutable
 import scala.jdk.CollectionConverters._
-import scala.reflect.ClassTag
 import scala.scalajs.js
 import scala.util.Random
 
@@ -107,29 +105,12 @@ object Files {
   }
 
   def createLink(link: Path, existing: Path): Path = {
-    if (Files.exists(link)) {
-      throw new FileAlreadyExistsException(link.toString)
-    }
-    try {
-      fs.Fs.linkSync(existing.toString, link.toString)
-    } catch {
-      case e: Throwable => throw new IOException(e.getMessage)
-    }
+    link.getFileSystem().provider().createLink(link, existing)
     link
   }
 
   @varargs def createSymbolicLink(link: Path, target: Path, attrs: FileAttribute[_]*): Path = {
-    val newPath = link.toString
-    if (Files.exists(link)) {
-      throw new FileAlreadyExistsException(newPath)
-    }
-    if (attrs.nonEmpty) {
-      throw new UnsupportedOperationException(
-        s"`${attrs.head.name()}` not supported as initial attribute"
-      )
-    }
-    val existingPath = target.toString
-    fs.Fs.symlinkSync(existingPath, newPath)
+    link.getFileSystem().provider().createSymbolicLink(link, target, attrs: _*)
     link
   }
 
