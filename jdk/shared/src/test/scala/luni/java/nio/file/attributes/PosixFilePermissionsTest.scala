@@ -1,6 +1,7 @@
 package luni.java.nio.file.attributes
 
 import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.prop.TableDrivenPropertyChecks._
 
 import java.nio.file.attribute.PosixFilePermission._
 import java.nio.file.attribute.{PosixFilePermission, PosixFilePermissions}
@@ -65,19 +66,22 @@ class PosixFilePermissionsTest extends AnyFreeSpec {
   }
 
   "asFileAttribute" in {
-    Seq(
-      "---------",
-      "r--------",
-      "-w-------",
-      "--x------",
-      "---r-----",
-      "----w----",
-      "-----x---",
-      "------r--",
-      "-------w-",
-      "--------x",
-      "rwxrwxrwx"
-    ).foreach { perms =>
+    forAll(
+      Table(
+        "perms",
+        "---------",
+        "r--------",
+        "-w-------",
+        "--x------",
+        "---r-----",
+        "----w----",
+        "-----x---",
+        "------r--",
+        "-------w-",
+        "--------x",
+        "rwxrwxrwx"
+      )
+    ) { perms: String =>
       val attr = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString(perms))
       assert(attr.name() === "posix:permissions")
       assert(attr.value() === PosixFilePermissions.fromString(perms))

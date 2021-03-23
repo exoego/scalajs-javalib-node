@@ -1,17 +1,18 @@
 package luni.java.net
 
 import java.net.{MalformedURLException, URI, URISyntaxException}
+import org.scalatest.prop.TableDrivenPropertyChecks._
 import org.scalatest.freespec.AnyFreeSpec
 import support.TestSupport
 
 class URITest extends AnyFreeSpec with TestSupport {
 
-  private var uris: Array[URI] = null
+  private var uris: Seq[URI] = null
 
   @throws[URISyntaxException]
-  private def getUris: Array[URI] = {
+  private def getUris: Seq[URI] = {
     if (uris != null) return uris
-    uris = Array[URI](
+    uris = Seq[URI](
       // single arg constructor
       new URI("http://user%60%20info@host/a%20path?qu%60%20ery#fr%5E%20ag"),
       // escaped octets for illegal chars
@@ -73,7 +74,8 @@ class URITest extends AnyFreeSpec with TestSupport {
   }
 
   "ConstructorLjava_lang_String" in {
-    val constructorTests = Array[String](
+    val constructorTests = Table(
+      "url",
       "http://user@www.google.com:45/search?q=helpinfo#somefragment",         // http with authority, query and fragment
       "ftp://ftp.is.co.za/rfc/rfc1808.txt",                                   // ftp
       "gopher://spinaltap.micro.umn.edu/00/Weather/California/Los%20Angeles", // gopher
@@ -105,44 +107,45 @@ class URITest extends AnyFreeSpec with TestSupport {
       // equivalent to = "http://host\u00dfname/",
       "ht123-+tp://www.google.com:80/test"
     )
-    for (s <- constructorTests) {
+    forAll(constructorTests) { s: String =>
+      // should success
       new URI(s)
     }
-    val constructorTestsInvalid = Array[String](
-      "http:///a path#frag", // space char in path, not in escaped
+    val constructorTestsInvalid = Table(
+      ("s", "i"),
+      ("http:///a path#frag", 9), // space char in path, not in escaped
       // octet form, with no host
-      "http://host/a[path#frag", // an illegal char, not in escaped
+      ("http://host/a[path#frag", 13), // an illegal char, not in escaped
       // octet form, should throw an
       // exception
-      "http://host/a%path#frag", // invalid escape sequence in path
-      "http://host/a%#frag",     // incomplete escape sequence in path
-      "http://host#a frag",      // space char in fragment, not in
+      ("http://host/a%path#frag", 13), // invalid escape sequence in path
+      ("http://host/a%#frag", 13),     // incomplete escape sequence in path
+      ("http://host#a frag", 13),      // space char in fragment, not in
       // escaped octet form, no path
-      "http://host/a#fr#ag", // illegal char in fragment
-      "http:///path#fr%ag",  // invalid escape sequence in fragment,
+      ("http://host/a#fr#ag", 16), // illegal char in fragment
+      ("http:///path#fr%ag", 15),  // invalid escape sequence in fragment,
       // with no host
-      "http://host/path#frag%", // incomplete escape sequence in
+      ("http://host/path#frag%", 21), // incomplete escape sequence in
       // fragment
-      "http://host/path?a query#frag", // space char in query, not
+      ("http://host/path?a query#frag", 18), // space char in query, not
       // in escaped octet form
-      "http://host?query%ag", // invalid escape sequence in query, no
+      ("http://host?query%ag", 17), // invalid escape sequence in query, no
       // path
-      "http:///path?query%",       // incomplete escape sequence in query,
-      "mailto:user^name@fklkf.com" // invalid char in scheme
+      ("http:///path?query%", 18),       // incomplete escape sequence in query,
+      ("mailto:user^name@fklkf.com", 11) // invalid char in scheme
     )
-    val constructorTestsInvalidIndices = Array[Int](9, 13, 13, 13, 13, 16, 15, 21, 18, 17, 18, 11)
-    (constructorTestsInvalid zip constructorTestsInvalidIndices).foreach {
-      case (s, i) =>
-        val ex = intercept[URISyntaxException] {
-          new URI(s)
-        }
-        assert(
-          isScalaJS || ex.getIndex == i,
-          "Wrong index in URISytaxException for: " + s + " expected: " + i + ", received: " + ex.getIndex
-        )
+    forAll(constructorTestsInvalid) { (s: String, i: Int) =>
+      val ex = intercept[URISyntaxException] {
+        new URI(s)
+      }
+      assert(
+        isScalaJS || ex.getIndex == i,
+        "Wrong index in URISytaxException for: " + s + " expected: " + i + ", received: " + ex.getIndex
+      )
     }
 
-    val invalid2 = Array(
+    val invalid2 = Table(
+      "s",
       // authority validation
       "http://user@[3ffe:2x00:100:7031::1]:80/test",
       // IPv6 authority
@@ -167,11 +170,9 @@ class URITest extends AnyFreeSpec with TestSupport {
       "asche\u00dfme:ssp", // unicode char , not USASCII
       "asc%20heme:ssp"     // escape octets
     )
-    for (s <- invalid2) {
-      withClue(s"For $s") {
-        assertThrows[URISyntaxException] {
-          new URI(s)
-        }
+    forAll(invalid2) { s: String =>
+      assertThrows[URISyntaxException] {
+        new URI(s)
       }
     }
   }
@@ -379,7 +380,8 @@ class URITest extends AnyFreeSpec with TestSupport {
   }
 
   "compareToLjava_lang_Object" in {
-    val compareToData = Array[(String, String, String)](
+    val compareToData = Table(
+      ("x", "y", "i"),
       // scheme tests
       ("http:test", "", ">"),            // scheme null, scheme not null
       ("", "http:test", "<"),            // reverse
@@ -428,13 +430,10 @@ class URITest extends AnyFreeSpec with TestSupport {
       else "<"
     }
     // test compareTo functionality
-    compareToData.foreach {
-      case (x, y, i) =>
-        withClue(s"For $x and $y, expected $i") {
-          val b = new URI(x)
-          val r = new URI(y)
-          assert(ord(b.compareTo(r)) === i)
-        }
+    forAll(compareToData) { (x: String, y: String, i: String) =>
+      val b = new URI(x)
+      val r = new URI(y)
+      assert(ord(b.compareTo(r)) === i)
     }
   }
 
@@ -462,7 +461,8 @@ class URITest extends AnyFreeSpec with TestSupport {
   }
 
   "equalsLjava_lang_Object" in {
-    val equalsData = Array[(String, String, Boolean)](
+    val equalsData = Table(
+      ("left", "right", "expected"),
       ("", "", true), // null frags
       ("/path", "/path#frag", false),
       ("#frag", "#frag2", false),
@@ -503,13 +503,10 @@ class URITest extends AnyFreeSpec with TestSupport {
       ("//test@test.com:85", "//test@test.com", false)
     )
     // test equals functionality
-    equalsData.foreach {
-      case (x, y, i) =>
-        withClue(s"For $x and $y") {
-          val b = new URI(x)
-          val r = new URI(y)
-          assert((b === r) === i)
-        }
+    forAll(equalsData) { (left: String, right: String, expected: Boolean) =>
+      val b = new URI(left)
+      val r = new URI(right)
+      assert((b === r) === expected)
     }
   }
 
@@ -534,7 +531,7 @@ class URITest extends AnyFreeSpec with TestSupport {
   }
 
   "getAuthority" in {
-    val getAuthorityResults = Array(
+    val getAuthorityResults = Seq(
       "user` info@host",
       "user\u00DF\u00A3info@host:80",
       "user\u00DF\u00A3info@host:0",
@@ -552,10 +549,10 @@ class URITest extends AnyFreeSpec with TestSupport {
       "reg:istry",
       null
     )
-    (getUris zip getAuthorityResults).foreach {
-      case (uri, expected) =>
-        val actual = uri.getAuthority
-        assert(actual === expected)
+    val table = Table(("uri", "expected"), (getUris zip getAuthorityResults): _*)
+    forAll(table) { (uri: URI, expected: String) =>
+      val actual = uri.getAuthority
+      assert(actual === expected)
     }
   }
 
@@ -596,7 +593,7 @@ class URITest extends AnyFreeSpec with TestSupport {
   }
 
   "getFragment" in {
-    val getFragmentResults = Array(
+    val getFragmentResults = Seq(
       "fr^ ag",
       "fr\u00E4\u00E8g",
       "fr\u00E4\u00E8g",
@@ -614,14 +611,14 @@ class URITest extends AnyFreeSpec with TestSupport {
       null,
       null
     )
-    (getUris zip getFragmentResults).foreach {
-      case (uri, expected) =>
-        assert(uri.getFragment === expected)
+    val table = Table(("uri", "expected"), (getUris zip getFragmentResults): _*)
+    forAll(table) { (uri: URI, expected: String) =>
+      assert(uri.getFragment === expected)
     }
   }
 
   "getHost" in {
-    val getHostResults = Array(
+    val getHostResults = Seq(
       "host",
       "host",
       "host",
@@ -638,14 +635,17 @@ class URITest extends AnyFreeSpec with TestSupport {
       null,
       null
     )
-    (getUris zip getHostResults).foreach {
-      case (uri, expected) =>
-        assert(uri.getHost === expected)
+    val table = Table(
+      ("uri", "expected"),
+      (getUris zip getHostResults): _*
+    )
+    forAll(table) { (uri: URI, expected: String) =>
+      assert(uri.getHost === expected)
     }
   }
 
   "getPath" in {
-    val getPathResults = Array(
+    val getPathResults = Seq(
       "/a path",
       "/a\u20ACpath",
       "/a\u20ACpath",
@@ -662,17 +662,23 @@ class URITest extends AnyFreeSpec with TestSupport {
       "",
       "/c:/temp/calculate.pl"
     )
-    (getUris zip getPathResults).foreach {
-      case (uri, expected) =>
-        assert(uri.getPath() === expected)
+    val table = Table(
+      ("uri", "expected"),
+      (getUris zip getPathResults): _*
+    )
+    forAll(table) { (uri: URI, expected: String) =>
+      assert(uri.getPath() === expected)
     }
   }
 
   "getPort" in {
-    val getPortResults = Array(-1, 80, 0, /*80, -1,*/ 80, 81, 0, -1, -1, -1, -1, -1, -1, -1)
-    (getUris zip getPortResults).foreach {
-      case (uri, expected) =>
-        assert(uri.getPort === expected)
+    val getPortResults = Seq(-1, 80, 0, /*80, -1,*/ 80, 81, 0, -1, -1, -1, -1, -1, -1, -1)
+    val table = Table(
+      ("uri", "expected"),
+      (getUris zip getPortResults): _*
+    )
+    forAll(table) { (uri: URI, expected: Int) =>
+      assert(uri.getPort === expected)
     }
   }
 
@@ -693,7 +699,7 @@ class URITest extends AnyFreeSpec with TestSupport {
   }
 
   "getQuery" in {
-    val getQueryResults = Array(
+    val getQueryResults = Seq(
       "qu` ery",
       "qu\u00A9\u00AEery",
       "qu\u00A9\u00AEery",
@@ -710,14 +716,17 @@ class URITest extends AnyFreeSpec with TestSupport {
       "query",
       ""
     )
-    (getUris zip getQueryResults).foreach {
-      case (uri, expected) =>
-        assert(uri.getQuery === expected)
+    val table = Table(
+      ("uri", "expected"),
+      (getUris zip getQueryResults): _*
+    )
+    forAll(table) { (uri: URI, expected: String) =>
+      assert(uri.getQuery === expected)
     }
   }
 
   "getRawAuthority" in {
-    val getRawAuthorityResults = Array(
+    val getRawAuthorityResults = Seq(
       "user%60%20info@host",
       "user%C3%9F%C2%A3info@host:80",
       "user\u00DF\u00A3info@host:0",
@@ -734,15 +743,17 @@ class URITest extends AnyFreeSpec with TestSupport {
       "reg:istry",
       null
     )
-    (getUris zip getRawAuthorityResults).foreach {
-      case (uri, expected) =>
-        val result = uri.getRawAuthority
-        assert(result === expected)
+    val table = Table(
+      ("uri", "expected"),
+      (getUris zip getRawAuthorityResults): _*
+    )
+    forAll(table) { (uri: URI, expected: String) =>
+      assert(uri.getRawAuthority === expected)
     }
   }
 
   def test_getRawFragment(): Unit = {
-    val getRawFragmentResults = Array(
+    val getRawFragmentResults = Seq(
       "fr%5E%20ag",
       "fr%C3%A4%C3%A8g",
       "fr\u00E4\u00E8g",
@@ -759,14 +770,17 @@ class URITest extends AnyFreeSpec with TestSupport {
       null,
       null
     )
-    (getUris zip getRawFragmentResults).foreach {
-      case (uri, expected) =>
-        assert(uri.getRawFragment === expected)
+    val table = Table(
+      ("uri", "expected"),
+      (getUris zip getRawFragmentResults): _*
+    )
+    forAll(table) { (uri: URI, expected: String) =>
+      assert(uri.getRawFragment === expected)
     }
   }
 
   "getRawPath" in {
-    val getRawPathResults = Array(
+    val getRawPathResults = Seq(
       "/a%20path",
       "/a%E2%82%ACpath",
       "/a\u20ACpath",
@@ -783,14 +797,17 @@ class URITest extends AnyFreeSpec with TestSupport {
       "",
       "/c:/temp/calculate.pl"
     )
-    (getUris zip getRawPathResults).foreach {
-      case (uri, expected) =>
-        assert(uri.getRawPath === expected)
+    val table = Table(
+      ("uri", "expected"),
+      (getUris zip getRawPathResults): _*
+    )
+    forAll(table) { (uri: URI, expected: String) =>
+      assert(uri.getRawPath === expected)
     }
   }
 
   "getRawQuery" in {
-    val getRawQueryResults = Array(
+    val getRawQueryResults = Seq(
       "qu%60%20ery",
       "qu%C2%A9%C2%AEery",
       "qu\u00A9\u00AEery",
@@ -807,15 +824,18 @@ class URITest extends AnyFreeSpec with TestSupport {
       "query",
       ""
     )
-    (getUris zip getRawQueryResults).foreach {
-      case (uri, expected) =>
-        assert(uri.getRawQuery === expected)
+    val table = Table(
+      ("uri", "expected"),
+      (getUris zip getRawQueryResults): _*
+    )
+    forAll(table) { (uri: URI, expected: String) =>
+      assert(uri.getRawQuery === expected)
     }
   }
 
   // FIXME
   "getRawSchemeSpecificPart" ignore {
-    val getRawSspResults = Array(
+    val getRawSspResults = Seq(
       "//user%60%20info@host/a%20path?qu%60%20ery",
       "//user%C3%9F%C2%A3info@host:80/a%E2%82%ACpath?qu%C2%A9%C2%AEery",
       "//user\u00DF\u00A3info@host:0/a\u20ACpath?qu\u00A9\u00AEery",
@@ -832,14 +852,17 @@ class URITest extends AnyFreeSpec with TestSupport {
       "//reg:istry?query",
       "///c:/temp/calculate.pl?"
     )
-    (getUris zip getRawSspResults).foreach {
-      case (uri, expected) =>
-        assert(uri.getRawSchemeSpecificPart === expected)
+    val table = Table(
+      ("uri", "expected"),
+      (getUris zip getRawSspResults): _*
+    )
+    forAll(table) { (uri: URI, expected: String) =>
+      assert(uri.getRawSchemeSpecificPart === expected)
     }
   }
 
   "getRawUserInfo" in {
-    val getRawUserInfoResults = Array(
+    val getRawUserInfoResults = Seq(
       "user%60%20info",
       "user%C3%9F%C2%A3info",
       "user\u00DF\u00A3info",
@@ -856,14 +879,17 @@ class URITest extends AnyFreeSpec with TestSupport {
       null,
       null
     )
-    (getUris zip getRawUserInfoResults).foreach {
-      case (uri, expected) =>
-        assert(uri.getRawUserInfo === expected)
+    val table = Table(
+      ("uri", "expected"),
+      (getUris zip getRawUserInfoResults): _*
+    )
+    forAll(table) { (uri: URI, expected: String) =>
+      assert(uri.getRawUserInfo === expected)
     }
   }
 
   "getScheme" in {
-    val getSchemeResults = Array(
+    val getSchemeResults = Seq(
       "http",
       "http",
       "ascheme",
@@ -880,14 +906,17 @@ class URITest extends AnyFreeSpec with TestSupport {
       "http",
       "file"
     )
-    (getUris zip getSchemeResults).foreach {
-      case (uri, expected) =>
-        assert(uri.getScheme === expected)
+    val table = Table(
+      ("uri", "expected"),
+      (getUris zip getSchemeResults): _*
+    )
+    forAll(table) { (uri: URI, expected: String) =>
+      assert(uri.getScheme === expected)
     }
   }
 
   "getSchemeSpecificPart" in {
-    val getSspResults = Array(
+    val getSspResults = Seq(
       "//user` info@host/a path?qu` ery",
       "//user\u00DF\u00A3info@host:80/a\u20ACpath?qu\u00A9\u00AEery",
       "//user\u00DF\u00A3info@host:0/a\u20ACpath?qu\u00A9\u00AEery",
@@ -904,14 +933,17 @@ class URITest extends AnyFreeSpec with TestSupport {
       "//reg:istry?query",
       "///c:/temp/calculate.pl?"
     )
-    (getUris zip getSspResults).foreach {
-      case (uri, expected) =>
-        assert(uri.getSchemeSpecificPart === expected)
+    val table = Table(
+      ("uri", "expected"),
+      (getUris zip getSspResults): _*
+    )
+    forAll(table) { (uri: URI, expected: String) =>
+      assert(uri.getSchemeSpecificPart === expected)
     }
   }
 
   "getUserInfo" in {
-    val getUserInfoResults = Array(
+    val getUserInfoResults = Seq(
       "user` info",
       "user\u00DF\u00A3info",
       "user\u00DF\u00A3info",
@@ -928,14 +960,18 @@ class URITest extends AnyFreeSpec with TestSupport {
       null,
       null
     )
-    (getUris zip getUserInfoResults).foreach {
-      case (uri, expected) =>
-        assert(uri.getUserInfo === expected)
+    val table = Table(
+      ("uri", "expected"),
+      (getUris zip getUserInfoResults): _*
+    )
+    forAll(table) { (uri: URI, expected: String) =>
+      assert(uri.getUserInfo === expected)
     }
   }
 
   "hashCode" in {
-    val hashCodeData = Array[(String, String, Boolean)](
+    val hashCodeData = Table(
+      ("", "", ""),
       ("", "", true), // null frags
       ("/path", "/path#frag", false),
       ("#frag", "#frag2", false),
@@ -975,18 +1011,16 @@ class URITest extends AnyFreeSpec with TestSupport {
       ("//jo%3E@test.com:82", "//jo%3E@test.com:82", true),
       ("//test@test.com:85", "//test@test.com", false)
     )
-    hashCodeData.foreach {
-      case (x, y, z) =>
-        val b = new URI(x)
-        val r = new URI(y)
-        withClue(s"For $x and $y") {
-          assert((b.hashCode === r.hashCode) === z)
-        }
+    forAll(hashCodeData) { (x: String, y: String, z: Boolean) =>
+      val b = new URI(x)
+      val r = new URI(y)
+      assert((b.hashCode === r.hashCode) === z)
     }
   }
 
   "isAbsolute" in {
-    val isAbsoluteData = Array[(String, Boolean)](
+    val isAbsoluteData = Table(
+      ("s", "expected"),
       ("mailto:user@ca.ibm.com", true),
       ("urn:isbn:123498989h", true),
       ("news:software.ibm.com", true),
@@ -1001,16 +1035,14 @@ class URITest extends AnyFreeSpec with TestSupport {
       ("//pc1/", false),
       ("//user@host/path/file", false)
     )
-    isAbsoluteData.foreach {
-      case (x, expected) =>
-        withClue(s"for $x") {
-          assert(new URI(x).isAbsolute === expected)
-        }
+    forAll(isAbsoluteData) { (x: String, expected: Boolean) =>
+      assert(new URI(x).isAbsolute === expected)
     }
   }
 
   "isOpaque" in {
-    val isOpaqueData = Array[(String, Boolean)](
+    val isOpaqueData = Table(
+      ("s", "expected"),
       ("mailto:user@ca.ibm.com", true),
       ("urn:isbn:123498989h", true),
       ("news:software.ibm.com", true),
@@ -1025,16 +1057,14 @@ class URITest extends AnyFreeSpec with TestSupport {
       ("//pc1/", false),
       ("//user@host/path/file", false)
     )
-    isOpaqueData.foreach {
-      case (x, expected) =>
-        withClue(s"for $x") {
-          assert(new URI(x).isOpaque === expected)
-        }
+    forAll(isOpaqueData) { (x: String, expected: Boolean) =>
+      assert(new URI(x).isOpaque === expected)
     }
   }
 
   "normalize" in {
-    val normalizeData = Array[(String, String)](
+    val normalizeData = Table(
+      ("before", "expected"),
       // normal
       ("/", "/"),
       ("/a", "/a"),
@@ -1100,16 +1130,8 @@ class URITest extends AnyFreeSpec with TestSupport {
 //      ("a/b/.././../../c/./d/../e", "../c/e"),
 //      ("a/../../.c././../././c/d/../g/..", "../c/")
     )
-    normalizeData.foreach {
-      case (x, expected) =>
-        withClue(s"for $x") {
-          try {
-            assert(new URI(x).normalize().toString === expected)
-          } catch {
-            case e: Exception => throw new Exception(x, e)
-          }
-
-        }
+    forAll(normalizeData) { (x: String, expected: String) =>
+      assert(new URI(x).normalize().toString === expected)
     }
   }
 
@@ -1134,7 +1156,8 @@ class URITest extends AnyFreeSpec with TestSupport {
 
   "parseServerAuthority" in {
     // registry based uris
-    val uris = Array[URI](
+    val uris = Table(
+      "uri",
       // port number not digits
       new URI("http://foo:bar/file#fragment"),
       new URI("http", "//foo:bar/file", "fragment"),
@@ -1183,7 +1206,7 @@ class URITest extends AnyFreeSpec with TestSupport {
     // but single arg, 3 and 5 arg constructors
     // parse them as valid registry based authorities
     // exception should occur when parseServerAuthority is
-    uris.foreach { uri =>
+    forAll(uris) { uri: URI =>
       assertThrows[URISyntaxException] {
         uri.parseServerAuthority
       }
@@ -1217,7 +1240,8 @@ class URITest extends AnyFreeSpec with TestSupport {
   }
 
   "relativizeLjava_net_URI" in {
-    val relativizeData = Array[(String, String, String)](
+    val relativizeData = Table(
+      ("x", "y", "expected"),
       // 1st is base, 2nd is the one to relativize, 3rd is expected
       ("http://www.google.com/dir1/dir2", "mailto:test", "mailto:test"), // rel =
       // opaque
@@ -1246,19 +1270,11 @@ class URITest extends AnyFreeSpec with TestSupport {
 //      ("/dir1", "/dir1/hi", "hi"),
 //      ("/dir1/", "/dir1/hi", "hi")
     )
-    relativizeData.foreach {
-      case (x, y, expected) =>
-        withClue(s"For $x and $y") {
-          try {
-            val b = new URI(x)
-            val r = new URI(y)
-            assert(b.relativize(r).toString === expected)
-            assert(b.relativize(r) === new URI(expected))
-          } catch {
-            case e: URISyntaxException =>
-              fail(s"Reason ${e.getMessage}")
-          }
-        }
+    forAll(relativizeData) { (x: String, y: String, expected: String) =>
+      val b = new URI(x)
+      val r = new URI(y)
+      assert(b.relativize(r).toString === expected)
+      assert(b.relativize(r) === new URI(expected))
     }
 
     var a = new URI("http://host/dir")
@@ -1317,7 +1333,8 @@ class URITest extends AnyFreeSpec with TestSupport {
   }
 
   "resolveLjava_net_URI" in {
-    val resolveData = Array[(String, String, String)](
+    val resolveData = Table(
+      ("x", "y", "expected"),
       // authority in given URI
       (
         "http://www.test.com/dir",
@@ -1347,19 +1364,12 @@ class URITest extends AnyFreeSpec with TestSupport {
       // return given when given is absolute
       ("http://www.google.com/hi/joe", "http://www.oogle.com", "http://www.oogle.com")
     )
-    resolveData.foreach {
-      case (x, y, expected) =>
-        withClue(s"For $x and $y") {
-          try {
-            val b      = new URI(x)
-            val r      = new URI(y)
-            val result = b.resolve(r)
-            assert(result.toString === expected)
-            assert(b.isOpaque || b.isAbsolute === result.isAbsolute)
-          } catch {
-            case e: URISyntaxException => fail(s"Reason ${e.getMessage}")
-          }
-        }
+    forAll(resolveData) { (x: String, y: String, expected: String) =>
+      val b      = new URI(x)
+      val r      = new URI(y)
+      val result = b.resolve(r)
+      assert(result.toString === expected)
+      assert(b.isOpaque || b.isAbsolute === result.isAbsolute)
     }
   }
 
@@ -1391,37 +1401,35 @@ class URITest extends AnyFreeSpec with TestSupport {
       "http://reg:istry?query",
       "file:///c:/temp/calculate.pl?"
     )
-    (getUris zip toASCIIStringResults0).foreach {
-      case (uri, expected) =>
-        assert(uri.toASCIIString === expected)
+    val table = Table(
+      ("uri", "expected"),
+      (getUris zip toASCIIStringResults0): _*
+    )
+    forAll(table) { (uri: URI, expected: String) =>
+      assert(uri.toASCIIString === expected)
     }
   }
 
   "toASCIIString2" in {
-    val toASCIIStringData = Array[String](
-      "http://www.test.com/\u00DF/dir/",
-      "http://www.test.com/\u20AC/dir",
-      "http://www.\u20AC.com/dir",
-      "http://www.test.com/\u20AC/dir/file#fragment",
-      "mailto://user@domain.com",
-      "mailto://user\u00DF@domain.com"
+    val table = Table(
+      ("uri", "expected"),
+      ("http://www.test.com/\u00DF/dir/", "http://www.test.com/%C3%9F/dir/"),
+      ("http://www.test.com/\u20AC/dir", "http://www.test.com/%E2%82%AC/dir"),
+      ("http://www.\u20AC.com/dir", "http://www.%E2%82%AC.com/dir"),
+      (
+        "http://www.test.com/\u20AC/dir/file#fragment",
+        "http://www.test.com/%E2%82%AC/dir/file#fragment"
+      ),
+      ("mailto://user@domain.com", "mailto://user@domain.com"),
+      ("mailto://user\u00DF@domain.com", "mailto://user%C3%9F@domain.com")
     )
-    val toASCIIStringResults = Array[String](
-      "http://www.test.com/%C3%9F/dir/",
-      "http://www.test.com/%E2%82%AC/dir",
-      "http://www.%E2%82%AC.com/dir",
-      "http://www.test.com/%E2%82%AC/dir/file#fragment",
-      "mailto://user@domain.com",
-      "mailto://user%C3%9F@domain.com"
-    )
-    (toASCIIStringData zip toASCIIStringResults).foreach {
-      case (uri, expected) =>
-        assert(new URI(uri).toASCIIString === expected)
+    forAll(table) { (uri: String, expected: String) =>
+      assert(new URI(uri).toASCIIString === expected)
     }
   }
 
   "toString" ignore {
-    val toStringResults = Array(
+    val toStringResults = Seq(
       "http://user%60%20info@host/a%20path?qu%60%20ery#fr%5E%20ag",
       "http://user%C3%9F%C2%A3info@host:80/a%E2%82%ACpath?qu%C2%A9%C2%AEery#fr%C3%A4%C3%A8g",
       "ascheme://user\u00DF\u00A3info@host:0/a\u20ACpath?qu\u00A9\u00AEery#fr\u00E4\u00E8g",
@@ -1438,9 +1446,12 @@ class URITest extends AnyFreeSpec with TestSupport {
       "http://reg:istry?query",
       "file:///c:/temp/calculate.pl?"
     )
-    (getUris zip toStringResults).foreach {
-      case (uri, expected) =>
-        assert(uri.toString === expected)
+    val table = Table(
+      ("uri", "expected"),
+      (getUris zip toStringResults): _*
+    )
+    forAll(table) { (uri: URI, expected: String) =>
+      assert(uri.toString === expected)
     }
   }
 
