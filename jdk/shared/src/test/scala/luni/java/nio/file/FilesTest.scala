@@ -1749,7 +1749,8 @@ class FilesTest extends AnyFreeSpec with TestSupport {
           assert(collector.countVisitFileFailed() === 0)
           assert(collector.countPostVisitDirectory() === 3)
           assert(
-            collector.visited === List(root, dirA, fileB, fileBBB, dirA, dir1, file2, dir1, root)
+            collector.visited === List(root, dirA, fileB, fileBBB, dirA, dir1, file2, dir1, root) ||
+              collector.visited === List(root, dirA, fileBBB, fileB, dirA, dir1, file2, dir1, root)
           )
         }
       }
