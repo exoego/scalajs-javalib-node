@@ -1,5 +1,7 @@
 package java.io
 
+import java.nio.channels._
+
 class RandomAccessFile(file: File, mode: String) extends Closeable {
 
   if (file.isDirectory()) {
@@ -31,4 +33,6 @@ class RandomAccessFile(file: File, mode: String) extends Closeable {
     // TODO: not implemented
     new FileDescriptor
   }
+
+  def getChannel(): FileChannel = ???
 }

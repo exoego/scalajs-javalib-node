@@ -38,7 +38,7 @@ abstract class FileChannel
 
   def tryLock(position: Long, size: Long, shared: Boolean): FileLock
 
-  final def write(srcs: Array[ByteBuffer]): Long = this.write(srcs, 0, srcs.length)
+  def write(srcs: Array[ByteBuffer]): Long = this.write(srcs, 0, srcs.length)
 
-  def write(src: Array[ByteBuffer], position: Long): Int
+  def write(src: ByteBuffer, position: Long): Int
 }
