@@ -10,6 +10,7 @@ abstract class AbstractInterruptibleChannel extends Channel with InterruptibleCh
 
   final def close(): Unit = {
     this.open = false
+    this.implCloseChannel()
   }
 
   final override def isOpen(): Boolean = this.open
