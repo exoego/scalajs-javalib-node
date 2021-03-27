@@ -123,7 +123,7 @@ private[io] final class FileInputStreamChannel(val stream: FileInputStream) exte
 
   override def transferFrom(src: ReadableByteChannel, position: Long, count: Long): Long = ???
 
-  override def read(dst: ByteBuffer, position: Long): Int = stream.getFD().internal
+  override def read(dst: ByteBuffer, position: Long): Int = ???
 
   override def write(src: ByteBuffer, position: Long): Int = ???
 
