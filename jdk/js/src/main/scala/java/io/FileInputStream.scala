@@ -3,9 +3,8 @@ package java.io
 import io.scalajs.nodejs.buffer.Buffer
 import io.scalajs.nodejs.fs.{BigIntStats, Fs, Stats}
 
-import java.nio.channels.FileChannel
-import scala.scalajs.js
-import scala.scalajs.js.JSConverters._
+import java.nio._
+import java.nio.channels._
 
 class FileInputStream(descriptor: FileDescriptor) extends InputStream {
 
@@ -57,7 +56,7 @@ class FileInputStream(descriptor: FileDescriptor) extends InputStream {
     }
   }
 
-  private var position: Long = 0
+  private[io] var position: Long = 0
 
   override def read(buffer: Array[Byte], off: Int, len: Int): Int = {
     if (buffer == null) {
@@ -86,5 +85,59 @@ class FileInputStream(descriptor: FileDescriptor) extends InputStream {
 
   def getFD(): FileDescriptor = this.descriptor
 
-  def getChannel(): FileChannel = throw new NotImplementedError("getChannel")
+  def getChannel(): FileChannel = {
+    new FileInputStreamChannel(this)
+  }
+}
+
+private[io] final class FileInputStreamChannel(val stream: FileInputStream) extends FileChannel {
+
+  override def read(dst: ByteBuffer): Int = {
+    if (stream.getFD().valid()) {
+      stream.read(dst.array())
+    } else {
+      throw new ClosedChannelException()
+    }
+  }
+
+  override def read(dsts: Array[ByteBuffer], offset: Int, length: Int): Long = {
+    ???
+  }
+
+  override def write(src: ByteBuffer): Int = throw new NonWritableChannelException()
+
+  override def write(srcs: Array[ByteBuffer], offset: Int, length: Int): Long =
+    throw new NonWritableChannelException()
+
+  override def position(): Long = ???
+
+  override def position(newPosition: Long): FileChannel = ???
+
+  override def size(): Long = ???
+
+  override def truncate(size: Long): FileChannel = ???
+
+  override def force(metaData: Boolean): Unit = ???
+
+  override def transferTo(position: Long, count: Long, target: WritableByteChannel): Long = ???
+
+  override def transferFrom(src: ReadableByteChannel, position: Long, count: Long): Long = ???
+
+  override def read(dst: ByteBuffer, position: Long): Int = ???
+
+  override def write(src: ByteBuffer, position: Long): Int = ???
+
+  override def map(
+      mode: _root_.java.nio.channels.FileChannel.MapMode,
+      position: Long,
+      size: Long
+  ): MappedByteBuffer = ???
+
+  override def lock(position: Long, size: Long, shared: Boolean): FileLock = ???
+
+  override def tryLock(position: Long, size: Long, shared: Boolean): FileLock = ???
+
+  override def implCloseChannel(): Unit = {
+    stream.getFD().invalidate()
+  }
 }

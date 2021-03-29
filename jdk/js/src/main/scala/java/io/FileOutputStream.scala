@@ -3,7 +3,8 @@ package java.io
 import io.scalajs.nodejs.buffer.Buffer
 import io.scalajs.nodejs.fs.Fs
 
-import java.nio.channels.FileChannel
+import java.nio._
+import java.nio.channels._
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters._
 
@@ -58,5 +59,59 @@ class FileOutputStream(private[this] val fd: FileDescriptor) extends OutputStrea
 
   val getFD: FileDescriptor = fd
 
-  def getChannel(): FileChannel = throw new NotImplementedError("getChannel")
+  def getChannel(): FileChannel = {
+    new FileOutputStreamChannel(this)
+  }
+}
+
+private[io] final class FileOutputStreamChannel(val stream: FileOutputStream) extends FileChannel {
+
+  override def read(dst: ByteBuffer): Int = throw new NonReadableChannelException()
+
+  override def read(dsts: Array[ByteBuffer], offset: Int, length: Int): Long =
+    throw new NonReadableChannelException()
+
+  override def write(src: ByteBuffer): Int = {
+    if (stream.getFD.valid()) {
+      val writeBuffer = src.array()
+      stream.write(writeBuffer)
+      writeBuffer.length
+    } else {
+      throw new ClosedChannelException()
+    }
+  }
+
+  override def write(srcs: Array[ByteBuffer], offset: Int, length: Int): Long = ???
+
+  override def position(): Long = ???
+
+  override def position(newPosition: Long): FileChannel = ???
+
+  override def size(): Long = ???
+
+  override def truncate(size: Long): FileChannel = ???
+
+  override def force(metaData: Boolean): Unit = ???
+
+  override def transferTo(position: Long, count: Long, target: WritableByteChannel): Long = ???
+
+  override def transferFrom(src: ReadableByteChannel, position: Long, count: Long): Long = ???
+
+  override def read(dst: ByteBuffer, position: Long): Int = ???
+
+  override def write(src: ByteBuffer, position: Long): Int = ???
+
+  override def map(
+      mode: _root_.java.nio.channels.FileChannel.MapMode,
+      position: Long,
+      size: Long
+  ): MappedByteBuffer = ???
+
+  override def lock(position: Long, size: Long, shared: Boolean): FileLock = ???
+
+  override def tryLock(position: Long, size: Long, shared: Boolean): FileLock = ???
+
+  override def implCloseChannel(): Unit = {
+    stream.getFD.invalidate()
+  }
 }
