@@ -1,13 +1,24 @@
 package luni.java.io
 
+import luni.java.nio.channels.ReadableByteChannelTest
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.freespec.AnyFreeSpec
 import support.TestSupport
 
 import java.io._
-import java.nio.channels.ClosedChannelException
+import java.nio.ByteBuffer
+import java.nio.channels.{
+  ClosedChannelException,
+  FileChannel,
+  NonWritableChannelException,
+  ReadableByteChannel
+}
 
-class FileInputStreamTest extends AnyFreeSpec with BeforeAndAfterEach with TestSupport {
+class FileInputStreamTest
+    extends AnyFreeSpec
+    with BeforeAndAfterEach
+    with TestSupport
+    with ReadableByteChannelTest {
   var fileName: String = _
 
   private var is: FileInputStream = _
@@ -288,4 +299,13 @@ class FileInputStreamTest extends AnyFreeSpec with BeforeAndAfterEach with TestS
     fis.close()
   }
 
+  override def readFactory(): FileChannel =
+    new FileInputStream("jdk/shared/src/test/resources/regular.txt").getChannel()
+
+  "non writable" in {
+    val readonlyChannel = readFactory()
+    assertThrows[NonWritableChannelException] {
+      readonlyChannel.write(ByteBuffer.allocate(10))
+    }
+  }
 }

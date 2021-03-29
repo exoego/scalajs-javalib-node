@@ -1,5 +1,7 @@
 package luni.java.io
 
+import luni.java.nio.channels.WritableByteChannelTest
+
 import java.io.{
   File,
   FileDescriptor,
@@ -12,9 +14,15 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatest.freespec.AnyFreeSpec
 import support.TestSupport
 
-import java.nio.channels.ClosedChannelException
+import java.nio.ByteBuffer
+import java.nio.channels.{ClosedChannelException, FileChannel, NonReadableChannelException}
+import java.nio.file.{Files, Path}
 
-class FileOutputStreamTest extends AnyFreeSpec with BeforeAndAfterEach with TestSupport {
+class FileOutputStreamTest
+    extends AnyFreeSpec
+    with BeforeAndAfterEach
+    with TestSupport
+    with WritableByteChannelTest {
   private[io] var fileName: String = _
 
   private[io] var fos: FileOutputStream = _
@@ -288,5 +296,16 @@ class FileOutputStreamTest extends AnyFreeSpec with BeforeAndAfterEach with Test
     val fos2 = new FileOutputStream(tmpfile, true);
     assert(fos2.getChannel().position() === 10);
     fos2.close();
+  }
+
+  private val path                         = Files.createTempFile("write", ".md")
+  override def writeChannelPath(): Path    = path
+  override def writeFactory(): FileChannel = new FileOutputStream(path.toFile).getChannel()
+
+  "non readable" in {
+    val writeOnlyChannel: FileChannel = writeFactory()
+    assertThrows[NonReadableChannelException] {
+      writeOnlyChannel.read(ByteBuffer.allocate(10))
+    }
   }
 }
