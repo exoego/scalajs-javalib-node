@@ -2,8 +2,6 @@ package java.io
 
 import io.scalajs.nodejs.fs.Fs
 
-import java.io.FileDescriptor.in
-
 final class FileDescriptor {
 
   private[io] var internal = -1
@@ -38,6 +36,16 @@ private[io] object FileDescriptorFactory {
   def openRead(filepath: String): FileDescriptor = {
     val nodeFD = Fs.openSync(filepath, "r")
     FileDescriptorFactory.createInternal(nodeFD, readOnly = true)
+  }
+
+  def openReadWrite(filepath: String, failIfExists: Boolean): FileDescriptor = {
+    val nodeFD = Fs.openSync(filepath, if (failIfExists) "wx+" else "w+")
+    FileDescriptorFactory.createInternal(nodeFD, readOnly = false)
+  }
+
+  def openReadAppend(filepath: String, failIfExists: Boolean): FileDescriptor = {
+    val nodeFD = Fs.openSync(filepath, if (failIfExists) "ax+" else "a+")
+    FileDescriptorFactory.createInternal(nodeFD, readOnly = false)
   }
 
   def createInternal(descriptor: Int, readOnly: Boolean = false): FileDescriptor = {

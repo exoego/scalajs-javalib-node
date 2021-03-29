@@ -74,7 +74,7 @@ class FileChannelTest extends AnyFreeSpec {
       }
       rwChannel.close()
 
-      val rwChannel2 = new RandomAccessFile(path.toFile, "rw").getChannel()
+      val rwChannel2 = new RandomAccessFile(path.toFile, "r").getChannel()
       val byteBuffer = ByteBuffer.allocate(16)
       assert(rwChannel2.read(byteBuffer) > 0)
       assert(new String(byteBuffer.array(), utf8).trim === "bar")
