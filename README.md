@@ -1,26 +1,21 @@
-# Java standard libs ported for Node.js
+# Java API ported for Node.js
 
-**Forget Node.js libs.<br>
-Focus in developing using familiar Scala/Java libs.**
-
-Wanna develop apps for Node.js (Electron or FaaS), but despairing over Node.js libs?
-
-This library provide some important parts of Java libs, like IO/Child processes, by re-implementing them on top of Node.js libs.
-So you may reduce effort into Node.js lib and their type facade. 
+This library provides some of Java's important APIs, like IO/NIO/Child processes, by re-implementing them on top of Node.js libs.
+So Scala.js users may reduce efforts into Node.js APIs and their type facade. 
 
 
 ## Goal
 
-Provide core parts of Java libs, e.g. 
+Provide core parts of Java APIs, e.g. :
 
-* `java.io` and `java.nio`
-* `java.util.concurrency`
+* `java.io`
+* `java.nio`
 * `java.lang` like (`Process` and `ProcessBuilder`)
 
 
 ## Non-Goal
 
-This project may not provide the following libs, or may provide only skelton/stub implementation if needed, since those are considered useless for writing Node.js apps.
+This project may not provide the following APIs, or may provide only skelton/stub implementation if needed, since those are considered useless for writing Node.js apps.
 
 * `java.applet`
 * `java.awt`
@@ -37,5 +32,7 @@ This project may not provide the following libs, or may provide only skelton/stu
 
 ## Note
 
-Many implementations and tests are based on [Apache Harmony project](https://github.com/apache/harmony), not OpenJDK.
+Some implementations and tests are based on [Apache Harmony project](https://github.com/apache/harmony), not OpenJDK.
 This is because Harmony uses Apache License, which is very flexible and non-invasive, but OpenJDK uses GPL. 
+
+Also some implementations are based on [Scala.js](https://github.com/scala-js/scala-js) to modify them specifically for Node.js.
